@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  netId         String?   @unique
+  firstName     String
+  lastName      String
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(STUDENT)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  verificationTokens VerificationToken[]
+  hostedEvents       Event[]              @relation("EventHost")
+  rsvps              Rsvp[]
+  dashboardWidgets   DashboardWidget[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("verification_tokens")
+}
+
+enum RecurrenceRule {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Event {
+  id            String         @id @default(cuid())
+  title         String
+  description   String
+  location      String
+  posterUrl     String?
+  startsAt      DateTime
+  endsAt        DateTime
+  recurrence    RecurrenceRule @default(NONE)
+  approved      Boolean        @default(true)
+  hostId        String
+  host          User           @relation("EventHost", fields: [hostId], references: [id], onDelete: Cascade)
+  rsvps         Rsvp[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("events")
+}
+
+model Rsvp {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@map("rsvps")
+}
+
+enum WidgetType {
+  EVENTS
+  DKU_EATS
+  SOCIAL
+  NEWS
+  WISDOM
+  CLUBS
+}
+
+model DashboardWidget {
+  id       String     @id @default(cuid())
+  userId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     WidgetType
+  position Int        @default(0)
+
+  @@unique([userId, type])
+  @@map("dashboard_widgets")
+}
