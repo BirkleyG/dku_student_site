@@ -19,27 +19,63 @@ export async function POST(request: Request) {
     );
   }
 
-  const { firstName, lastName, netId, email, password } = parsed.data;
+  const { firstName, lastName, netId, email, password, inviteCode } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
   }
 
+  // Bootstrap problem: invite codes can only be issued by an ADMIN, and
+  // there is no ADMIN until someone signs up. Let the very first account
+  // on the whole site in for free, as the super-admin, so there's someone
+  // who can start inviting everyone else.
+  const isFirstUser = (await prisma.user.count()) === 0;
+
+  const invite = isFirstUser
+    ? null
+    : await prisma.inviteCode.findFirst({
+        where: { code: inviteCode, netId: { equals: netId, mode: "insensitive" }, usedAt: null },
+      });
+  if (!isFirstUser && !invite) {
+    return NextResponse.json(
+      { error: "That invite code doesn't match your netID, or has already been used." },
+      { status: 403 },
+    );
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   let user;
   try {
-    user = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        netId: netId || null,
-        email,
-        passwordHash,
-      },
+    user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          firstName,
+          lastName,
+          netId,
+          email,
+          passwordHash,
+          role: isFirstUser ? "ADMIN" : "STUDENT",
+        },
+      });
+      if (invite) {
+        // Re-check usedAt inside the transaction so two concurrent signups
+        // racing on the same code can't both succeed.
+        const claimed = await tx.inviteCode.updateMany({
+          where: { id: invite.id, usedAt: null },
+          data: { usedAt: new Date(), usedById: created.id },
+        });
+        if (claimed.count === 0) {
+          throw new Error("INVITE_ALREADY_USED");
+        }
+      }
+      return created;
     });
   } catch (err) {
+    if (err instanceof Error && err.message === "INVITE_ALREADY_USED") {
+      return NextResponse.json({ error: "That invite code was just used by someone else." }, { status: 409 });
+    }
     // A second submit of the same form (e.g. a duplicate Enter/click while
     // the first request was still in flight) can race past the findUnique
     // check above — fall back to the DB's own unique constraint here.

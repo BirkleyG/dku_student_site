@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canModerateEvent } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -31,7 +32,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   ]);
 
   if (!user || !event) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (event.hostId !== user.id && user.role !== "ADMIN") {
+  if (event.hostId !== user.id && !canModerateEvent(user, event.category)) {
     return NextResponse.json({ error: "You can't remove this event" }, { status: 403 });
   }
 

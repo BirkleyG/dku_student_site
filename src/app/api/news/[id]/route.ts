@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,8 +17,13 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   const session = await auth();
-  if (!session?.user?.email || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Only admins can remove articles" }, { status: 403 });
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Log in" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  if (!user || !hasScope(user, "NEWS")) {
+    return NextResponse.json({ error: "You don't have News admin permission" }, { status: 403 });
   }
 
   const { id } = await params;

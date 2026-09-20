@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 import { Reveal, StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
@@ -9,10 +10,14 @@ import { NewsletterForm } from "./NewsletterForm";
 
 export default async function NewsPage() {
   const session = await auth();
-  const posts = await prisma.newsPost.findMany({
-    orderBy: { publishedAt: "desc" },
-    include: { author: { select: { firstName: true, lastName: true } } },
-  });
+  const [posts, user] = await Promise.all([
+    prisma.newsPost.findMany({
+      orderBy: { publishedAt: "desc" },
+      include: { author: { select: { firstName: true, lastName: true } } },
+    }),
+    session?.user?.email ? prisma.user.findUnique({ where: { email: session.user.email } }) : null,
+  ]);
+  const canPublish = user ? hasScope(user, "NEWS") : false;
 
   return (
     <div>
@@ -24,7 +29,7 @@ export default async function NewsPage() {
             A live Lilypad sync is on the roadmap — for now, admins post updates here directly.
           </p>
         </div>
-        {session?.user?.role === "ADMIN" ? <LinkButton href="/news/new">New article</LinkButton> : null}
+        {canPublish ? <LinkButton href="/news/new">New article</LinkButton> : null}
       </Reveal>
 
       <Reveal delay={0.1}>
