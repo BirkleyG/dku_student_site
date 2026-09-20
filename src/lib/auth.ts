@@ -22,7 +22,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // explicitly rather than relying on inference. Safe because we don't run
   // behind an untrusted reverse proxy that could spoof the Host header.
   trustHost: true,
-  session: { strategy: "jwt" },
+  // Keep people signed in across visits instead of re-prompting every time
+  // the JWT's default lifetime lapses.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 60 },
   pages: {
     signIn: "/login",
   },
