@@ -123,6 +123,7 @@ export function Welcome() {
   const [lastName, setLastName] = useState("");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [platform] = useState<Platform>(() => detectPlatform());
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -220,12 +221,14 @@ export function Welcome() {
   };
 
   const submitPassword = async () => {
+    if (isSubmitting) return;
     const password = value;
     if (password.length < 8) {
       setError(lang === "zh" ? "密码至少需要 8 个字符" : "Password must be at least 8 characters");
       return;
     }
     setError(null);
+    setIsSubmitting(true);
     echo("•".repeat(password.length));
     setValue("");
     say(t.settingUp);
@@ -253,6 +256,8 @@ export function Welcome() {
     } catch {
       setError(t.somethingWrong);
       setStep("password");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
