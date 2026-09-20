@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = user.role === "ADMIN";
-  const { title, description, location, posterUrl, startsAt, endsAt, recurrence } = parsed.data;
+  const { title, description, location, posterUrl, startsAt, endsAt, recurrence, category } = parsed.data;
 
   const event = await prisma.event.create({
     data: {
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       endsAt,
       // Recurring events require admin approval — non-admins are silently capped to a one-off.
       recurrence: isAdmin ? recurrence : "NONE",
+      category,
       hostId: user.id,
     },
   });

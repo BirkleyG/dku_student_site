@@ -1,4 +1,8 @@
 import { z } from "zod";
+import type { EventCategory } from "@prisma/client";
+import { EVENT_CATEGORIES } from "@/lib/event-categories";
+
+const categoryKeys = EVENT_CATEGORIES.map((c) => c.key) as [EventCategory, ...EventCategory[]];
 
 export const eventSchema = z
   .object({
@@ -9,6 +13,7 @@ export const eventSchema = z
     startsAt: z.coerce.date(),
     endsAt: z.coerce.date(),
     recurrence: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY"]).default("NONE"),
+    category: z.enum(categoryKeys).default("SOCIAL_EVENTS"),
   })
   .refine((data) => data.endsAt > data.startsAt, {
     message: "End time must be after the start time",

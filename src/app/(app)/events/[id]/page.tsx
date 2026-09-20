@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
+import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { RsvpButton } from "./RsvpButton";
 
 export default async function EventDetailPage({ params }: PageProps<"/events/[id]">) {
@@ -36,9 +37,17 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
-          {format(event.startsAt, "EEEE, MMMM d · h:mm a")} – {format(event.endsAt, "h:mm a")}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
+            {format(event.startsAt, "EEEE, MMMM d · h:mm a")} – {format(event.endsAt, "h:mm a")}
+          </p>
+          <span
+            className="rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+            style={{ backgroundColor: EVENT_CATEGORY_MAP[event.category].tint, color: EVENT_CATEGORY_MAP[event.category].color }}
+          >
+            {EVENT_CATEGORY_MAP[event.category].label}
+          </span>
+        </div>
         <h1 className="mt-2 font-display text-4xl">{event.title}</h1>
         <p className="mt-2 text-ink/60">
           {event.location} · Hosted by {event.host.firstName} {event.host.lastName}
