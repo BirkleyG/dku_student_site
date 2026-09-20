@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-const studentDomain = process.env.STUDENT_EMAIL_DOMAIN ?? "dukekunshan.edu.cn";
+// Allowed domains aren't sensitive, so this is deliberately a single NEXT_PUBLIC_
+// var — keeping client and server validation reading the exact same value avoids
+// them silently drifting apart if only one of two separate vars gets set.
+export const studentEmailDomains = (process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAINS ?? "dukekunshan.edu.cn,duke.edu")
+  .split(",")
+  .map((d) => d.trim().toLowerCase())
+  .filter(Boolean);
 
 export const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(80),
@@ -17,8 +23,8 @@ export const signupSchema = z.object({
     .trim()
     .toLowerCase()
     .email("Enter a valid email")
-    .refine((email) => email.endsWith(`@${studentDomain}`), {
-      message: `Use your ${studentDomain} email to sign up`,
+    .refine((email) => studentEmailDomains.some((domain) => email.endsWith(`@${domain}`)), {
+      message: `Use your ${studentEmailDomains.join(" or ")} email to sign up`,
     }),
   password: z
     .string()

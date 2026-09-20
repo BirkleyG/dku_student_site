@@ -51,17 +51,19 @@ export function Customize({ initial, canSave }: { initial: WidgetType[]; canSave
             <div className="mt-4 flex flex-wrap gap-2">
               {defaultWidgetOrder.map((type) => {
                 const active = selected.includes(type);
+                const Icon = widgetCatalog[type].icon;
                 return (
                   <button
                     key={type}
                     onClick={() => toggle(type)}
-                    className={`focus-ring rounded-full border px-4 py-2 text-sm transition-colors ${
+                    className={`focus-ring flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors ${
                       active
                         ? "border-gold bg-gold/10 text-gold"
                         : "border-paper/15 text-paper/50 hover:border-paper/35"
                     }`}
                   >
-                    {widgetCatalog[type].emoji} {widgetCatalog[type].label}
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    {widgetCatalog[type].label}
                   </button>
                 );
               })}
