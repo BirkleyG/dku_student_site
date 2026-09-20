@@ -24,6 +24,8 @@ This repo's default branch (`claude/lucid-knuth-kxmnfs`) is what Vercel will imp
 | `NEXT_PUBLIC_STUDENT_EMAIL_DOMAINS` | **Required** | Comma-separated list of email domains allowed to sign up, e.g. `dukekunshan.edu.cn,duke.edu`. |
 | `RESEND_API_KEY` | Optional | Leave unset for now. Without it, signup verification links are written to the deployment's logs (Vercel dashboard → your project → **Logs**) instead of emailed — the app is fully usable this way, you just verify accounts by copying the link out of the logs. Add this later to send real emails. |
 | `NEXTAUTH_URL` | Optional | Not needed on Vercel or in local dev — Auth.js trusts the request host automatically in both. Only set this if deploying somewhere else and you hit a host/auth error. |
+| `EATS_FIREBASE_PROJECT_ID`, `EATS_FIREBASE_CLIENT_EMAIL`, `EATS_FIREBASE_PRIVATE_KEY` | Optional | Enables single sign-on into the DKU Eats embed on the `/eats` tab. All three come from one JSON file: Firebase Console (DKU Eats' project, `eats-3f3fa`) → **Project Settings → Service Accounts → Generate new private key**. Without these, `/eats` still works, it just falls back to an unauthenticated embed. |
+| `NEXT_PUBLIC_EATS_URL` | Optional | Where DKU Eats is hosted. Defaults to `https://dkueats.com`. |
 
 ### Steps
 
@@ -55,4 +57,4 @@ No email provider is required in development — verification links are logged t
 
 ## Status
 
-Phase 1 (foundation): onboarding, auth, Home dashboard, and Events are fully built. DKU Eats, Board, News, Wisdom, and Clubs are stubbed and next up.
+Onboarding, auth, Home dashboard, Events, The Board, DKU Wisdom, DKU News, and Clubs & Orgs are fully built. DKU Eats is embedded with single sign-on (see the env var table above) — it's a separate app (`birkleyg/eats`), so it needs its own Firebase service account credentials to enable SSO.
