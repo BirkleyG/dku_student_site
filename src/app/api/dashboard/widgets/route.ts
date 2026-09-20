@@ -2,30 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { defaultWidgetOrder } from "@/lib/widgets";
-import { WidgetType } from "@prisma/client";
-
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ widgets: defaultWidgetOrder });
-  }
-
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) return NextResponse.json({ widgets: defaultWidgetOrder });
-
-  const saved = await prisma.dashboardWidget.findMany({
-    where: { userId: user.id },
-    orderBy: { position: "asc" },
-  });
-
-  return NextResponse.json({
-    widgets: saved.length ? saved.map((w) => w.type) : defaultWidgetOrder,
-  });
-}
+import { WidgetType, WidgetSize } from "@prisma/client";
 
 const bodySchema = z.object({
-  widgets: z.array(z.nativeEnum(WidgetType)).min(1).max(6),
+  widgets: z
+    .array(z.object({ type: z.nativeEnum(WidgetType), size: z.nativeEnum(WidgetSize) }))
+    .max(24),
 });
 
 export async function POST(request: Request) {
@@ -46,7 +28,12 @@ export async function POST(request: Request) {
   await prisma.$transaction([
     prisma.dashboardWidget.deleteMany({ where: { userId: user.id } }),
     prisma.dashboardWidget.createMany({
-      data: parsed.data.widgets.map((type, position) => ({ userId: user.id, type, position })),
+      data: parsed.data.widgets.map(({ type, size }, position) => ({
+        userId: user.id,
+        type,
+        size,
+        position,
+      })),
     }),
   ]);
 

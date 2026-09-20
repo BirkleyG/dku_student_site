@@ -1,17 +1,16 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { defaultWidgetOrder } from "@/lib/widgets";
-import { WidgetCard } from "@/components/widgets/WidgetCard";
-import { Reveal, StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
-import { Customize } from "./Customize";
-import type { WidgetType } from "@prisma/client";
-import { format } from "date-fns";
+import { defaultLayout } from "@/lib/widgets";
+import type { WidgetInstance } from "@/lib/widgets";
+import type { WidgetData } from "@/components/widgets/AppWidgetContent";
+import { HomeDashboard } from "@/components/widgets/HomeDashboard";
+import { Reveal } from "@/components/motion/Reveal";
 
 export default async function HomePage() {
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0];
 
-  let widgets: WidgetType[] = defaultWidgetOrder;
+  let layout: WidgetInstance[] = defaultLayout.map((w) => ({ id: crypto.randomUUID(), ...w }));
   let userId: string | null = null;
 
   if (session?.user?.email) {
@@ -22,18 +21,50 @@ export default async function HomePage() {
         where: { userId: user.id },
         orderBy: { position: "asc" },
       });
-      if (saved.length) widgets = saved.map((w) => w.type);
+      if (saved.length) {
+        layout = saved.map((w) => ({ id: w.id, app: w.type, size: w.size }));
+      }
     }
   }
 
-  const upcomingEvents = widgets.includes("EVENTS")
-    ? await prisma.event.findMany({
-        where: { startsAt: { gte: new Date() }, approved: true },
-        orderBy: { startsAt: "asc" },
-        take: 3,
-        include: { host: true },
-      })
-    : [];
+  const [events, boardPosts, wisdomPosts, newsPosts, clubs] = await Promise.all([
+    prisma.event.findMany({
+      where: { startsAt: { gte: new Date() }, approved: true },
+      orderBy: { startsAt: "asc" },
+      take: 4,
+    }),
+    prisma.boardPost.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: { author: true },
+    }),
+    prisma.wisdomPost.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+    prisma.newsPost.findMany({
+      orderBy: { publishedAt: "desc" },
+      take: 4,
+    }),
+    prisma.club.findMany({
+      where: { approved: true },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+  ]);
+
+  const data: WidgetData = {
+    events: events.map((e) => ({ id: e.id, title: e.title, startsAt: e.startsAt.toISOString(), location: e.location })),
+    boardPosts: boardPosts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      authorName: p.author.firstName,
+      createdAt: p.createdAt.toISOString(),
+    })),
+    wisdomPosts: wisdomPosts.map((w) => ({ id: w.id, title: w.title, category: w.category, createdAt: w.createdAt.toISOString() })),
+    newsPosts: newsPosts.map((n) => ({ id: n.id, title: n.title, summary: n.summary, publishedAt: n.publishedAt.toISOString() })),
+    clubs: clubs.map((c) => ({ id: c.id, name: c.name, category: c.category, description: c.description })),
+  };
 
   return (
     <div>
@@ -46,33 +77,9 @@ export default async function HomePage() {
         </h1>
       </Reveal>
 
-      <Reveal delay={0.1} className="mt-6">
-        <Customize initial={widgets} canSave={Boolean(userId)} />
+      <Reveal delay={0.1} className="mt-8">
+        <HomeDashboard initialLayout={layout} data={data} canSave={Boolean(userId)} />
       </Reveal>
-
-      <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {widgets.map((type) => (
-          <StaggerItem key={type}>
-            <WidgetCard type={type}>
-              {type === "EVENTS" ? (
-                upcomingEvents.length ? (
-                  <ul className="space-y-2 text-sm">
-                    {upcomingEvents.map((event) => (
-                      <li key={event.id} className="text-ink/75">
-                        <span className="text-ink/40">{format(event.startsAt, "MMM d, h:mm a")}</span>
-                        {" — "}
-                        {event.title}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-ink/40">No events on the calendar yet.</p>
-                )
-              ) : null}
-            </WidgetCard>
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
     </div>
   );
 }
