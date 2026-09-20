@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/lib/validation";
 import { sendVerificationEmail } from "@/lib/mailer";
@@ -27,15 +28,28 @@ export async function POST(request: Request) {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const user = await prisma.user.create({
-    data: {
-      firstName,
-      lastName,
-      netId: netId || null,
-      email,
-      passwordHash,
-    },
-  });
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        netId: netId || null,
+        email,
+        passwordHash,
+      },
+    });
+  } catch (err) {
+    // A second submit of the same form (e.g. a duplicate Enter/click while
+    // the first request was still in flight) can race past the findUnique
+    // check above — fall back to the DB's own unique constraint here.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const target = (err.meta?.target as string[] | undefined) ?? [];
+      const field = target.includes("net_id") || target.includes("netId") ? "netID" : "email";
+      return NextResponse.json({ error: `An account with that ${field} already exists` }, { status: 409 });
+    }
+    throw err;
+  }
 
   const token = randomBytes(32).toString("hex");
   await prisma.verificationToken.create({
