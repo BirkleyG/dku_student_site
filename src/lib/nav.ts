@@ -1,4 +1,15 @@
-import { Home, CalendarDays, UtensilsCrossed, MessagesSquare, Newspaper, Compass, Users2, type LucideIcon } from "lucide-react";
+import {
+  Home,
+  CalendarDays,
+  UtensilsCrossed,
+  MessagesSquare,
+  Newspaper,
+  Compass,
+  Users2,
+  ShoppingBag,
+  Landmark,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -14,4 +25,6 @@ export const navItems: NavItem[] = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/wisdom", label: "Wisdom", icon: Compass },
   { href: "/clubs", label: "Clubs", icon: Users2 },
+  { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
+  { href: "/slb", label: "SLB", icon: Landmark },
 ];
