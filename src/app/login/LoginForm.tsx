@@ -39,7 +39,9 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      {verifiedNote ? <p className="rounded-xl bg-teal/10 px-4 py-3 text-sm text-teal">{verifiedNote}</p> : null}
+      {verifiedNote ? (
+        <p className="rounded-xl bg-sprout/25 px-4 py-3 text-sm text-sprout-deep">{verifiedNote}</p>
+      ) : null}
 
       <Field label="DKU email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <Field

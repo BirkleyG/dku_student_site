@@ -126,10 +126,10 @@ export function SignupForm() {
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-3xl border border-teal/30 bg-teal/10 p-8 text-center"
+        className="rounded-3xl border border-sprout-deep/30 bg-sprout/20 p-8 text-center"
       >
-        <p className="font-display text-2xl text-teal">Almost there, {answers.firstName}.</p>
-        <p className="mt-2 text-paper/70">
+        <p className="font-display text-2xl text-sprout-deep">Almost there, {answers.firstName}.</p>
+        <p className="mt-2 text-ink/70">
           We sent a verification link to your inbox. Confirm it, then come back and log in.
         </p>
       </motion.div>
@@ -168,7 +168,7 @@ export function SignupForm() {
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={currentStep.placeholder}
-                className="focus-ring w-full rounded-2xl border border-paper/15 bg-ink-soft px-4 py-3 text-paper placeholder:text-paper/30 focus:border-gold"
+                className="focus-ring w-full rounded-2xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
               />
               <button
                 onClick={() => void advance()}
@@ -199,7 +199,7 @@ function ChatBubble({ from, children }: { from: "dku" | "you"; children: React.R
     >
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-          from === "you" ? "bg-gold/15 text-gold-bright" : "bg-surface-raised text-paper/85"
+          from === "you" ? "bg-ink text-white" : "bg-paper-dim text-ink/85"
         }`}
       >
         {children}

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Fraunces, Space_Grotesk } from "next/font/google";
+import { Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
+  weight: ["400"],
   style: ["normal", "italic"],
 });
 
@@ -26,9 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${instrumentSerif.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body className="grain min-h-full flex flex-col bg-ink text-paper">
+      <body className="grain min-h-full flex flex-col bg-white text-ink">
         <Providers>{children}</Providers>
       </body>
     </html>

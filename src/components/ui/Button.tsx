@@ -8,10 +8,10 @@ const base =
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-gold text-ink shadow-[0_0_0_0_rgba(242,169,59,0)] hover:bg-gold-bright hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-4px_rgba(242,169,59,0.45)]",
+    "bg-gold text-ink hover:bg-gold-bright hover:-translate-y-0.5 hover:shadow-[0_10px_28px_-8px_rgba(167,149,100,0.55)]",
   secondary:
-    "border border-paper/25 text-paper hover:border-paper/60 hover:-translate-y-0.5 hover:bg-paper/5",
-  ghost: "text-paper/80 hover:text-paper",
+    "border border-ink text-ink hover:bg-ink hover:text-white hover:-translate-y-0.5",
+  ghost: "text-ink/70 hover:text-ink",
 };
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

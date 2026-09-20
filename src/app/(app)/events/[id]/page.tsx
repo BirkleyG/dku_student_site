@@ -26,21 +26,21 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
   return (
     <div className="mx-auto max-w-2xl">
       <Reveal>
-        <div className="relative h-64 w-full overflow-hidden rounded-3xl bg-surface-raised sm:h-80">
+        <div className="relative h-64 w-full overflow-hidden rounded-3xl bg-paper-dim sm:h-80">
           {event.posterUrl ? (
             <Image src={event.posterUrl} alt="" fill className="object-cover" unoptimized />
           ) : (
-            <div className="flex h-full items-center justify-center font-display text-5xl text-paper/15">DKU</div>
+            <div className="flex h-full items-center justify-center font-display text-5xl italic text-ink/15">DKU</div>
           )}
         </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">
-        <p className="text-xs uppercase tracking-[0.3em] text-gold">
+        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
           {format(event.startsAt, "EEEE, MMMM d · h:mm a")} – {format(event.endsAt, "h:mm a")}
         </p>
-        <h1 className="mt-2 font-display text-4xl font-medium">{event.title}</h1>
-        <p className="mt-2 text-paper/60">
+        <h1 className="mt-2 font-display text-4xl">{event.title}</h1>
+        <p className="mt-2 text-ink/60">
           {event.location} · Hosted by {event.host.firstName} {event.host.lastName}
         </p>
       </Reveal>
@@ -54,7 +54,7 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
         />
       </Reveal>
 
-      <Reveal delay={0.2} className="mt-8 whitespace-pre-wrap text-paper/75 leading-relaxed">
+      <Reveal delay={0.2} className="mt-8 whitespace-pre-wrap text-ink/75 leading-relaxed">
         {event.description}
       </Reveal>
     </div>

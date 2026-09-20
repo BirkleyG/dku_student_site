@@ -44,7 +44,7 @@ export function RsvpButton({
       <Button variant={going ? "secondary" : "primary"} onClick={onClick} disabled={loading}>
         {going ? "You're going ✓" : "RSVP"}
       </Button>
-      <span className="text-sm text-paper/50">{count} going</span>
+      <span className="text-sm text-ink/50">{count} going</span>
     </div>
   );
 }

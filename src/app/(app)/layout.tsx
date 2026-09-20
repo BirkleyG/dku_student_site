@@ -7,14 +7,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const userLabel = session?.user?.name ?? null;
 
   return (
-    <div className="relative flex min-h-svh flex-col overflow-hidden">
+    <div className="relative flex min-h-svh flex-col overflow-hidden bg-white">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 h-[32rem] w-[64rem] -translate-x-1/2 rounded-full bg-duke/15 blur-[140px]"
+        className="pointer-events-none absolute -top-40 left-1/2 h-[32rem] w-[64rem] -translate-x-1/2 rounded-full bg-sprout/25 blur-[140px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-gold/10 blur-[120px]"
+        className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-gold/15 blur-[120px]"
       />
       <NavBar userLabel={userLabel} />
       <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-6 py-10">

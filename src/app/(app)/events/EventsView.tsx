@@ -72,7 +72,7 @@ export function EventsView() {
             key={r}
             onClick={() => setRange(r)}
             className={`focus-ring rounded-full border px-4 py-1.5 text-sm transition-colors ${
-              range === r ? "border-gold bg-gold/10 text-gold" : "border-paper/15 text-paper/50 hover:border-paper/35"
+              range === r ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/50 hover:border-ink/35"
             }`}
           >
             {rangeLabels[r]}
@@ -81,16 +81,16 @@ export function EventsView() {
       </div>
 
       {loading ? (
-        <p className="mt-10 text-sm text-paper/40">Loading events…</p>
+        <p className="mt-10 text-sm text-ink/40">Loading events…</p>
       ) : grouped.length === 0 ? (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-10 text-paper/50">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-10 text-ink/50">
           Nothing on the calendar for this {range}. Be the first to host something.
         </motion.p>
       ) : (
         <div className="mt-8 space-y-10">
           {grouped.map((group) => (
             <div key={group.day.toISOString()}>
-              <h2 className="mb-3 font-display text-lg text-paper/70">{format(group.day, "EEEE, MMMM d")}</h2>
+              <h2 className="mb-3 font-display text-xl text-ink/70">{format(group.day, "EEEE, MMMM d")}</h2>
               <StaggerGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((event) => (
                   <StaggerItem key={event.id}>
@@ -110,9 +110,9 @@ function EventCard({ event }: { event: ApiEvent }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="focus-ring group block overflow-hidden rounded-3xl border border-paper/10 bg-surface/70 transition-transform duration-300 hover:-translate-y-1"
+      className="focus-ring group block overflow-hidden rounded-3xl border border-ink/10 bg-paper transition-transform duration-300 hover:-translate-y-1 hover:border-ink/20"
     >
-      <div className="relative h-36 w-full overflow-hidden bg-surface-raised">
+      <div className="relative h-36 w-full overflow-hidden bg-paper-dim">
         {event.posterUrl ? (
           <Image
             src={event.posterUrl}
@@ -122,14 +122,14 @@ function EventCard({ event }: { event: ApiEvent }) {
             unoptimized
           />
         ) : (
-          <div className="flex h-full items-center justify-center font-display text-3xl text-paper/15">DKU</div>
+          <div className="flex h-full items-center justify-center font-display text-3xl italic text-ink/15">DKU</div>
         )}
       </div>
       <div className="p-5">
-        <p className="text-xs uppercase tracking-wide text-gold">{format(new Date(event.startsAt), "h:mm a")}</p>
-        <h3 className="mt-1 font-display text-lg">{event.title}</h3>
-        <p className="mt-1 text-sm text-paper/50">{event.location}</p>
-        <p className="mt-3 text-xs text-paper/40">
+        <p className="text-xs uppercase tracking-wide text-gold-bright">{format(new Date(event.startsAt), "h:mm a")}</p>
+        <h3 className="mt-1 font-display text-xl">{event.title}</h3>
+        <p className="mt-1 text-sm text-ink/50">{event.location}</p>
+        <p className="mt-3 text-xs text-ink/40">
           Hosted by {event.host.firstName} · {event._count.rsvps} going
         </p>
       </div>

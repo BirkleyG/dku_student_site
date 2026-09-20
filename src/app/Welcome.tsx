@@ -22,11 +22,11 @@ export function Welcome() {
   }, [step, done]);
 
   return (
-    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6">
+    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6">
       <BackgroundGlow />
 
       <div className="relative z-10 w-full max-w-xl">
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.4em] text-gold">Duke Kunshan University</p>
+        <p className="mb-6 text-center text-xs uppercase tracking-[0.4em] text-gold-bright">Duke Kunshan University</p>
 
         <div className="min-h-[220px] space-y-4">
           <AnimatePresence>
@@ -38,8 +38,8 @@ export function Welcome() {
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className={
                   i === lines.length - 1
-                    ? "font-display text-3xl font-medium text-paper sm:text-4xl"
-                    : "font-display text-2xl text-paper/70 sm:text-3xl"
+                    ? "font-display text-3xl italic text-ink sm:text-4xl"
+                    : "font-display text-2xl text-ink/60 sm:text-3xl"
                 }
               >
                 {line}
@@ -72,7 +72,7 @@ function BackgroundGlow() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       <motion.div
-        className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-duke/40 blur-[120px]"
+        className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-sprout/40 blur-[120px]"
         animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -82,7 +82,7 @@ function BackgroundGlow() {
         transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute right-1/3 top-1/4 h-64 w-64 rounded-full bg-teal/20 blur-[100px]"
+        className="absolute right-1/3 top-1/4 h-64 w-64 rounded-full bg-sprout-deep/20 blur-[100px]"
         animate={{ opacity: [0.4, 0.8, 0.4] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />

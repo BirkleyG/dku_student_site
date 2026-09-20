@@ -46,10 +46,10 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
       <Field label="Title" {...register("title")} error={errors.title?.message} />
 
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-paper/60">Description</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Description</span>
         <textarea
           rows={4}
-          className="focus-ring w-full rounded-xl border border-paper/15 bg-ink-soft px-4 py-3 text-paper placeholder:text-paper/30 focus:border-gold"
+          className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           {...register("description")}
         />
         {errors.description ? <span className="mt-1 block text-xs text-danger">{errors.description.message}</span> : null}
@@ -70,9 +70,9 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
 
       {isAdmin ? (
         <label className="block">
-          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-paper/60">Repeats</span>
+          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Repeats</span>
           <select
-            className="focus-ring w-full rounded-xl border border-paper/15 bg-ink-soft px-4 py-3 text-paper focus:border-gold"
+            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
             {...register("recurrence")}
           >
             <option value="NONE">Doesn&apos;t repeat</option>
@@ -82,7 +82,7 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
           </select>
         </label>
       ) : (
-        <p className="text-xs text-paper/40">
+        <p className="text-xs text-ink/40">
           Need a recurring event? Email the site admin — recurring events currently need admin approval.
         </p>
       )}

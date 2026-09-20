@@ -34,7 +34,7 @@ export function Customize({ initial, canSave }: { initial: WidgetType[]; canSave
     <div>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="focus-ring text-sm font-medium text-paper/60 hover:text-paper"
+        className="focus-ring text-sm font-medium text-ink/60 hover:text-ink"
       >
         {open ? "Close" : "Customize dashboard"} ✦
       </button>
@@ -58,8 +58,8 @@ export function Customize({ initial, canSave }: { initial: WidgetType[]; canSave
                     onClick={() => toggle(type)}
                     className={`focus-ring flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors ${
                       active
-                        ? "border-gold bg-gold/10 text-gold"
-                        : "border-paper/15 text-paper/50 hover:border-paper/35"
+                        ? "border-gold bg-gold/10 text-ink"
+                        : "border-ink/15 text-ink/50 hover:border-ink/35"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -74,7 +74,7 @@ export function Customize({ initial, canSave }: { initial: WidgetType[]; canSave
                 {saving ? "Saving…" : "Save layout"}
               </Button>
             ) : (
-              <p className="mt-4 text-sm text-paper/40">Log in to save your dashboard layout.</p>
+              <p className="mt-4 text-sm text-ink/40">Log in to save your dashboard layout.</p>
             )}
           </motion.div>
         ) : null}

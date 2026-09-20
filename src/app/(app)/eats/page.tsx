@@ -11,7 +11,7 @@ export default function EatsPage() {
         href="https://dkueats.com"
         target="_blank"
         rel="noopener noreferrer"
-        className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-paper/25 px-6 py-3 text-sm font-medium text-paper transition-transform duration-200 hover:-translate-y-0.5 hover:border-paper/60"
+        className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-ink text-ink transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink hover:text-white px-6 py-3 text-sm font-medium"
       >
         Open DKU Eats ↗
       </a>

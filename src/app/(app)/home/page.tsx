@@ -38,10 +38,12 @@ export default async function HomePage() {
   return (
     <div>
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold">
+        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
           {firstName ? `Welcome back, ${firstName}` : "Welcome"}
         </p>
-        <h1 className="mt-2 font-display text-4xl font-medium">Your DKU, all in one place.</h1>
+        <h1 className="mt-2 font-display text-4xl">
+          Your DKU, <em className="italic text-gold-bright">all in one place.</em>
+        </h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-6">
@@ -56,15 +58,15 @@ export default async function HomePage() {
                 upcomingEvents.length ? (
                   <ul className="space-y-2 text-sm">
                     {upcomingEvents.map((event) => (
-                      <li key={event.id} className="text-paper/75">
-                        <span className="text-paper/40">{format(event.startsAt, "MMM d, h:mm a")}</span>
+                      <li key={event.id} className="text-ink/75">
+                        <span className="text-ink/40">{format(event.startsAt, "MMM d, h:mm a")}</span>
                         {" — "}
                         {event.title}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-paper/40">No events on the calendar yet.</p>
+                  <p className="text-sm text-ink/40">No events on the calendar yet.</p>
                 )
               ) : null}
             </WidgetCard>

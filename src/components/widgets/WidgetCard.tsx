@@ -12,11 +12,11 @@ export function WidgetCard({ type, children }: { type: WidgetType; children?: Re
     <Card className="flex h-full flex-col transition-transform duration-300 hover:-translate-y-1">
       <div className="flex items-start justify-between">
         <div>
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-gold/20 to-teal/10 text-gold">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-gold/25 to-sprout/30 text-ink">
             <Icon className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <h3 className="mt-3 font-display text-xl">{meta.label}</h3>
-          <p className="mt-1 text-sm text-paper/55">{meta.blurb}</p>
+          <h3 className="mt-3 font-display text-2xl">{meta.label}</h3>
+          <p className="mt-1 text-sm text-ink/55">{meta.blurb}</p>
         </div>
       </div>
 
