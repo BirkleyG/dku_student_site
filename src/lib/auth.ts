@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Auth.js's auto-detection of a trusted host (via process.env.VERCEL) isn't
+  // reliable on every Next.js/Vercel runtime combo, and a false negative here
+  // throws UntrustedHost on every request that touches auth — so set it
+  // explicitly rather than relying on inference. Safe because we don't run
+  // behind an untrusted reverse proxy that could spoof the Host header.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
