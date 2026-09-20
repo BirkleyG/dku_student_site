@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { eventSchema, type EventInput } from "@/lib/event-validation";
+import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -20,7 +21,7 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues, unknown, EventInput>({
     resolver: zodResolver(eventSchema),
-    defaultValues: { recurrence: "NONE" },
+    defaultValues: { recurrence: "NONE", category: "SOCIAL_EVENTS" },
   });
 
   const onSubmit = async (data: EventInput) => {
@@ -67,6 +68,25 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
         <Field label="Starts" type="datetime-local" {...register("startsAt")} error={errors.startsAt?.message} />
         <Field label="Ends" type="datetime-local" {...register("endsAt")} error={errors.endsAt?.message} />
       </div>
+
+      <label className="block">
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Category</span>
+        <select
+          className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
+          {...register("category")}
+        >
+          {EVENT_CATEGORY_GROUPS.map((group) => (
+            <optgroup key={group.group} label={group.group}>
+              {group.categories.map((cat) => (
+                <option key={cat.key} value={cat.key}>
+                  {cat.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        {errors.category ? <span className="mt-1 block text-xs text-danger">{errors.category.message}</span> : null}
+      </label>
 
       {isAdmin ? (
         <label className="block">

@@ -1,0 +1,8 @@
+-- CreateEnum
+CREATE TYPE "EventCategory" AS ENUM ('NATURAL_SCIENCE', 'SOCIAL_SCIENCE', 'ARTS_HUMANITIES', 'ADMINISTRATIVE', 'CLUBS', 'SPORTS_OPEN_PLAY', 'SPORTS_TOURNAMENTS', 'RA_EVENTS', 'SOCIAL_EVENTS', 'PARTIES');
+
+-- AlterTable
+ALTER TABLE "events" ADD COLUMN "category" "EventCategory" NOT NULL DEFAULT 'SOCIAL_EVENTS';
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN "hiddenEventCategories" "EventCategory"[] NOT NULL DEFAULT ARRAY[]::"EventCategory"[];

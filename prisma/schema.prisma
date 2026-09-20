@@ -24,6 +24,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  hiddenEventCategories EventCategory[] @default([])
+
   verificationTokens VerificationToken[]
   hostedEvents       Event[]              @relation("EventHost")
   rsvps              Rsvp[]
@@ -56,6 +58,19 @@ enum RecurrenceRule {
   MONTHLY
 }
 
+enum EventCategory {
+  NATURAL_SCIENCE
+  SOCIAL_SCIENCE
+  ARTS_HUMANITIES
+  ADMINISTRATIVE
+  CLUBS
+  SPORTS_OPEN_PLAY
+  SPORTS_TOURNAMENTS
+  RA_EVENTS
+  SOCIAL_EVENTS
+  PARTIES
+}
+
 model Event {
   id            String         @id @default(cuid())
   title         String
@@ -65,6 +80,7 @@ model Event {
   startsAt      DateTime
   endsAt        DateTime
   recurrence    RecurrenceRule @default(NONE)
+  category      EventCategory  @default(SOCIAL_EVENTS)
   approved      Boolean        @default(true)
   hostId        String
   host          User           @relation("EventHost", fields: [hostId], references: [id], onDelete: Cascade)

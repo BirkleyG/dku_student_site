@@ -1,10 +1,17 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
 import { LinkButton } from "@/components/ui/Button";
-import { EventsView } from "./EventsView";
+import { Calendar } from "./Calendar";
 
 export default async function EventsPage() {
   const session = await auth();
+  const user = session?.user?.email
+    ? await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { hiddenEventCategories: true },
+      })
+    : null;
 
   return (
     <div>
@@ -17,7 +24,7 @@ export default async function EventsPage() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <EventsView />
+        <Calendar loggedIn={Boolean(session?.user)} initialHiddenCategories={user?.hiddenEventCategories ?? []} />
       </Reveal>
     </div>
   );
