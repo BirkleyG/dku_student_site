@@ -28,6 +28,12 @@ model User {
   hostedEvents       Event[]              @relation("EventHost")
   rsvps              Rsvp[]
   dashboardWidgets   DashboardWidget[]
+  boardPosts         BoardPost[]          @relation("BoardAuthor")
+  boardComments      BoardComment[]       @relation("BoardCommentAuthor")
+  wisdomPosts        WisdomPost[]         @relation("WisdomAuthor")
+  wisdomVotes        WisdomVote[]
+  newsPosts          NewsPost[]           @relation("NewsAuthor")
+  clubsSubmitted     Club[]               @relation("ClubSubmitter")
 
   @@map("users")
 }
@@ -99,4 +105,108 @@ model DashboardWidget {
 
   @@unique([userId, type])
   @@map("dashboard_widgets")
+}
+
+model BoardPost {
+  id        String         @id @default(cuid())
+  title     String
+  body      String
+  authorId  String
+  author    User           @relation("BoardAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments  BoardComment[]
+  createdAt DateTime       @default(now())
+
+  @@map("board_posts")
+}
+
+model BoardComment {
+  id        String    @id @default(cuid())
+  postId    String
+  post      BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation("BoardCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime  @default(now())
+
+  @@map("board_comments")
+}
+
+enum WisdomCategory {
+  FOOD
+  NIGHTLIFE
+  ACTIVITIES
+  TRAVEL
+  STUDY
+  OTHER
+}
+
+model WisdomPost {
+  id        String         @id @default(cuid())
+  title     String
+  category  WisdomCategory
+  location  String?
+  body      String
+  authorId  String
+  author    User           @relation("WisdomAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  votes     WisdomVote[]
+  createdAt DateTime       @default(now())
+
+  @@map("wisdom_posts")
+}
+
+model WisdomVote {
+  id     String     @id @default(cuid())
+  postId String
+  post   WisdomPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value  Int
+
+  @@unique([postId, userId])
+  @@map("wisdom_votes")
+}
+
+model NewsPost {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  body        String
+  authorId    String
+  author      User     @relation("NewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  publishedAt DateTime @default(now())
+
+  @@map("news_posts")
+}
+
+model NewsletterSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_signups")
+}
+
+enum ClubCategory {
+  ACADEMIC
+  ARTS
+  SPORTS
+  CULTURAL
+  SERVICE
+  SOCIAL
+  OTHER
+}
+
+model Club {
+  id            String       @id @default(cuid())
+  name          String
+  category      ClubCategory
+  description   String
+  contact       String?
+  logoUrl       String?
+  approved      Boolean      @default(true)
+  submittedById String
+  submittedBy   User         @relation("ClubSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+
+  @@map("clubs")
 }
