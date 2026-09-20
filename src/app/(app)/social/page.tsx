@@ -1,11 +1,31 @@
-import { ComingSoon } from "@/components/shell/ComingSoon";
+import { auth } from "@/lib/auth";
+import { Reveal } from "@/components/motion/Reveal";
+import { LinkButton } from "@/components/ui/Button";
+import { BoardFeed } from "./BoardFeed";
 
-export default function SocialPage() {
+export default async function SocialPage() {
+  const session = await auth();
+
   return (
-    <ComingSoon
-      eyebrow="The Board"
-      title="Only DKU, talking to DKU."
-      description="A verified-only space to post, ask, and discuss — think campus Reddit, minus the outsiders. Moderation tools and posting are coming next."
-    />
+    <div>
+      <Reveal className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">The Board</p>
+          <h1 className="mt-2 font-display text-4xl">Only DKU, talking to DKU.</h1>
+          <p className="mt-2 max-w-lg text-ink/60">
+            A verified-only space to post, ask, and discuss. Be decent — see the{" "}
+            <a href="/terms" className="underline decoration-ink/30 underline-offset-2 hover:text-ink">
+              community guidelines
+            </a>
+            .
+          </p>
+        </div>
+        <LinkButton href={session ? "/social/new" : "/login"}>New post</LinkButton>
+      </Reveal>
+
+      <Reveal delay={0.1}>
+        <BoardFeed />
+      </Reveal>
+    </div>
   );
 }

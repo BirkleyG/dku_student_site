@@ -23,6 +23,14 @@ export default function SignupPage() {
           Log in
         </Link>
       </Reveal>
+
+      <Reveal delay={0.25} className="mt-3 text-center text-xs text-ink/35">
+        By signing up you agree to the{" "}
+        <Link href="/terms" className="underline decoration-ink/30 underline-offset-2 hover:text-ink">
+          community guidelines
+        </Link>
+        .
+      </Reveal>
     </main>
   );
 }

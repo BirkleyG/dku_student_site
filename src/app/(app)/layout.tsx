@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { NavBar } from "@/components/shell/NavBar";
 import { PageTransition } from "@/components/motion/PageTransition";
@@ -20,6 +21,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-6 py-10">
         <PageTransition>{children}</PageTransition>
       </div>
+      <footer className="relative z-10 border-t border-ink/10 px-6 py-6 text-center text-xs text-ink/40">
+        DKU Life ·{" "}
+        <Link href="/terms" className="underline decoration-ink/30 underline-offset-2 hover:text-ink">
+          Community guidelines
+        </Link>
+      </footer>
     </div>
   );
 }

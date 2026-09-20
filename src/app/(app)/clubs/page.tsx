@@ -1,11 +1,28 @@
-import { ComingSoon } from "@/components/shell/ComingSoon";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { Reveal } from "@/components/motion/Reveal";
+import { LinkButton } from "@/components/ui/Button";
+import { ClubsDirectory } from "./ClubsDirectory";
 
-export default function ClubsPage() {
+export default async function ClubsPage() {
+  const session = await auth();
+  const currentUser = session?.user?.email
+    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
+    : null;
+
   return (
-    <ComingSoon
-      eyebrow="Clubs & Orgs"
-      title="Find your people."
-      description="A full directory of DKU clubs, student orgs, and sports teams — who they are, what they do, and how to join."
-    />
+    <div>
+      <Reveal className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">Clubs & Orgs</p>
+          <h1 className="mt-2 font-display text-4xl">Find your people.</h1>
+        </div>
+        <LinkButton href={session ? "/clubs/new" : "/login"}>Add a club</LinkButton>
+      </Reveal>
+
+      <Reveal delay={0.1} className="mt-10">
+        <ClubsDirectory currentUserId={currentUser?.id ?? null} isAdmin={currentUser?.role === "ADMIN"} />
+      </Reveal>
+    </div>
   );
 }

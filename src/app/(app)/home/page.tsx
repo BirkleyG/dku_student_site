@@ -26,14 +26,25 @@ export default async function HomePage() {
     }
   }
 
-  const upcomingEvents = widgets.includes("EVENTS")
-    ? await prisma.event.findMany({
-        where: { startsAt: { gte: new Date() }, approved: true },
-        orderBy: { startsAt: "asc" },
-        take: 3,
-        include: { host: true },
-      })
-    : [];
+  const [upcomingEvents, recentPosts, recentNews, topWisdom, clubCount] = await Promise.all([
+    widgets.includes("EVENTS")
+      ? prisma.event.findMany({
+          where: { startsAt: { gte: new Date() }, approved: true },
+          orderBy: { startsAt: "asc" },
+          take: 3,
+        })
+      : Promise.resolve([]),
+    widgets.includes("SOCIAL")
+      ? prisma.boardPost.findMany({ orderBy: { createdAt: "desc" }, take: 3 })
+      : Promise.resolve([]),
+    widgets.includes("NEWS")
+      ? prisma.newsPost.findMany({ orderBy: { publishedAt: "desc" }, take: 2 })
+      : Promise.resolve([]),
+    widgets.includes("WISDOM")
+      ? prisma.wisdomPost.findMany({ orderBy: { createdAt: "desc" }, take: 3 })
+      : Promise.resolve([]),
+    widgets.includes("CLUBS") ? prisma.club.count({ where: { approved: true } }) : Promise.resolve(0),
+  ]);
 
   return (
     <div>
@@ -68,6 +79,54 @@ export default async function HomePage() {
                 ) : (
                   <p className="text-sm text-ink/40">No events on the calendar yet.</p>
                 )
+              ) : null}
+
+              {type === "SOCIAL" ? (
+                recentPosts.length ? (
+                  <ul className="space-y-2 text-sm">
+                    {recentPosts.map((post) => (
+                      <li key={post.id} className="truncate text-ink/75">
+                        {post.title}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-ink/40">Nothing posted yet.</p>
+                )
+              ) : null}
+
+              {type === "NEWS" ? (
+                recentNews.length ? (
+                  <ul className="space-y-2 text-sm">
+                    {recentNews.map((post) => (
+                      <li key={post.id} className="truncate text-ink/75">
+                        {post.title}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-ink/40">No articles yet.</p>
+                )
+              ) : null}
+
+              {type === "WISDOM" ? (
+                topWisdom.length ? (
+                  <ul className="space-y-2 text-sm">
+                    {topWisdom.map((post) => (
+                      <li key={post.id} className="truncate text-ink/75">
+                        {post.title}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-ink/40">No recs yet — add the first.</p>
+                )
+              ) : null}
+
+              {type === "CLUBS" ? (
+                <p className="text-sm text-ink/75">
+                  {clubCount > 0 ? `${clubCount} club${clubCount === 1 ? "" : "s"} listed` : "No clubs listed yet."}
+                </p>
               ) : null}
             </WidgetCard>
           </StaggerItem>
