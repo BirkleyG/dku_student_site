@@ -38,6 +38,12 @@ const copy = {
     allSet: "Great! I have your account set up. Enjoying using DKU Life and making this campus a better place.",
     submit: "↵",
     somethingWrong: "Something went wrong. Try again?",
+    pwaIntro:
+      "One more thing — want DKU Life on your home screen? It opens instantly, fills the screen, and feels like a real app.",
+    pwaIOS: 'Tap the Share icon in Safari (the square with an arrow pointing up), then scroll down and tap "Add to Home Screen."',
+    pwaAndroid: 'Tap the ⋮ menu in Chrome (top right), then tap "Install app" (or "Add to Home screen").',
+    pwaOther: 'Look for an install icon in your browser\'s address bar, or open its menu and choose "Install DKU Life."',
+    pwaContinue: "Got it — take me to the dashboard",
   },
   zh: {
     greeting: "你好！欢迎来到 DKU Life。你更喜欢哪种语言？",
@@ -67,6 +73,11 @@ const copy = {
     allSet: "太好了！你的账户已经设置好了。祝你使用 DKU Life 愉快，一起让这个校园变得更好。",
     submit: "↵",
     somethingWrong: "出了点问题，再试一次？",
+    pwaIntro: "还有一件事——要把 DKU Life 添加到主屏幕吗？这样打开更快，全屏显示，用起来就像真正的 App。",
+    pwaIOS: "在 Safari 中点击分享图标（带向上箭头的方框），然后向下滚动并点击“添加到主屏幕”。",
+    pwaAndroid: "在 Chrome 中点击右上角的 ⋮ 菜单，然后点击“安装应用”（或“添加到主屏幕”）。",
+    pwaOther: "在浏览器地址栏中查找安装图标，或打开菜单选择“安装 DKU Life”。",
+    pwaContinue: "好的，带我去仪表盘",
   },
 } as const;
 
@@ -81,14 +92,25 @@ type Step =
   | "fullName"
   | "password"
   | "submitting"
-  | "done";
+  | "done"
+  | "installPwa";
 
 type Message = { from: "dku" | "you"; text: string };
+type Platform = "ios" | "android" | "other";
 
 function guessLastInitial(netId: string, lang: Lang) {
   const alpha = netId.replace(/[^a-zA-Z]/g, "");
   const letter = alpha.slice(-1).toUpperCase();
   return letter || (lang === "zh" ? "?" : "?");
+}
+
+function detectPlatform(): Platform {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) return "ios";
+  if (/Android/.test(ua)) return "android";
+  return "other";
 }
 
 export function Welcome() {
@@ -101,6 +123,7 @@ export function Welcome() {
   const [lastName, setLastName] = useState("");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [platform] = useState<Platform>(() => detectPlatform());
   const inputRef = useRef<HTMLInputElement>(null);
 
   const t = copy[lang];
@@ -144,8 +167,15 @@ export function Welcome() {
     setStep("afterName");
   };
 
-  const chooseDashboard = () => {
-    echo(t.dashboard);
+  const goToInstallStep = (label: string) => {
+    echo(label);
+    const instructions = platform === "ios" ? t.pwaIOS : platform === "android" ? t.pwaAndroid : t.pwaOther;
+    say(`${t.pwaIntro} ${instructions}`);
+    setStep("installPwa");
+  };
+
+  const finishToDashboard = () => {
+    echo(t.pwaContinue);
     router.push("/home");
   };
 
@@ -286,7 +316,7 @@ export function Welcome() {
 
           {step === "notStudent" ? (
             <ActionRow key="notStudent">
-              <ChoiceButton primary onClick={chooseDashboard}>
+              <ChoiceButton primary onClick={() => goToInstallStep(t.goToDashboard)}>
                 {t.goToDashboard}
               </ChoiceButton>
             </ActionRow>
@@ -307,7 +337,7 @@ export function Welcome() {
 
           {step === "afterName" ? (
             <ActionRow key="afterName">
-              <ChoiceButton onClick={chooseDashboard}>{t.dashboard}</ChoiceButton>
+              <ChoiceButton onClick={() => goToInstallStep(t.dashboard)}>{t.dashboard}</ChoiceButton>
               <ChoiceButton primary onClick={chooseContinue}>
                 {t.continueBtn}
               </ChoiceButton>
@@ -365,8 +395,16 @@ export function Welcome() {
 
           {step === "done" ? (
             <ActionRow key="done">
-              <ChoiceButton primary onClick={chooseDashboard}>
+              <ChoiceButton primary onClick={() => goToInstallStep(t.dashboard)}>
                 {t.dashboard}
+              </ChoiceButton>
+            </ActionRow>
+          ) : null}
+
+          {step === "installPwa" ? (
+            <ActionRow key="installPwa">
+              <ChoiceButton primary onClick={finishToDashboard}>
+                {t.pwaContinue}
               </ChoiceButton>
             </ActionRow>
           ) : null}
