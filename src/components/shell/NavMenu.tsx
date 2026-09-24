@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -90,7 +91,17 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
     wasOpen.current = open;
   }, [open, triggerRef]);
 
-  return (
+  // Render into <body>: the sticky header uses backdrop-filter, which makes it
+  // the containing block for `position: fixed` children, so a drawer rendered
+  // inside it gets clipped to the header's height.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -131,6 +142,7 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
               <div className="border-b border-ink/10 px-5 py-3 text-sm font-medium text-ink/70">{userLabel}</div>
             )}
 
+            <p className="px-5 pt-4 text-xs text-ink/45">Star a tab to pin it to the header.</p>
             <nav aria-label="All tabs" className="flex-1 overflow-y-auto p-2">
               {items.map((item) => {
                 const Icon = item.icon;
@@ -205,6 +217,7 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

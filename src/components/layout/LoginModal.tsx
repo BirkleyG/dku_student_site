@@ -7,8 +7,10 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -35,7 +37,18 @@ export function useModalClose() {
  * button, or a successful login) animates out, then calls `router.back()` so the URL and
  * history stay in sync with the underlying page.
  */
-export function LoginModal({ children }: { children: ReactNode }) {
+export function LoginModal({
+  children,
+  onDismiss,
+  labelledBy = "login-modal-title",
+  className = "max-w-md",
+}: {
+  children: ReactNode;
+  /** When set, closing calls this instead of `router.back()` (for modals not tied to a route). */
+  onDismiss?: () => void;
+  labelledBy?: string;
+  className?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -47,10 +60,11 @@ export function LoginModal({ children }: { children: ReactNode }) {
   }, []);
 
   const handleExitComplete = useCallback(() => {
-    router.back();
+    if (onDismiss) onDismiss();
+    else router.back();
     onClosedRef.current?.();
     onClosedRef.current = undefined;
-  }, [router]);
+  }, [router, onDismiss]);
 
   // Lock body scroll while the modal is mounted.
   useEffect(() => {
@@ -96,7 +110,16 @@ export function LoginModal({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [requestClose]);
 
-  return (
+  // Portal to <body> so the modal isn't trapped under the sticky header's
+  // stacking context when it's rendered from inside page content.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  if (!mounted) return null;
+
+  return createPortal(
     <ModalCloseContext.Provider value={{ requestClose }}>
       <AnimatePresence onExitComplete={handleExitComplete}>
         {open && (
@@ -110,13 +133,19 @@ export function LoginModal({ children }: { children: ReactNode }) {
               transition={{ duration: 0.2 }}
               onClick={() => requestClose()}
             />
-            <div className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-6">
+            <div
+              className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-6"
+              // This layer covers the backdrop, so clicks "outside" the card land here.
+              onClick={(event) => {
+                if (event.target === event.currentTarget) requestClose();
+              }}
+            >
               <motion.div
                 ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="login-modal-title"
-                className="relative w-full max-w-md rounded-t-3xl bg-white px-6 py-8 shadow-2xl sm:rounded-3xl sm:px-8 sm:py-10"
+                aria-labelledby={labelledBy}
+                className={`relative max-h-[90svh] w-full ${className} overflow-y-auto rounded-t-3xl bg-white px-6 py-8 shadow-2xl sm:rounded-3xl sm:px-8 sm:py-10`}
                 initial={{ opacity: 0, y: 32, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 32, scale: 0.98 }}
@@ -136,6 +165,7 @@ export function LoginModal({ children }: { children: ReactNode }) {
           </div>
         )}
       </AnimatePresence>
-    </ModalCloseContext.Provider>
+    </ModalCloseContext.Provider>,
+    document.body,
   );
 }

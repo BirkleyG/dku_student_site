@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { eventSchema, type EventInput } from "@/lib/event-validation";
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 type EventFormValues = z.input<typeof eventSchema>;
 
@@ -18,11 +19,14 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues, unknown, EventInput>({
     resolver: zodResolver(eventSchema),
     defaultValues: { recurrence: "NONE", category: "SOCIAL_EVENTS" },
   });
+  const posterUrl = useWatch({ control, name: "posterUrl" });
 
   const onSubmit = async (data: EventInput) => {
     setServerError(null);
@@ -57,10 +61,10 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
       </label>
 
       <Field label="Location" {...register("location")} error={errors.location?.message} />
-      <Field
-        label="Poster image URL (optional)"
-        placeholder="https://…"
-        {...register("posterUrl")}
+      <ImageUpload
+        label="Poster (optional)"
+        value={posterUrl}
+        onChange={(url) => setValue("posterUrl", url, { shouldValidate: true })}
         error={errors.posterUrl?.message}
       />
 

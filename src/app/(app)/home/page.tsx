@@ -6,6 +6,7 @@ import type { WidgetData } from "@/components/widgets/AppWidgetContent";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
+import { WelcomeModal } from "@/components/layout/WelcomeModal";
 
 export default async function HomePage() {
   const session = await auth();
@@ -75,9 +76,13 @@ export default async function HomePage() {
 
   return (
     <div>
-      <div className="relative">
-        <GoldBurst originXPct={78} originYPct={15} />
-        <Reveal>
+      <div className="relative overflow-hidden rounded-2xl border border-ink/10 bg-paper px-6 py-10 sm:px-10 sm:py-14">
+        <GoldBurst
+          originXPct={92}
+          originYPct={115}
+          className="[mask-image:radial-gradient(ellipse_70%_90%_at_92%_100%,black_35%,transparent_80%)]"
+        />
+        <Reveal className="relative">
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
             {firstName ? `Welcome back, ${firstName}` : "Welcome"}
           </p>
@@ -88,6 +93,8 @@ export default async function HomePage() {
       <Reveal delay={0.1} className="mt-8">
         <HomeDashboard initialLayout={layout} data={data} canSave={Boolean(userId)} />
       </Reveal>
+
+      {session?.user ? null : <WelcomeModal />}
     </div>
   );
 }
