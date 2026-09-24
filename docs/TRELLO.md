@@ -35,6 +35,15 @@ List a board's labels with `trelloReadBoard` `list_labels` to get the label IDs,
 - Fill in the description using the "🧩 Task template" card in Templates: Agent, Priority, Branch, PR, Goal, Details, Done when, Conflicts with.
 - Attach every label that applies.
 
+## The card description is the spec
+
+Each card's description holds the full instructions for that task: Goal, Current state, What to build, Done when, and Conflicts with. Birkley edits these directly in Trello to steer the work. The description overrides anything in chat or in this file for that task.
+
+- Re-read the card (`trelloReadCard` `get`) right before you start, and again before you open a PR, in case it changed.
+- Every "Done when" item has to be true before the card moves to Completed.
+- If the instructions are ambiguous or conflict with the code, comment on the card with your question and move it to **Stuck**. Don't guess.
+- Research cards (`Type: Research`) are finished reports. Only build from the items Birkley ticked, and split each one into its own build card first.
+
 ## When you're working a card as a sub-agent
 
 1. Only take a card whose `Agent:` line names you or says `unassigned`. Set it to your agent name.
