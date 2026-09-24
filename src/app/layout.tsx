@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { APP_VERSION } from "@/lib/version";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
@@ -20,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "DKU Life",
   description:
-    "One home for everything happening at Duke Kunshan University — events, food, news, and the wisdom of everyone who came before you.",
+    "Events, food, news, and the wisdom of everyone who came before you at Duke Kunshan University.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -46,13 +45,7 @@ export default function RootLayout({ children, modal }: LayoutProps<"/">) {
       lang="en"
       className={`${instrumentSerif.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body className="grain min-h-full flex flex-col bg-white text-ink">
-        <span
-          aria-hidden
-          className="pointer-events-none fixed right-2 top-1.5 z-50 select-none text-[10px] tabular-nums text-ink/25"
-        >
-          v{APP_VERSION}
-        </span>
+      <body className="min-h-full flex flex-col bg-white text-ink">
         <Providers>
           {children}
           {modal}
