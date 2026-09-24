@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { studentEmailDomains } from "@/lib/validation";
 
@@ -267,6 +268,13 @@ export function Welcome() {
         // Send them back to whichever field actually failed, not just the last one.
         setStep(/invite code/i.test(message) ? "inviteCode" : "password");
         return;
+      }
+
+      const signInRes = await signIn("credentials", { email, password, redirect: false });
+      if (signInRes?.error) {
+        // Account was created but the automatic sign-in failed — let them
+        // continue the flow anyway; they can log in manually from /login.
+        setError(t.somethingWrong);
       }
 
       say(t.allSet);

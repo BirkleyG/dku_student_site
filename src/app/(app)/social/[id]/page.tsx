@@ -53,7 +53,7 @@ export default async function BoardPostPage({ params }: PageProps<"/social/[id]"
         <CommentThread
           postId={post.id}
           initialComments={post.comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))}
-          canComment={Boolean(session?.user?.verified)}
+          canComment={Boolean(session?.user)}
         />
       </Reveal>
     </div>
