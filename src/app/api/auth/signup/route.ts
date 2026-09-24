@@ -3,7 +3,8 @@ import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { signupSchema } from "@/lib/validation";
+import { signupSchema, emailMatchesNetId, normalizeNetId } from "@/lib/validation";
+import { getClientIp, isRateLimited, recordFailure } from "@/lib/rate-limit";
 import { sendVerificationEmail } from "@/lib/mailer";
 
 const VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
@@ -21,25 +22,54 @@ export async function POST(request: Request) {
 
   const { firstName, lastName, netId, email, password, inviteCode } = parsed.data;
 
+  // The invite code is issued per-netID, so the email has to line up with
+  // that netID too — otherwise someone could claim a code meant for netID
+  // `abc12` while signing up with a different person's email address.
+  if (!emailMatchesNetId(email, netId)) {
+    return NextResponse.json(
+      { error: "Your email doesn't match your netID.", field: "email" },
+      { status: 400 },
+    );
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
   }
 
-  // Bootstrap problem: invite codes can only be issued by an ADMIN, and
-  // there is no ADMIN until someone signs up. Let the very first account
-  // on the whole site in for free, as the super-admin, so there's someone
-  // who can start inviting everyone else.
-  const isFirstUser = (await prisma.user.count()) === 0;
+  // Rate-limit the invite-code step specifically: someone hammering wrong
+  // codes against this endpoint is trying to brute-force one, not just
+  // mistyping their own. See src/lib/rate-limit.ts for the (in-memory,
+  // resets-on-redeploy) implementation.
+  const clientIp = getClientIp(request);
+  if (isRateLimited(clientIp)) {
+    return NextResponse.json(
+      { error: "Too many invite code attempts. Please wait a while and try again.", field: "inviteCode" },
+      { status: 429 },
+    );
+  }
 
-  const invite = isFirstUser
+  // Bootstrap problem: invite codes can only be issued by an ADMIN, and
+  // there is no ADMIN until someone signs up. Rather than letting whoever
+  // signs up first in on an empty database, only allow the no-code
+  // bootstrap path for the netID named in BOOTSTRAP_ADMIN_NETID (see
+  // README / .env.example). Anyone else always needs a real invite code,
+  // even against an empty database.
+  const bootstrapNetId = process.env.BOOTSTRAP_ADMIN_NETID;
+  const isBootstrapAdmin =
+    !!bootstrapNetId &&
+    normalizeNetId(bootstrapNetId) === normalizeNetId(netId) &&
+    (await prisma.user.count()) === 0;
+
+  const invite = isBootstrapAdmin
     ? null
     : await prisma.inviteCode.findFirst({
         where: { code: inviteCode, netId: { equals: netId, mode: "insensitive" }, usedAt: null },
       });
-  if (!isFirstUser && !invite) {
+  if (!isBootstrapAdmin && !invite) {
+    recordFailure(clientIp);
     return NextResponse.json(
-      { error: "That invite code doesn't match your netID, or has already been used." },
+      { error: "That invite code doesn't match your netID, or has already been used.", field: "inviteCode" },
       { status: 403 },
     );
   }
@@ -56,7 +86,7 @@ export async function POST(request: Request) {
           netId,
           email,
           passwordHash,
-          role: isFirstUser ? "ADMIN" : "STUDENT",
+          role: isBootstrapAdmin ? "ADMIN" : "STUDENT",
         },
       });
       if (invite) {
@@ -74,7 +104,10 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     if (err instanceof Error && err.message === "INVITE_ALREADY_USED") {
-      return NextResponse.json({ error: "That invite code was just used by someone else." }, { status: 409 });
+      return NextResponse.json(
+        { error: "That invite code was just used by someone else.", field: "inviteCode" },
+        { status: 409 },
+      );
     }
     // A second submit of the same form (e.g. a duplicate Enter/click while
     // the first request was still in flight) can race past the findUnique

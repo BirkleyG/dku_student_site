@@ -261,11 +261,14 @@ export function Welcome() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
         const message: string = body.error ?? t.somethingWrong;
         setError(message);
         // Send them back to whichever field actually failed, not just the last one.
-        setStep(/invite code/i.test(message) ? "inviteCode" : "password");
+        // The server tells us via `field` (invalid/used/mismatched code, rate limit,
+        // or an email/netID mismatch); fall back to sniffing the message for older
+        // responses that don't set it.
+        setStep(body.field === "inviteCode" || (!body.field && /invite code/i.test(message)) ? "inviteCode" : "password");
         return;
       }
 
