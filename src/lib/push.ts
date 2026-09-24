@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import type { NotificationCategory, PushSubscription as StoredSubscription } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isNotificationEnabled } from "@/lib/notification-preferences";
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
@@ -123,8 +124,12 @@ async function sendToSubscription(sub: StoredSubscription, payload: PushPayload)
   return { ok: false as const, pruned: false as const };
 }
 
-/** Sends a push notification to every subscription a single user has registered. */
+/** Sends a push notification to every subscription a single user has registered, unless they've opted out of this category. */
 export async function sendPushToUser(userId: string, payload: PushPayload) {
+  if (!(await isNotificationEnabled(userId, payload.category))) {
+    return { sent: 0, failed: 0, pruned: 0 };
+  }
+
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   const results = await Promise.all(subs.map((sub) => sendToSubscription(sub, payload)));
   return {
@@ -135,9 +140,9 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
 }
 
 /**
- * Sends a push notification to every user who has at least one subscription.
- * v1 has no per-category opt-out yet (that's the separate preferences card) —
- * this is the "send everything" default the card calls for. `excludeUserId`
+ * Sends a push notification to every user who has at least one subscription
+ * and hasn't opted out of this category via their notification preferences
+ * (opt-out default — see src/lib/notification-preferences.ts). `excludeUserId`
  * skips notifying the actor who caused the event (e.g. the event's own host).
  */
 export async function broadcastPush(payload: PushPayload, options?: { excludeUserId?: string }) {
@@ -145,9 +150,16 @@ export async function broadcastPush(payload: PushPayload, options?: { excludeUse
     where: options?.excludeUserId ? { userId: { not: options.excludeUserId } } : undefined,
   });
 
-  const results = await Promise.all(subs.map((sub) => sendToSubscription(sub, payload)));
+  const userIds = Array.from(new Set(subs.map((s) => s.userId)));
+  const enabledEntries = await Promise.all(
+    userIds.map(async (userId) => [userId, await isNotificationEnabled(userId, payload.category)] as const),
+  );
+  const enabledUserIds = new Set(enabledEntries.filter(([, enabled]) => enabled).map(([userId]) => userId));
+  const eligibleSubs = subs.filter((sub) => enabledUserIds.has(sub.userId));
+
+  const results = await Promise.all(eligibleSubs.map((sub) => sendToSubscription(sub, payload)));
   return {
-    recipients: new Set(subs.map((s) => s.userId)).size,
+    recipients: new Set(eligibleSubs.map((s) => s.userId)).size,
     sent: results.filter((r) => r.ok).length,
     failed: results.filter((r) => !r.ok && !("pruned" in r && r.pruned)).length,
     pruned: results.filter((r) => "pruned" in r && r.pruned).length,
