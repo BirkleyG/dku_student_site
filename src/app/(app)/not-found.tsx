@@ -5,8 +5,7 @@ export default function NotFound() {
   return (
     <div className="mx-auto max-w-2xl py-12 text-center">
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Life</p>
-        <h1 className="mt-2 font-display text-4xl">Couldn&apos;t find that.</h1>
+        <h1 className="font-display text-4xl">Couldn&apos;t find that.</h1>
         <p className="mx-auto mt-4 max-w-md text-ink/60">
           This page doesn&apos;t exist or may have been removed.
         </p>

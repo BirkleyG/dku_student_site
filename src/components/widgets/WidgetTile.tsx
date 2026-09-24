@@ -41,7 +41,7 @@ export function WidgetTile({
       className={`${sizeSpec[size].className} relative ${isDragging ? "z-20 opacity-90" : ""}`}
     >
       <div
-        className={`group/tile relative flex h-full flex-col overflow-hidden rounded-3xl border border-ink/10 bg-paper p-4 transition-transform duration-150 ${
+        className={`group/tile relative flex h-full flex-col overflow-hidden rounded-lg border border-ink/10 bg-paper p-4 transition-transform duration-150 ${
           editing ? "animate-jiggle cursor-grab active:cursor-grabbing" : "hover:-translate-y-1 hover:border-ink/20"
         }`}
         {...(editing ? { ...attributes, ...listeners } : {})}

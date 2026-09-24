@@ -14,8 +14,8 @@ export function ComingSoon({
   return (
     <div className="mx-auto max-w-2xl py-12 text-center">
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{eyebrow}</p>
-        <h1 className="mt-2 font-display text-4xl">{title}</h1>
+        <h1 className="font-display text-4xl">{title}</h1>
+        <p className="mt-1 text-sm font-medium text-ink/40">{eyebrow}</p>
         <p className="mx-auto mt-4 max-w-md text-ink/60">{description}</p>
       </Reveal>
       {children ? (

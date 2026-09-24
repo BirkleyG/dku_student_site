@@ -6,8 +6,7 @@ export default function TermsPage() {
     <main className="mx-auto max-w-2xl px-6 py-16">
       <Reveal>
         <BackHome className="mb-8" />
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Life</p>
-        <h1 className="mt-2 font-display text-4xl">Community guidelines.</h1>
+        <h1 className="font-display text-4xl">Community guidelines.</h1>
         <p className="mt-3 text-ink/60">
           Short version: this is a place for DKU students. Be someone your classmates would want to run into.
         </p>
@@ -24,19 +23,19 @@ export default function TermsPage() {
             <li>Harassment, hate speech, or targeting someone by name</li>
             <li>Explicit, violent, or otherwise not-safe-for-campus content</li>
             <li>Spam, scams, or posting to sell something unrelated to campus life</li>
-            <li>Doxxing — sharing anyone&apos;s private info without consent</li>
+            <li>Doxxing: sharing anyone&apos;s private info without consent</li>
             <li>Impersonating another student, staff member, or organization</li>
           </ul>
         </Section>
 
         <Section title="Events, posts, and clubs">
-          Anything you post — an event, a board post, a rec, a club listing — should be something you&apos;d be fine
+          Anything you post (an event, a board post, a rec, a club listing) should be something you&apos;d be fine
           putting your name on, because it already has your name on it. Admins can remove content that breaks these
           guidelines, and repeat issues can mean losing access to post.
         </Section>
 
         <Section title="Reporting a problem">
-          There&apos;s no report button yet — for now, reach out to a site admin directly if something needs a look.
+          There&apos;s no report button yet. For now, reach out to a site admin directly if something needs a look.
         </Section>
       </Reveal>
     </main>

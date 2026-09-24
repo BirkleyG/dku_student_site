@@ -11,8 +11,7 @@ export default async function NewClubPage() {
   return (
     <div className="mx-auto max-w-xl">
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">New club</p>
-        <h1 className="mt-2 font-display text-4xl">Put it on the map.</h1>
+        <h1 className="font-display text-4xl">Put it on the map.</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">

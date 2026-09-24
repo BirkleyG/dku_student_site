@@ -84,7 +84,7 @@ const copy = {
         ],
       },
       wechat: {
-        note: "You can't install apps from inside WeChat or QQ — open this page in your real browser first.",
+        note: "You can't install apps from inside WeChat or QQ. Open this page in your real browser first.",
         steps: [
           { icon: Ellipsis, text: "Tap **···** in the top right corner." },
           { icon: Share, text: "Choose **Open in Browser**." },

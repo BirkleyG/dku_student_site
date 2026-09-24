@@ -8,6 +8,7 @@ import { signOut } from "next-auth/react";
 import { X, Star, Download, LogOut } from "lucide-react";
 import type { NavItem } from "@/lib/nav";
 import { MAX_STARRED_NAV } from "@/lib/nav";
+import { APP_VERSION } from "@/lib/version";
 
 type Props = {
   open: boolean;
@@ -176,7 +177,7 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden px-5 text-xs text-danger"
                 >
-                  You can star up to {MAX_STARRED_NAV} tabs — unstar one to add another.
+                  You can star up to {MAX_STARRED_NAV} tabs. Unstar one to add another.
                 </motion.p>
               )}
             </AnimatePresence>
@@ -199,6 +200,7 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
                   Log out
                 </button>
               )}
+              <p className="px-3 pt-2 text-[10px] tabular-nums text-ink/30">v{APP_VERSION}</p>
             </div>
           </motion.div>
         </>

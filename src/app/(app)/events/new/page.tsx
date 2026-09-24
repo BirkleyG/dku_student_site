@@ -10,8 +10,7 @@ export default async function NewEventPage() {
   return (
     <div className="mx-auto max-w-xl">
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">New event</p>
-        <h1 className="mt-2 font-display text-4xl">Host something.</h1>
+        <h1 className="font-display text-4xl">Host something.</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">
