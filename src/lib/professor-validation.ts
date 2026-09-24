@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { DKU_DEPARTMENTS } from "@/lib/departments";
 
 export const professorSchema = z.object({
   firstName: z.string().trim().min(1, "Enter a first name").max(80),
   lastName: z.string().trim().min(1, "Enter a last name").max(80),
-  department: z.string().trim().min(2, "Enter a department").max(80),
+  department: z.enum(DKU_DEPARTMENTS),
+  otherDepartment: z.string().trim().max(80).optional().or(z.literal("")),
   email: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
 });
 

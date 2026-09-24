@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, ShieldCheck, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
+import { DKU_DEPARTMENTS } from "@/lib/departments";
 
 type ApiProfessor = {
   id: string;
@@ -31,10 +32,14 @@ export function ProfessorsDirectory({
 }) {
   const [professors, setProfessors] = useState<ApiProfessor[] | null>(null);
   const [q, setQ] = useState("");
+  const [department, setDepartment] = useState<string | "ALL">("ALL");
 
   useEffect(() => {
     let cancelled = false;
-    const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (department !== "ALL") params.set("department", department);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     const handle = setTimeout(() => {
       fetch(`/api/professors${qs}`)
         .then((r) => r.json())
@@ -46,7 +51,7 @@ export function ProfessorsDirectory({
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [q]);
+  }, [q, department]);
 
   const remove = async (id: string) => {
     if (!window.confirm("Remove this professor?")) return;
@@ -56,12 +61,26 @@ export function ProfessorsDirectory({
 
   return (
     <div>
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search by name or department…"
-        className="focus-ring w-full max-w-md rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-      />
+      <div className="flex flex-wrap gap-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by name or department…"
+          className="focus-ring w-full max-w-md flex-1 rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
+        />
+        <select
+          value={department}
+          onChange={(e) => setDepartment(e.target.value)}
+          className="focus-ring rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
+        >
+          <option value="ALL">All departments</option>
+          {DKU_DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {professors === null ? (
         <p className="mt-10 text-sm text-ink/40">Loading professors…</p>

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, MessageSquare, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
+import { DKU_DEPARTMENTS } from "@/lib/departments";
 
 type ApiCourse = {
   id: string;
@@ -14,7 +15,7 @@ type ApiCourse = {
   description: string | null;
   createdById: string;
   offerings: { professor: { id: string; firstName: string; lastName: string } }[];
-  _count: { resources: number };
+  _count: { resources: number; comments: number };
 };
 
 export function CoursesDirectory({
@@ -26,10 +27,14 @@ export function CoursesDirectory({
 }) {
   const [courses, setCourses] = useState<ApiCourse[] | null>(null);
   const [q, setQ] = useState("");
+  const [department, setDepartment] = useState<string | "ALL">("ALL");
 
   useEffect(() => {
     let cancelled = false;
-    const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (department !== "ALL") params.set("department", department);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     const handle = setTimeout(() => {
       fetch(`/api/courses${qs}`)
         .then((r) => r.json())
@@ -41,7 +46,7 @@ export function CoursesDirectory({
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [q]);
+  }, [q, department]);
 
   const remove = async (id: string) => {
     if (!window.confirm("Remove this course?")) return;
@@ -51,17 +56,31 @@ export function CoursesDirectory({
 
   return (
     <div>
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search by code, title, or department…"
-        className="focus-ring w-full max-w-md rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-      />
+      <div className="flex flex-wrap gap-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by code, title, or department…"
+          className="focus-ring w-full max-w-md flex-1 rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
+        />
+        <select
+          value={department}
+          onChange={(e) => setDepartment(e.target.value)}
+          className="focus-ring rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
+        >
+          <option value="ALL">All departments</option>
+          {DKU_DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {courses === null ? (
         <p className="mt-10 text-sm text-ink/40">Loading courses…</p>
       ) : courses.length === 0 ? (
-        <p className="mt-10 text-ink/50">No courses yet. Add the first one.</p>
+        <p className="mt-10 text-ink/50">No courses match yet. Add the first one.</p>
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
@@ -87,7 +106,7 @@ export function CoursesDirectory({
                 </Link>
                 {course.description ? <p className="mt-1.5 flex-1 text-sm text-ink/65">{course.description}</p> : <div className="flex-1" />}
                 <div className="mt-4 flex items-center justify-between text-xs text-ink/45">
-                  <span>
+                  <span className="truncate">
                     {course.offerings.length
                       ? course.offerings
                           .map((o) => `${o.professor.firstName} ${o.professor.lastName}`)
@@ -95,8 +114,13 @@ export function CoursesDirectory({
                           .join(", ")
                       : "No professor listed"}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <FileText className="h-3.5 w-3.5" /> {course._count.resources}
+                  <span className="flex shrink-0 items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <FileText className="h-3.5 w-3.5" /> {course._count.resources}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="h-3.5 w-3.5" /> {course._count.comments}
+                    </span>
                   </span>
                 </div>
               </Card>

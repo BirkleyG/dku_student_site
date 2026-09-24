@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
 import { GuidelinesNote } from "@/components/shell/GuidelinesNote";
 import { NewCourseForm } from "./NewCourseForm";
@@ -8,11 +7,6 @@ import { NewCourseForm } from "./NewCourseForm";
 export default async function NewCoursePage() {
   const session = await auth();
   if (!session?.user) redirect("/login?callbackUrl=/courses/new");
-
-  const professors = await prisma.professor.findMany({
-    orderBy: { lastName: "asc" },
-    select: { id: true, firstName: true, lastName: true, department: true },
-  });
 
   return (
     <div className="mx-auto max-w-xl">
@@ -22,7 +16,7 @@ export default async function NewCoursePage() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">
-        <NewCourseForm professors={professors} />
+        <NewCourseForm />
         <GuidelinesNote />
       </Reveal>
     </div>

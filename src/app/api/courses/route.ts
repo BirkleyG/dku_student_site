@@ -1,27 +1,34 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { courseSchema } from "@/lib/course-validation";
+import { courseCreateSchema } from "@/lib/course-validation";
+import { DKU_DEPARTMENTS } from "@/lib/departments";
 import { awardPoints } from "@/lib/community-score";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q")?.trim();
+  const department = url.searchParams.get("department");
+  const validDepartment =
+    department && (DKU_DEPARTMENTS as readonly string[]).includes(department) ? department : undefined;
 
   const courses = await prisma.course.findMany({
-    where: q
-      ? {
-          OR: [
-            { code: { contains: q, mode: "insensitive" } },
-            { title: { contains: q, mode: "insensitive" } },
-            { department: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where: {
+      department: validDepartment,
+      ...(q
+        ? {
+            OR: [
+              { code: { contains: q, mode: "insensitive" } },
+              { title: { contains: q, mode: "insensitive" } },
+              { department: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { code: "asc" },
     include: {
       offerings: { include: { professor: { select: { id: true, firstName: true, lastName: true } } } },
-      _count: { select: { resources: true } },
+      _count: { select: { resources: true, comments: true } },
     },
   });
 
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = courseSchema.safeParse(body);
+  const parsed = courseCreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
@@ -43,55 +50,25 @@ export async function POST(request: Request) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const {
-    code,
-    title,
-    department,
-    description,
-    professorId,
-    newProfessorFirstName,
-    newProfessorLastName,
-    newProfessorDepartment,
-    semester,
-  } = parsed.data;
+  const { code, title, department, otherDepartment, credits } = parsed.data;
+  const resolvedDepartment = department === "Other" && otherDepartment ? otherDepartment : department;
 
   const existingCourse = await prisma.course.findUnique({ where: { code: code.toUpperCase() } });
   if (existingCourse) {
     return NextResponse.json({ error: "That course code already exists" }, { status: 409 });
   }
 
-  let resolvedProfessorId = professorId || null;
-  let awardedProfessorPoints = false;
-
-  if (!resolvedProfessorId && newProfessorFirstName && newProfessorLastName) {
-    const professor = await prisma.professor.create({
-      data: {
-        firstName: newProfessorFirstName,
-        lastName: newProfessorLastName,
-        department: newProfessorDepartment || department,
-        addedById: user.id,
-      },
-    });
-    resolvedProfessorId = professor.id;
-    awardedProfessorPoints = true;
-  }
-
   const course = await prisma.course.create({
     data: {
       code: code.toUpperCase(),
       title,
-      department,
-      description: description || null,
+      department: resolvedDepartment,
+      credits: credits || null,
       createdById: user.id,
-      offerings: resolvedProfessorId
-        ? { create: { professorId: resolvedProfessorId, semester: semester || "Unspecified" } }
-        : undefined,
     },
-    include: { offerings: { include: { professor: true } } },
   });
 
   await awardPoints(user.id, "COURSE_ADDED");
-  if (awardedProfessorPoints) await awardPoints(user.id, "PROFESSOR_ADDED");
 
   return NextResponse.json({ course }, { status: 201 });
 }
