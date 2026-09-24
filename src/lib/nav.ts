@@ -6,6 +6,8 @@ import {
   Newspaper,
   Compass,
   Users2,
+  ShoppingBag,
+  Landmark,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +26,8 @@ export const navItems: NavItem[] = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/wisdom", label: "Wisdom", icon: Compass },
   { href: "/clubs", label: "Clubs", icon: Users2 },
+  { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
+  { href: "/slb", label: "SLB", icon: Landmark },
 ];
 
 export const adminNavItem: NavItem = { href: "/admin", label: "Admin", icon: ShieldCheck };

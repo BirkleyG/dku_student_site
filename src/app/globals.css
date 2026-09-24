@@ -89,3 +89,18 @@ body {
   outline-offset: 3px;
   border-radius: 4px;
 }
+
+/* iOS-style "jiggle mode" for widgets in edit state */
+@keyframes jiggle {
+  0%, 100% { transform: rotate(-0.6deg); }
+  50% { transform: rotate(0.6deg); }
+}
+.animate-jiggle {
+  animation: jiggle 0.22s ease-in-out infinite;
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .animate-jiggle {
+    animation-play-state: running;
+  }
+}
