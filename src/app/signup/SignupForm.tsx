@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
 
@@ -112,8 +113,24 @@ export function SignupForm() {
       return;
     }
 
+    const signInRes = await signIn("credentials", {
+      email: payload.email,
+      password: payload.password,
+      redirect: false,
+    });
+
+    if (signInRes?.error) {
+      // Account was created but the automatic sign-in failed for some reason —
+      // send them to log in manually instead of stranding them here.
+      router.push("/login");
+      return;
+    }
+
     setStatus("done");
-    setTimeout(() => router.push("/login"), 2600);
+    setTimeout(() => {
+      router.push("/home");
+      router.refresh();
+    }, 1600);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -134,10 +151,8 @@ export function SignupForm() {
         animate={{ opacity: 1, scale: 1 }}
         className="rounded-3xl border border-sprout-deep/30 bg-sprout/20 p-8 text-center"
       >
-        <p className="font-display text-2xl text-sprout-deep">Almost there, {answers.firstName}.</p>
-        <p className="mt-2 text-ink/70">
-          We sent a verification link to your inbox. Confirm it, then come back and log in.
-        </p>
+        <p className="font-display text-2xl text-sprout-deep">Welcome, {answers.firstName}.</p>
+        <p className="mt-2 text-ink/70">Your DKU Life account is ready — taking you home.</p>
       </motion.div>
     );
   }

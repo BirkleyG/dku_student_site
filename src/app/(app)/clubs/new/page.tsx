@@ -6,19 +6,7 @@ import { NewClubForm } from "./NewClubForm";
 
 export default async function NewClubPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
-
-  if (!session.user.verified) {
-    return (
-      <div className="mx-auto max-w-lg text-center">
-        <h1 className="font-display text-3xl">Verify your email first</h1>
-        <p className="mt-3 text-ink/60">
-          Adding a club requires a verified DKU account. Check your inbox for the verification link we sent when you
-          signed up.
-        </p>
-      </div>
-    );
-  }
+  if (!session?.user) redirect("/login?callbackUrl=/clubs/new");
 
   return (
     <div className="mx-auto max-w-xl">

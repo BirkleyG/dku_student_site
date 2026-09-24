@@ -51,7 +51,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: `${user.firstName} ${user.lastName}`,
           email: user.email,
           role: user.role,
-          verified: user.emailVerified !== null,
         };
       },
     }),
@@ -60,14 +59,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.role = user.role;
-        token.verified = user.verified;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.role = token.role as "STUDENT" | "ADMIN";
-        session.user.verified = token.verified as boolean;
       }
       return session;
     },

@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/lib/validation";
-import { sendVerificationEmail } from "@/lib/mailer";
-
-const VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -86,19 +82,6 @@ export async function POST(request: Request) {
     }
     throw err;
   }
-
-  const token = randomBytes(32).toString("hex");
-  await prisma.verificationToken.create({
-    data: {
-      token,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
-    },
-  });
-
-  const origin = request.headers.get("origin") ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const verifyUrl = `${origin}/api/auth/verify?token=${token}`;
-  await sendVerificationEmail(user.email, verifyUrl);
 
   return NextResponse.json({ ok: true, userId: user.id });
 }

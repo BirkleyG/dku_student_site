@@ -15,7 +15,7 @@ export default function TermsPage() {
 
       <Reveal delay={0.1} className="mt-10 space-y-8 text-ink/80">
         <Section title="Who this is for">
-          DKU Life is built for verified Duke Kunshan students, using a real @dukekunshan.edu.cn or @duke.edu email.
+          DKU Life is built for Duke Kunshan students, using a real @dukekunshan.edu.cn or @duke.edu email.
           Don&apos;t share your login, and don&apos;t create accounts that aren&apos;t yours.
         </Section>
 
