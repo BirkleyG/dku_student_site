@@ -19,7 +19,7 @@ export default async function AdminPage() {
 
   const isSuperAdmin = requester.role === "ADMIN";
 
-  const [events, clubs, news, wisdomTopics, boardPosts, users, inviteCodes] = await Promise.all([
+  const [events, clubs, wisdomTopics, boardPosts, users, inviteCodes] = await Promise.all([
     hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")
       ? prisma.event.findMany({
           orderBy: { startsAt: "desc" },
@@ -29,9 +29,6 @@ export default async function AdminPage() {
       : Promise.resolve([]),
     hasScope(requester, "CLUBS")
       ? prisma.club.findMany({ orderBy: { createdAt: "desc" }, take: 20 })
-      : Promise.resolve([]),
-    hasScope(requester, "NEWS")
-      ? prisma.newsPost.findMany({ orderBy: { publishedAt: "desc" }, take: 20 })
       : Promise.resolve([]),
     hasScope(requester, "WISDOM")
       ? prisma.wisdomTopic.findMany({
@@ -126,24 +123,6 @@ export default async function AdminPage() {
         <ModerationList
           empty="No clubs yet."
           rows={clubs.map((c) => ({ id: c.id, title: c.name, subtitle: c.category, endpoint: `/api/clubs/${c.id}` }))}
-        />
-      ),
-    });
-  }
-
-  if (hasScope(requester, "NEWS")) {
-    tabs.push({
-      key: "news",
-      label: "News",
-      content: (
-        <ModerationList
-          empty="No articles yet."
-          rows={news.map((n) => ({
-            id: n.id,
-            title: n.title,
-            subtitle: format(n.publishedAt, "MMM d, yyyy"),
-            endpoint: `/api/news/${n.id}`,
-          }))}
         />
       ),
     });

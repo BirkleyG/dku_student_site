@@ -4,6 +4,7 @@ import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { WidgetInstance } from "@/lib/widgets";
 import type { EatsWidgetData } from "@/lib/eats-live";
+import type { LilypadCategory, LilypadPost } from "@/lib/lilypad";
 
 export type WidgetData = {
   now: string;
@@ -11,6 +12,8 @@ export type WidgetData = {
   boardPosts: { id: string; title: string; authorName: string; createdAt: string; commentCount: number }[];
   trackedPosts: Record<string, { postId: string; title: string; authorName: string; unreadCount: number } | null>;
   eats: EatsWidgetData;
+  lilypadCategories: LilypadCategory[];
+  lilypadByWidget: Record<string, LilypadPost[]>;
 };
 
 function Empty({ label }: { label: string }) {
@@ -164,6 +167,20 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
             {tracked.unreadCount > 0 ? `${tracked.unreadCount} new comment${tracked.unreadCount === 1 ? "" : "s"}` : "No new comments"}
           </p>
         </div>
+      );
+    }
+
+    case "LILYPAD_LATEST": {
+      const items = data.lilypadByWidget[instance.id] ?? [];
+      if (!items.length) return <Empty label="No articles yet." />;
+      return (
+        <ul className="space-y-1.5 text-sm">
+          {items.slice(0, 4).map((p) => (
+            <li key={p.id} className="truncate text-ink/75">
+              <span className="text-ink/40">{format(new Date(p.date), "MMM d")}</span> {p.title}
+            </li>
+          ))}
+        </ul>
       );
     }
 

@@ -29,6 +29,9 @@ export function WidgetConfigEditor({
     typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : (data.eats.vendors[0]?.name ?? ""),
   );
   const [postId, setPostId] = useState<string>(typeof instance.config.postId === "string" ? instance.config.postId : "");
+  const [lilypadCategoryId, setLilypadCategoryId] = useState<number | null>(
+    typeof instance.config.categoryId === "number" ? instance.config.categoryId : null,
+  );
 
   const toggleCategory = (key: EventCategory) => {
     setCategories((prev) => (prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]));
@@ -38,6 +41,7 @@ export function WidgetConfigEditor({
     if (instance.kind === "EVENTS_TALLY") onSave({ categories, timeframe });
     else if (instance.kind === "EATS_FAVORITE") onSave(restaurantName ? { restaurantName } : {});
     else if (instance.kind === "BOARD_TRACKED_POST") onSave({ postId });
+    else if (instance.kind === "LILYPAD_LATEST") onSave({ categoryId: lilypadCategoryId });
     else onSave({});
   };
 
@@ -150,6 +154,33 @@ export function WidgetConfigEditor({
               ) : (
                 <p className="text-sm text-ink/40">No posts yet.</p>
               )}
+            </div>
+          </div>
+        ) : null}
+
+        {instance.kind === "LILYPAD_LATEST" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Category</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setLilypadCategoryId(null)}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  lilypadCategoryId === null ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/50 hover:border-ink/35"
+                }`}
+              >
+                All
+              </button>
+              {data.lilypadCategories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setLilypadCategoryId(c.id)}
+                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                    lilypadCategoryId === c.id ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/50 hover:border-ink/35"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
             </div>
           </div>
         ) : null}

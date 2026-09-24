@@ -1,5 +1,5 @@
 // Bump this name to purge every client's cache on the next visit.
-const CACHE = "dku-life-v2";
+const CACHE = "dku-life-v3";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -49,6 +49,42 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => cached);
       return cached || network;
+    }),
+  );
+});
+
+// --- Push notifications ---
+// The server sends a JSON body: { title, body, url }. `url` is where a click
+// on the notification should land (defaults to the home page).
+self.addEventListener("push", (event) => {
+  let data = { title: "DKU Life", body: "You have a new notification.", url: "/" };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    // Non-JSON payload — fall back to the defaults above.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.pathname === targetUrl && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     }),
   );
 });

@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
+import { DescriptionEditor } from "./DescriptionEditor";
+import { OfferingsPanel } from "./OfferingsPanel";
 import { ResourcesPanel } from "./ResourcesPanel";
+import { CommentsPanel } from "./CommentsPanel";
 
 export default async function CoursePage({ params }: PageProps<"/courses/[id]">) {
   const { id } = await params;
@@ -17,6 +19,10 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
         offerings: { include: { professor: true } },
         resources: {
           orderBy: { createdAt: "desc" },
+          include: { author: { select: { firstName: true, lastName: true } } },
+        },
+        comments: {
+          orderBy: { createdAt: "asc" },
           include: { author: { select: { firstName: true, lastName: true } } },
         },
       },
@@ -32,12 +38,16 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
       })
     : null;
   const canDelete = currentUser && (currentUser.id === course.createdById || hasScope(currentUser, "COURSES"));
+  const canEdit = Boolean(session?.user);
 
   return (
     <div className="mx-auto max-w-2xl">
       <Reveal className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{course.department}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
+            {course.department}
+            {course.credits ? ` · ${course.credits} credits` : ""}
+          </p>
           <h1 className="mt-2 font-display text-4xl">
             {course.code} · {course.title}
           </h1>
@@ -45,35 +55,38 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
         {canDelete ? <DeleteButton endpoint={`/api/courses/${course.id}`} redirectTo="/courses" /> : null}
       </Reveal>
 
-      {course.description ? (
-        <Reveal delay={0.1} className="mt-6 leading-relaxed text-ink/80">
-          {course.description}
-        </Reveal>
-      ) : null}
+      <Reveal delay={0.1}>
+        <DescriptionEditor courseId={course.id} initialDescription={course.description} canEdit={canEdit} />
+      </Reveal>
 
-      <Reveal delay={0.12} className="mt-6 flex flex-wrap gap-2">
-        {course.offerings.length ? (
-          course.offerings.map((o) => (
-            <Link
-              key={o.id}
-              href={`/professors/${o.professor.id}`}
-              className="focus-ring rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-gold hover:text-ink"
-            >
-              {o.professor.firstName} {o.professor.lastName} · {o.semester}
-            </Link>
-          ))
-        ) : (
-          <p className="text-sm text-ink/40">No professor linked yet.</p>
-        )}
+      <Reveal delay={0.12}>
+        <OfferingsPanel
+          courseId={course.id}
+          courseDepartment={course.department}
+          canEdit={canEdit}
+          initialOfferings={course.offerings.map((o) => ({
+            id: o.id,
+            semester: o.semester,
+            professor: { id: o.professor.id, firstName: o.professor.firstName, lastName: o.professor.lastName },
+          }))}
+        />
       </Reveal>
 
       <Reveal delay={0.15}>
         <ResourcesPanel
           courseId={course.id}
           currentUserId={currentUser?.id ?? null}
-          canManage={Boolean(session?.user)}
+          canManage={canEdit}
           isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
           initialResources={course.resources.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))}
+        />
+      </Reveal>
+
+      <Reveal delay={0.18}>
+        <CommentsPanel
+          courseId={course.id}
+          canComment={canEdit}
+          initialComments={course.comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))}
         />
       </Reveal>
     </div>

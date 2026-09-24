@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Link as LinkIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { DocumentUpload } from "@/components/ui/DocumentUpload";
 import { courseResourceTypes, courseResourceTypeLabels, type CourseResourceInput } from "@/lib/course-validation";
 
 type ApiResource = {
@@ -162,12 +163,15 @@ export function ResourcesPanel({
             rows={3}
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
-          <input
-            value={form.fileUrl ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
-            placeholder="Link to a file (Drive, etc — optional)"
-            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-          />
+          <DocumentUpload value={form.fileUrl} onChange={(url) => setForm((f) => ({ ...f, fileUrl: url }))} />
+          {!form.fileUrl ? (
+            <input
+              value={form.fileUrl ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
+              placeholder="…or paste a link (Drive, etc — optional)"
+              className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
+            />
+          ) : null}
           {error ? <p className="text-sm text-danger">{error}</p> : null}
           <Button onClick={submit} disabled={submitting} className="w-full">
             {submitting ? "Sharing…" : "Share"}

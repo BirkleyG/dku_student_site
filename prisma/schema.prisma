@@ -29,6 +29,23 @@ enum AdminScope {
   PROFESSORS
 }
 
+// Coordinate this with the "[Notifications] Per-category notification
+// preferences in Settings" card — these are the categories a user will be
+// able to opt in/out of. This card ships a "send everything" default;
+// per-category filtering happens on top of PushSubscription in that card.
+enum NotificationCategory {
+  EVENTS
+  POSTS
+  RECOMMENDATIONS
+  ORDERS
+}
+
+enum PushDeliveryStatus {
+  SENT
+  FAILED
+  PRUNED
+}
+
 model User {
   id            String    @id @default(cuid())
   netId         String?   @unique
@@ -56,16 +73,28 @@ model User {
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
   wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
   wisdomVotes           WisdomVote[]
-  newsPosts          NewsPost[]           @relation("NewsAuthor")
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
+  clubMemberships    ClubMembership[]     @relation("ClubMember")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
   coursesSubmitted    Course[]            @relation("CourseSubmitter")
   professorsSubmitted Professor[]         @relation("ProfessorSubmitter")
   courseResources     CourseResource[]    @relation("CourseResourceAuthor")
+  courseComments      CourseComment[]     @relation("CourseCommentAuthor")
   professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
   scoreEvents         ScoreEvent[]
   uploads             Upload[]
+  pushSubscriptions   PushSubscription[]
+  pushDeliveries      PushDelivery[]
+  slbMembership       SlbMember?
+  slbAboutEdits       SlbAbout[]
+  slbAnnouncements    SlbAnnouncement[]
+  slbPolls            SlbPoll[]
+  slbPollVotes        SlbPollVote[]
+  slbInitiatives      SlbInitiative[]
+  slbBackings         SlbInitiativeBacker[]
+  slbInitiativeVotes  SlbInitiativeVote[]
+  notificationPreferences NotificationPreference[]
 
   @@map("users")
 }
@@ -158,6 +187,7 @@ enum WidgetKind {
   BOARD_LATEST
   BOARD_RECENT
   BOARD_TRACKED_POST
+  LILYPAD_LATEST
 }
 
 model DashboardWidget {
@@ -248,49 +278,93 @@ model WisdomVote {
   @@map("wisdom_votes")
 }
 
-model NewsPost {
-  id          String   @id @default(cuid())
-  title       String
-  summary     String
-  body        String
-  authorId    String
-  author      User     @relation("NewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  publishedAt DateTime @default(now())
 
-  @@map("news_posts")
-}
-
-model NewsletterSignup {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-
-  @@map("newsletter_signups")
+// CLUB is a student-run interest group; ORGANIZATION covers non-club bodies
+// (e.g. the Athletics department itself, hosting varsity teams and rec clubs).
+enum GroupType {
+  CLUB
+  ORGANIZATION
 }
 
 enum ClubCategory {
   ACADEMIC
   ARTS
-  SPORTS
   CULTURAL
   SERVICE
   SOCIAL
+  PROFESSIONAL
+  ATHLETIC
   OTHER
 }
 
+// Only meaningful when category is ATHLETIC — distinguishes a varsity team
+// from a recreational sports club.
+enum AthleticKind {
+  VARSITY_TEAM
+  SPORTS_CLUB
+}
+
+enum ContactMethod {
+  EMAIL
+  WECHAT
+  PHONE
+  OTHER
+}
+
+enum ClubMemberRole {
+  MEMBER
+  MANAGER
+}
+
 model Club {
-  id            String       @id @default(cuid())
+  id            String        @id @default(cuid())
+  type          GroupType     @default(CLUB)
   name          String
   category      ClubCategory
+  athleticKind  AthleticKind?
+  sportName     String?
   description   String
-  contact       String?
+  contactMethod ContactMethod @default(EMAIL)
+  contactValue  String?
+  contactQrUrl  String?
+  website       String?
   logoUrl       String?
-  approved      Boolean      @default(true)
+  openJoin      Boolean       @default(true)
+  approved      Boolean       @default(true)
   submittedById String
-  submittedBy   User         @relation("ClubSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
-  createdAt     DateTime     @default(now())
+  submittedBy   User          @relation("ClubSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  officers ClubOfficer[]
+  members  ClubMembership[]
 
   @@map("clubs")
+}
+
+model ClubOfficer {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name      String
+  title     String
+  contact   String?
+  createdAt DateTime @default(now())
+
+  @@map("club_officers")
+}
+
+model ClubMembership {
+  id       String         @id @default(cuid())
+  clubId   String
+  club     Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User           @relation("ClubMember", fields: [userId], references: [id], onDelete: Cascade)
+  role     ClubMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  @@unique([clubId, userId])
+  @@map("club_memberships")
 }
 
 model Professor {
@@ -315,6 +389,7 @@ model Course {
   code        String   @unique
   title       String
   department  String
+  credits     String?
   description String?
   createdById String
   createdBy   User     @relation("CourseSubmitter", fields: [createdById], references: [id], onDelete: Cascade)
@@ -322,9 +397,22 @@ model Course {
 
   offerings CourseOffering[]
   resources CourseResource[]
+  comments  CourseComment[]
   reviews   ProfessorReview[]
 
   @@map("courses")
+}
+
+model CourseComment {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("CourseCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@map("course_comments")
 }
 
 model CourseOffering {
@@ -343,6 +431,7 @@ enum CourseResourceType {
   SYLLABUS
   NOTES
   EXAM
+  MATERIALS
   TIP
 }
 
@@ -388,6 +477,7 @@ enum ScoreReason {
   COURSE_RESOURCE
   COURSE_ADDED
   PROFESSOR_ADDED
+  COURSE_COMMENT
 }
 
 model ScoreEvent {
@@ -414,4 +504,187 @@ model Upload {
   createdAt   DateTime @default(now())
 
   @@map("uploads")
+}
+
+// ---------------------------------------------------------------------------
+// Student Leaders Board: members, About page, announcements, polls, and
+// initiatives (member-sponsored proposals the community votes on).
+
+model SlbMember {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime @default(now())
+
+  @@map("slb_members")
+}
+
+// Single row (id "about"), editable by SLB members.
+model SlbAbout {
+  id          String   @id
+  body        String
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt   DateTime @updatedAt
+
+  @@map("slb_about")
+}
+
+model SlbAnnouncement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("slb_announcements")
+}
+
+model SlbPoll {
+  id        String          @id @default(cuid())
+  question  String
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  closesAt  DateTime?
+  options   SlbPollOption[]
+  votes     SlbPollVote[]
+  createdAt DateTime        @default(now())
+
+  @@map("slb_polls")
+}
+
+model SlbPollOption {
+  id       String        @id @default(cuid())
+  pollId   String
+  poll     SlbPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  label    String
+  position Int
+  votes    SlbPollVote[]
+
+  @@map("slb_poll_options")
+}
+
+model SlbPollVote {
+  id        String        @id @default(cuid())
+  pollId    String
+  poll      SlbPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    SlbPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([pollId, userId])
+  @@map("slb_poll_votes")
+}
+
+enum SlbInitiativeStatus {
+  PROPOSED
+  IN_PROGRESS
+  PASSED
+  NOT_PASSED
+}
+
+model SlbInitiative {
+  id        String                @id @default(cuid())
+  title     String
+  summary   String
+  body      String
+  status    SlbInitiativeStatus   @default(PROPOSED)
+  sponsorId String
+  sponsor   User                  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  backers   SlbInitiativeBacker[]
+  votes     SlbInitiativeVote[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@map("slb_initiatives")
+}
+
+// SLB members (other than the sponsor) who co-sponsor an initiative.
+model SlbInitiativeBacker {
+  id           String        @id @default(cuid())
+  initiativeId String
+  initiative   SlbInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+
+  @@unique([initiativeId, userId])
+  @@map("slb_initiative_backers")
+}
+
+// Community vote: +1 = "Yes, I want this", -1 = "No".
+model SlbInitiativeVote {
+  id           String        @id @default(cuid())
+  initiativeId String
+  initiative   SlbInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value        Int
+
+  @@unique([initiativeId, userId])
+  @@map("slb_initiative_votes")
+}
+
+// One row per browser/device push subscription (a user may have several —
+// phone, laptop, etc). endpoint is the push service URL PushManager.subscribe()
+// returns; it's globally unique per subscription.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  deliveries PushDelivery[]
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// Delivery record for a single push send to a single subscription, used to
+// drive retry-with-backoff and to give an auditable trail of what was sent
+// and why a send failed. Not a full job queue (see PR notes) — attempts
+// happen inline (with backoff) during the triggering request via
+// `next/server`'s `after()`, and this table lets a follow-up sweep retry
+// anything left FAILED.
+model PushDelivery {
+  id             String                @id @default(cuid())
+  category       NotificationCategory
+  title          String
+  body           String
+  url            String?
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   PushSubscription?     @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  status         PushDeliveryStatus
+  attempts       Int                   @default(1)
+  lastError      String?
+  createdAt      DateTime              @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@map("push_deliveries")
+}
+
+// Per-user, per-category push notification preference. Opt-out model: a
+// missing row for a (userId, category) pair means "enabled" — see
+// src/lib/notification-preferences.ts for the default-on read helper.
+model NotificationPreference {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  NotificationCategory
+  enabled   Boolean              @default(true)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@unique([userId, category])
+  @@map("notification_preferences")
 }

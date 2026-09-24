@@ -9,6 +9,7 @@ export const scorePoints: Record<ScoreReason, number> = {
   COURSE_RESOURCE: 8,
   COURSE_ADDED: 5,
   PROFESSOR_ADDED: 4,
+  COURSE_COMMENT: 2,
 };
 
 export const scoreReasonLabels: Record<ScoreReason, string> = {
@@ -19,6 +20,7 @@ export const scoreReasonLabels: Record<ScoreReason, string> = {
   COURSE_RESOURCE: "Uploaded a course resource",
   COURSE_ADDED: "Added a course",
   PROFESSOR_ADDED: "Added a professor",
+  COURSE_COMMENT: "Commented on a course",
 };
 
 /** Credits a user's DKU Life community score and logs why. Fire-and-forget from API routes after the main write succeeds. */

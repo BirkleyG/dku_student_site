@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOut } from "next-auth/react";
-import { X, Star, Download, LogOut, Award } from "lucide-react";
+import { X, Star, Download, LogOut, Award, Bell } from "lucide-react";
 import type { NavItem } from "@/lib/nav";
 import { MAX_STARRED_NAV } from "@/lib/nav";
 import { APP_VERSION } from "@/lib/version";
@@ -230,6 +230,16 @@ export function NavMenu({
             </AnimatePresence>
 
             <div className="border-t border-ink/10 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+              {userLabel && (
+                <Link
+                  href="/settings"
+                  onClick={onClose}
+                  className="focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-ink/80 transition-colors hover:bg-paper-dim"
+                >
+                  <Bell className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  Notification settings
+                </Link>
+              )}
               <Link
                 href="/install"
                 className="focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-ink/80 transition-colors hover:bg-paper-dim"

@@ -1,5 +1,5 @@
 import type { WidgetKind as PrismaWidgetKind } from "@prisma/client";
-import { CalendarDays, UtensilsCrossed, MessagesSquare, type LucideIcon } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, MessagesSquare, Newspaper, type LucideIcon } from "lucide-react";
 
 export type WidgetKind = PrismaWidgetKind;
 export type WidgetDisplaySize = "SMALL" | "MEDIUM" | "LARGE";
@@ -102,6 +102,15 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     blurb: "Pick a post and see how many new comments it's gotten since.",
     configurable: true,
   },
+  LILYPAD_LATEST: {
+    kind: "LILYPAD_LATEST",
+    label: "Latest from the Lilypad",
+    size: "LARGE",
+    icon: Newspaper,
+    href: "/news",
+    blurb: "The newest articles from DKU's independent student publication. Pick a category or show them all.",
+    configurable: true,
+  },
 };
 
 export type WidgetGroup = {
@@ -120,6 +129,7 @@ export const widgetGroups: WidgetGroup[] = [
     kinds: ["EATS_OPEN_COUNT", "EATS_FAVORITE", "EATS_ORDER_TRACKER", "EATS_ACTIVITY"],
   },
   { key: "board", label: "The Board", icon: MessagesSquare, kinds: ["BOARD_LATEST", "BOARD_RECENT", "BOARD_TRACKED_POST"] },
+  { key: "lilypad", label: "The Lilypad", icon: Newspaper, kinds: ["LILYPAD_LATEST"] },
 ];
 
 export const sizeSpec: Record<WidgetDisplaySize, { className: string }> = {
@@ -142,6 +152,8 @@ export function defaultConfigFor(kind: WidgetKind): Record<string, unknown> {
       return { categories: [], timeframe: "today" };
     case "EATS_FAVORITE":
       return {};
+    case "LILYPAD_LATEST":
+      return { categoryId: null };
     default:
       return {};
   }
@@ -161,4 +173,5 @@ export const defaultLayout: Array<{ kind: WidgetKind; config?: Record<string, un
   { kind: "EVENTS_TALLY", config: { categories: ["CLUBS"], timeframe: "week" } },
   { kind: "BOARD_LATEST" },
   { kind: "EATS_FAVORITE", config: {} },
+  { kind: "LILYPAD_LATEST", config: { categoryId: null } },
 ];
