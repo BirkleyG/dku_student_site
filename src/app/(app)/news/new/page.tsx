@@ -15,8 +15,7 @@ export default async function NewArticlePage() {
   return (
     <div className="mx-auto max-w-2xl">
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">New article</p>
-        <h1 className="mt-2 font-display text-4xl">Publish an update.</h1>
+        <h1 className="font-display text-4xl">Publish an update.</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">

@@ -5,6 +5,7 @@ import type { WidgetInstance } from "@/lib/widgets";
 import type { WidgetData } from "@/components/widgets/AppWidgetContent";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
+import { GoldBurst } from "@/components/effects/GoldBurst";
 
 export default async function HomePage() {
   const session = await auth();
@@ -54,7 +55,13 @@ export default async function HomePage() {
   ]);
 
   const data: WidgetData = {
-    events: events.map((e) => ({ id: e.id, title: e.title, startsAt: e.startsAt.toISOString(), location: e.location })),
+    events: events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startsAt: e.startsAt.toISOString(),
+      endsAt: e.endsAt.toISOString(),
+      location: e.location,
+    })),
     boardPosts: boardPosts.map((p) => ({
       id: p.id,
       title: p.title,
@@ -68,14 +75,15 @@ export default async function HomePage() {
 
   return (
     <div>
-      <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
-          {firstName ? `Welcome back, ${firstName}` : "Welcome"}
-        </p>
-        <h1 className="mt-2 font-display text-4xl">
-          Your DKU, <em className="italic text-gold-bright">all in one place.</em>
-        </h1>
-      </Reveal>
+      <div className="relative">
+        <GoldBurst originXPct={78} originYPct={15} />
+        <Reveal>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
+            {firstName ? `Welcome back, ${firstName}` : "Welcome"}
+          </p>
+          <h1 className="mt-2 font-display text-4xl">Events, food, and everyone&apos;s dorm gossip.</h1>
+        </Reveal>
+      </div>
 
       <Reveal delay={0.1} className="mt-8">
         <HomeDashboard initialLayout={layout} data={data} canSave={Boolean(userId)} />

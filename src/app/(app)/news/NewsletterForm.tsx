@@ -19,7 +19,7 @@ export function NewsletterForm() {
   };
 
   if (status === "done") {
-    return <p className="text-sm text-sprout-deep">You&apos;re on the list — new issues will land in your inbox.</p>;
+    return <p className="text-sm text-sprout-deep">You&apos;re on the list. New issues will land in your inbox.</p>;
   }
 
   return (

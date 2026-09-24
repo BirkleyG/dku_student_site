@@ -23,10 +23,9 @@ export default async function NewsPage() {
     <div>
       <Reveal className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU News</p>
-          <h1 className="mt-2 font-display text-4xl">Straight from the Lilypad.</h1>
+          <h1 className="font-display text-4xl">Straight from the Lilypad.</h1>
           <p className="mt-2 max-w-lg text-ink/60">
-            A live Lilypad sync is on the roadmap — for now, admins post updates here directly.
+            A live Lilypad sync is on the roadmap. For now, admins post updates here directly.
           </p>
         </div>
         {canPublish ? <LinkButton href="/news/new">New article</LinkButton> : null}
@@ -43,7 +42,7 @@ export default async function NewsPage() {
 
       {posts.length === 0 ? (
         <Reveal delay={0.15}>
-          <p className="mt-10 text-ink/50">No articles yet — check back soon.</p>
+          <p className="mt-10 text-ink/50">No articles yet. Check back soon.</p>
         </Reveal>
       ) : (
         <StaggerGroup className="mt-10 space-y-4">

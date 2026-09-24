@@ -179,8 +179,7 @@ export default async function AdminPage() {
   return (
     <div>
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">Admin</p>
-        <h1 className="mt-2 font-display text-4xl">
+        <h1 className="font-display text-4xl">
           {isSuperAdmin ? "Run the beta." : "Your moderation tools."}
         </h1>
       </Reveal>

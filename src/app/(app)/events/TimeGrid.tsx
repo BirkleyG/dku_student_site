@@ -2,16 +2,15 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useLenis } from "lenis/react";
 import { format, isSameDay, isToday, setHours } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { layoutDayEvents } from "./calendar-layout";
 import type { ApiEvent } from "./calendar-types";
 
 const HOUR_HEIGHT = 56;
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
-// Keep this in sync with the sticky NavBar's rendered height so the
-// business-hours auto-scroll below doesn't land the target row underneath it.
-const NAV_SCROLL_OFFSET = 140;
 
 type Props = {
   days: Date[];
@@ -22,15 +21,28 @@ type Props = {
 export function TimeGrid({ days, events, onDayHeaderClick }: Props) {
   const businessHoursRef = useRef<HTMLDivElement>(null);
   const daysKey = days.map((d) => d.toDateString()).join(",");
+  // Scroll is owned by Lenis (see SmoothScroll.tsx) wherever it's mounted —
+  // this is null under prefers-reduced-motion or on a full-bleed route, so
+  // fall back to native scroll there.
+  const lenis = useLenis();
 
   // Land on business hours instead of midnight, without trapping the grid
   // in its own tiny scrollbox — this scrolls the page itself.
   useEffect(() => {
     const el = businessHoursRef.current;
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - NAV_SCROLL_OFFSET;
-    window.scrollTo({ top: Math.max(top, 0) });
-  }, [daysKey]);
+    // Switching Day/Week/Month is in-page client state, not a route change,
+    // so LenisRouteResize (SmoothScroll.tsx) never fires for it — Lenis is
+    // left with whatever scroll limit it measured for the *previous* view
+    // (e.g. the short Month view) and silently refuses to scroll past it.
+    // Resize first so it knows this view's real (taller) height.
+    lenis?.resize();
+    const headerH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 73;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerH - 16;
+    const target = Math.max(top, 0);
+    if (lenis) lenis.scrollTo(target, { immediate: true });
+    else window.scrollTo({ top: target });
+  }, [daysKey, lenis]);
 
   return (
     <div className="overflow-hidden rounded-3xl border border-ink/10 bg-paper">
@@ -97,7 +109,10 @@ export function TimeGrid({ days, events, onDayHeaderClick }: Props) {
                       color: meta.color,
                     }}
                   >
-                    <span className="block truncate font-medium">{event.title}</span>
+                    <span className="flex items-center gap-1 truncate font-medium">
+                      <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
+                      {event.title}
+                    </span>
                     <span className="block truncate opacity-80">{format(new Date(event.startsAt), "h:mm a")}</span>
                   </Link>
                 );

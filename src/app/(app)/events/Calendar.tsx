@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useLenis } from "lenis/react";
 import {
   addDays,
   addMonths,
@@ -59,6 +60,16 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
     if (view === "week") return { from: startOfWeek(anchor), to: endOfWeek(anchor) };
     return { from: anchor, to: addDays(anchor, 1) };
   }, [view, anchor]);
+
+  // Day/Week/Month is client state, not a route change, so Lenis (see
+  // SmoothScroll.tsx) never re-measures on its own when switching between
+  // them — it can be left clamped to a shorter/taller view's stale scroll
+  // limit. Resize on every view/month change so it always reflects the
+  // page's real current height.
+  const lenis = useLenis();
+  useEffect(() => {
+    lenis?.resize();
+  }, [view, anchor, lenis]);
 
   useEffect(() => {
     let cancelled = false;
