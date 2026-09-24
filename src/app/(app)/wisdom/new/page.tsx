@@ -11,7 +11,7 @@ export default async function NewWisdomPage() {
   return (
     <div className="mx-auto max-w-xl">
       <Reveal>
-        <h1 className="font-display text-4xl">Pass it on.</h1>
+        <h1 className="font-display text-4xl">Start a topic.</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { wisdomPostSchema, wisdomCategories } from "@/lib/wisdom-validation";
+import { wisdomTopicSchema, wisdomCategories } from "@/lib/wisdom-validation";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -11,23 +11,26 @@ export async function GET(request: Request) {
       ? (category as (typeof wisdomCategories)[number])
       : undefined;
 
-  const posts = await prisma.wisdomPost.findMany({
+  const topics = await prisma.wisdomTopic.findMany({
     where: validCategory ? { category: validCategory } : undefined,
     orderBy: { createdAt: "desc" },
-    include: { author: { select: { firstName: true, lastName: true } }, votes: true },
+    include: {
+      createdBy: { select: { firstName: true, lastName: true } },
+      _count: { select: { recommendations: true } },
+    },
   });
 
-  return NextResponse.json({ posts });
+  return NextResponse.json({ topics });
 }
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.email) {
-    return NextResponse.json({ error: "Log in to post" }, { status: 401 });
+    return NextResponse.json({ error: "Log in to start a topic" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = wisdomPostSchema.safeParse(body);
+  const parsed = wisdomTopicSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
@@ -35,10 +38,10 @@ export async function POST(request: Request) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { title, category, location, body: text } = parsed.data;
-  const post = await prisma.wisdomPost.create({
-    data: { title, category, location: location || null, body: text, authorId: user.id },
+  const { title, category, description, requireLocation } = parsed.data;
+  const topic = await prisma.wisdomTopic.create({
+    data: { title, category, description: description || null, requireLocation, createdById: user.id },
   });
 
-  return NextResponse.json({ post }, { status: 201 });
+  return NextResponse.json({ topic }, { status: 201 });
 }

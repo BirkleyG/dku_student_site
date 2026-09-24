@@ -12,16 +12,16 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const [user, post] = await Promise.all([
+  const [user, topic] = await Promise.all([
     prisma.user.findUnique({ where: { email: session.user.email } }),
-    prisma.wisdomPost.findUnique({ where: { id } }),
+    prisma.wisdomTopic.findUnique({ where: { id } }),
   ]);
 
-  if (!user || !post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (post.authorId !== user.id && !hasScope(user, "WISDOM")) {
-    return NextResponse.json({ error: "You can't remove this post" }, { status: 403 });
+  if (!user || !topic) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (topic.createdById !== user.id && !hasScope(user, "WISDOM")) {
+    return NextResponse.json({ error: "You can't remove this topic" }, { status: 403 });
   }
 
-  await prisma.wisdomPost.delete({ where: { id } });
+  await prisma.wisdomTopic.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

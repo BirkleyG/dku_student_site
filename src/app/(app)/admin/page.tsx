@@ -19,7 +19,7 @@ export default async function AdminPage() {
 
   const isSuperAdmin = requester.role === "ADMIN";
 
-  const [events, clubs, news, wisdomPosts, boardPosts, users, inviteCodes] = await Promise.all([
+  const [events, clubs, news, wisdomTopics, boardPosts, users, inviteCodes] = await Promise.all([
     hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")
       ? prisma.event.findMany({
           orderBy: { startsAt: "desc" },
@@ -34,7 +34,11 @@ export default async function AdminPage() {
       ? prisma.newsPost.findMany({ orderBy: { publishedAt: "desc" }, take: 20 })
       : Promise.resolve([]),
     hasScope(requester, "WISDOM")
-      ? prisma.wisdomPost.findMany({ orderBy: { createdAt: "desc" }, take: 20 })
+      ? prisma.wisdomTopic.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: { _count: { select: { recommendations: true } } },
+        })
       : Promise.resolve([]),
     hasScope(requester, "BOARD")
       ? prisma.boardPost.findMany({
@@ -151,8 +155,13 @@ export default async function AdminPage() {
       label: "Wisdom",
       content: (
         <ModerationList
-          empty="No posts yet."
-          rows={wisdomPosts.map((w) => ({ id: w.id, title: w.title, subtitle: w.category, endpoint: `/api/wisdom/${w.id}` }))}
+          empty="No topics yet."
+          rows={wisdomTopics.map((w) => ({
+            id: w.id,
+            title: w.title,
+            subtitle: `${w.category} · ${w._count.recommendations} rec${w._count.recommendations === 1 ? "" : "s"}`,
+            endpoint: `/api/wisdom/${w.id}`,
+          }))}
         />
       ),
     });
