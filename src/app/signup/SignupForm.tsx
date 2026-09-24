@@ -106,10 +106,15 @@ export function SignupForm() {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
       setServerError(body.error ?? "Something went wrong. Try again.");
       setStatus("chatting");
-      setStepIndex(steps.length - 1); // send them back to fix whatever failed
+      // Send them back to whichever step actually failed (an invalid/used/
+      // rate-limited invite code, or an email that doesn't match the netID)
+      // rather than always the last step.
+      const targetKey: StepKey = body.field === "email" ? "email" : "inviteCode";
+      const targetIndex = steps.findIndex((s) => s.key === targetKey);
+      setStepIndex(targetIndex >= 0 ? targetIndex : steps.length - 1);
       return;
     }
 
