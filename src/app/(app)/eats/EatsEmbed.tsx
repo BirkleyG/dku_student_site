@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ExternalLink, X } from "lucide-react";
 
 const EATS_URL = process.env.NEXT_PUBLIC_EATS_URL ?? "https://dkueats.com";
 
@@ -38,17 +39,26 @@ export function EatsEmbed({ loggedIn }: { loggedIn: boolean }) {
   }, [loggedIn]);
 
   return (
-    <div className="mt-6 overflow-hidden rounded-3xl border border-ink/10 bg-paper">
+    <div className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
       {src ? (
-        <iframe
-          src={src}
-          title="DKU Eats"
-          className="h-[78vh] w-full"
-          allow="clipboard-write; payment"
-        />
+        <iframe src={src} title="DKU Eats" className="h-full w-full" allow="clipboard-write; payment" />
       ) : (
-        <div className="flex h-[78vh] items-center justify-center text-sm text-ink/40">Loading DKU Eats…</div>
+        <EatsLoading />
       )}
+    </div>
+  );
+}
+
+function EatsLoading() {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+      <motion.div
+        aria-hidden
+        className="h-10 w-10 rounded-full border-2 border-ink/15 border-t-sprout-deep"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+      />
+      <p className="text-sm text-ink/40">Loading DKU Eats…</p>
     </div>
   );
 }
@@ -59,9 +69,39 @@ export function OpenInNewTab() {
       href={EATS_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="focus-ring inline-flex items-center gap-1.5 text-sm text-ink/50 hover:text-ink"
+      title="Open DKU Eats in a new tab"
+      className="focus-ring absolute bottom-5 right-5 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink/50 shadow-sm backdrop-blur-sm transition hover:text-ink"
     >
-      Open in a new tab <ExternalLink className="h-3.5 w-3.5" />
+      <ExternalLink className="h-4 w-4" />
+      <span className="sr-only">Open in a new tab</span>
     </a>
+  );
+}
+
+export function GuestNote() {
+  const [dismissed, setDismissed] = useState(false);
+
+  return (
+    <AnimatePresence>
+      {!dismissed && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute bottom-5 left-5 z-20 flex max-w-xs items-start gap-2 rounded-2xl border border-ink/10 bg-white/95 px-4 py-3 text-sm text-ink/70 shadow-lg backdrop-blur-sm"
+        >
+          <p className="flex-1">Log in to DKU Life to skip DKU Eats&rsquo; own login.</p>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="focus-ring -m-1 shrink-0 rounded-full p-1 text-ink/40 hover:text-ink"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span className="sr-only">Dismiss</span>
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
