@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { navItems } from "@/lib/nav";
+import { navItems, adminNavItem } from "@/lib/nav";
 
 type Props = {
   userLabel: string | null;
+  isAdmin?: boolean;
 };
 
-export function NavBar({ userLabel }: Props) {
+export function NavBar({ userLabel, isAdmin }: Props) {
   const pathname = usePathname();
+  const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink/10 bg-white/85 backdrop-blur-md">
@@ -23,7 +25,7 @@ export function NavBar({ userLabel }: Props) {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-7 md:flex">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const active = pathname?.startsWith(item.href);
             return (
               <Link
@@ -62,7 +64,7 @@ export function NavBar({ userLabel }: Props) {
       </div>
 
       <nav className="flex items-center gap-1 overflow-x-auto px-4 pb-3 md:hidden">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const active = pathname?.startsWith(item.href);
           const Icon = item.icon;
           return (

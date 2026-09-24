@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,7 +18,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   ]);
 
   if (!user || !post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (post.authorId !== user.id && user.role !== "ADMIN") {
+  if (post.authorId !== user.id && !hasScope(user, "WISDOM")) {
     return NextResponse.json({ error: "You can't remove this post" }, { status: 403 });
   }
 

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
 import { CommentThread } from "./CommentThread";
@@ -25,9 +26,12 @@ export default async function BoardPostPage({ params }: PageProps<"/social/[id]"
   if (!post) notFound();
 
   const currentUser = session?.user?.email
-    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
+    ? await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, role: true, adminScopes: true },
+      })
     : null;
-  const canDelete = currentUser && (currentUser.id === post.authorId || currentUser.role === "ADMIN");
+  const canDelete = currentUser && (currentUser.id === post.authorId || hasScope(currentUser, "BOARD"));
 
   return (
     <div className="mx-auto max-w-2xl">

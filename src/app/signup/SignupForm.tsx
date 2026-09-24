@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
 
-type StepKey = "firstName" | "lastName" | "email" | "netId" | "password";
+type StepKey = "firstName" | "lastName" | "email" | "netId" | "inviteCode" | "password";
 
 type Step = {
   key: StepKey;
@@ -26,10 +26,15 @@ const steps: Step[] = [
   },
   {
     key: "netId",
-    prompt: "Got a Net ID? Drop it in and we'll link it up — totally optional.",
+    prompt: "What's your NetID?",
     placeholder: "jsmith123",
     type: "text",
-    optional: true,
+  },
+  {
+    key: "inviteCode",
+    prompt: "We're in early beta, so it's invite-only for now — what's your invite code?",
+    placeholder: "e.g. K7M2Q9PX",
+    type: "text",
   },
   { key: "password", prompt: "Last thing — set a password.", placeholder: "At least 8 characters", type: "password" },
 ];
@@ -90,6 +95,7 @@ export function SignupForm() {
       netId: finalAnswers.netId ?? "",
       email: finalAnswers.email ?? "",
       password: finalAnswers.password ?? "",
+      inviteCode: finalAnswers.inviteCode ?? "",
     };
 
     const res = await fetch("/api/auth/signup", {

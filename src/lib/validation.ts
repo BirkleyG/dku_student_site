@@ -11,13 +11,7 @@ export const studentEmailDomains = (process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN
 export const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(80),
   lastName: z.string().trim().min(1, "Last name is required").max(80),
-  netId: z
-    .string()
-    .trim()
-    .min(1)
-    .max(40)
-    .optional()
-    .or(z.literal("")),
+  netId: z.string().trim().min(1, "NetID is required").max(40),
   email: z
     .string()
     .trim()
@@ -30,6 +24,12 @@ export const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(200),
+  // Beta gate: a super-admin issues one per netID from the admin tab.
+  inviteCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .min(1, "Invite code is required"),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

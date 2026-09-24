@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { LinkButton } from "@/components/ui/Button";
 import { WisdomFeed } from "./WisdomFeed";
@@ -7,7 +8,10 @@ import { WisdomFeed } from "./WisdomFeed";
 export default async function WisdomPage() {
   const session = await auth();
   const currentUser = session?.user?.email
-    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
+    ? await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, role: true, adminScopes: true },
+      })
     : null;
 
   return (
@@ -21,7 +25,7 @@ export default async function WisdomPage() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <WisdomFeed currentUserId={currentUser?.id ?? null} isAdmin={currentUser?.role === "ADMIN"} />
+        <WisdomFeed currentUserId={currentUser?.id ?? null} isAdmin={currentUser ? hasScope(currentUser, "WISDOM") : false} />
       </Reveal>
     </div>
   );

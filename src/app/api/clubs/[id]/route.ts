@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,7 +18,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   ]);
 
   if (!user || !club) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (club.submittedById !== user.id && user.role !== "ADMIN") {
+  if (club.submittedById !== user.id && !hasScope(user, "CLUBS")) {
     return NextResponse.json({ error: "You can't remove this club" }, { status: 403 });
   }
 

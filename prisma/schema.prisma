@@ -11,6 +11,22 @@ enum Role {
   ADMIN
 }
 
+// Granular, independent of Role — a STUDENT can hold any of these without
+// being a full ADMIN. SPORTS gates the SPORTS_* event categories; the rest
+// gate their matching content type. SLB and EATS have no dedicated
+// moderation surface yet — they exist so a super-admin can grant the scope
+// now, ahead of content for it landing.
+enum AdminScope {
+  EVENTS
+  CLUBS
+  SPORTS
+  NEWS
+  WISDOM
+  BOARD
+  EATS
+  SLB
+}
+
 model User {
   id            String    @id @default(cuid())
   netId         String?   @unique
@@ -19,6 +35,7 @@ model User {
   email         String    @unique
   passwordHash  String
   role          Role      @default(STUDENT)
+  adminScopes   AdminScope[] @default([])
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())
@@ -36,8 +53,25 @@ model User {
   wisdomVotes        WisdomVote[]
   newsPosts          NewsPost[]           @relation("NewsAuthor")
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
+  inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
+  inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
 
   @@map("users")
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  netId       String
+  code        String    @unique
+  createdById String
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedAt      DateTime?
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteCodeRedeemer", fields: [usedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+
+  @@unique([netId, code])
+  @@map("invite_codes")
 }
 
 model VerificationToken {

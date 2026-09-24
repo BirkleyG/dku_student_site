@@ -32,6 +32,8 @@ const copy = {
     giveFullName: "Give full name",
     askFullName: "What's your full name?",
     fullNamePlaceholder: "First Last",
+    askInviteCode: "We're in early beta, so it's invite-only right now — what's your invite code?",
+    inviteCodePlaceholder: "e.g. K7M2Q9PX",
     askPassword: (name: string) => `Sounds good. Last question ${name}. Could you give me a secure password for next time you want to sign up?`,
     passwordPlaceholder: "At least 8 characters",
     settingUp: "Setting up your account…",
@@ -67,6 +69,8 @@ const copy = {
     giveFullName: "告诉你全名",
     askFullName: "你的全名是？",
     fullNamePlaceholder: "名 姓",
+    askInviteCode: "我们现在是早期内测阶段，需要邀请码才能注册——你的邀请码是？",
+    inviteCodePlaceholder: "例如 K7M2Q9PX",
     askPassword: (name: string) => `好的，最后一个问题，${name}。请给我一个安全的密码，下次登录时会用到。`,
     passwordPlaceholder: "至少 8 个字符",
     settingUp: "正在设置你的账户…",
@@ -90,6 +94,7 @@ type Step =
   | "netId"
   | "confirmLetter"
   | "fullName"
+  | "inviteCode"
   | "password"
   | "submitting"
   | "done"
@@ -121,6 +126,7 @@ export function Welcome() {
   const [firstName, setFirstName] = useState("");
   const [netId, setNetId] = useState("");
   const [lastName, setLastName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,7 +136,7 @@ export function Welcome() {
   const t = copy[lang];
 
   useEffect(() => {
-    if (step === "firstName" || step === "netId" || step === "fullName" || step === "password") {
+    if (step === "firstName" || step === "netId" || step === "fullName" || step === "inviteCode" || step === "password") {
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [step]);
@@ -200,8 +206,8 @@ export function Welcome() {
 
   const stickWithLetter = () => {
     echo(t.stickWithIt);
-    say(t.askPassword(firstName));
-    setStep("password");
+    say(t.askInviteCode);
+    setStep("inviteCode");
   };
 
   const wantFullName = () => {
@@ -215,6 +221,16 @@ export function Welcome() {
     if (!name) return;
     setLastName(name.split(/\s+/).slice(1).join(" ") || name);
     echo(name);
+    setValue("");
+    say(t.askInviteCode);
+    setStep("inviteCode");
+  };
+
+  const submitInviteCode = () => {
+    const code = value.trim();
+    if (!code) return;
+    setInviteCode(code);
+    echo(code);
     setValue("");
     say(t.askPassword(firstName));
     setStep("password");
@@ -241,13 +257,15 @@ export function Welcome() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, netId, email, password }),
+        body: JSON.stringify({ firstName, lastName, netId, email, password, inviteCode }),
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(body.error ?? t.somethingWrong);
-        setStep("password");
+        const message: string = body.error ?? t.somethingWrong;
+        setError(message);
+        // Send them back to whichever field actually failed, not just the last one.
+        setStep(/invite code/i.test(message) ? "inviteCode" : "password");
         return;
       }
 
@@ -276,6 +294,8 @@ export function Welcome() {
         return submitNetId;
       case "fullName":
         return submitFullName;
+      case "inviteCode":
+        return submitInviteCode;
       case "password":
         return submitPassword;
       default:
@@ -377,6 +397,19 @@ export function Welcome() {
               inputRef={inputRef}
               value={value}
               placeholder={t.fullNamePlaceholder}
+              onChange={setValue}
+              onKeyDown={(e) => onKeyDown(e, currentSubmit)}
+              onSubmit={currentSubmit}
+              submitLabel={t.submit}
+            />
+          ) : null}
+
+          {step === "inviteCode" ? (
+            <TextInputRow
+              key="inviteCode"
+              inputRef={inputRef}
+              value={value}
+              placeholder={t.inviteCodePlaceholder}
               onChange={setValue}
               onKeyDown={(e) => onKeyDown(e, currentSubmit)}
               onSubmit={currentSubmit}
