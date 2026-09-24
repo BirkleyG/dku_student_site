@@ -72,9 +72,7 @@ export default async function HomePage() {
         <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
           {firstName ? `Welcome back, ${firstName}` : "Welcome"}
         </p>
-        <h1 className="mt-2 font-display text-4xl">
-          Your DKU, <em className="italic text-gold-bright">all in one place.</em>
-        </h1>
+        <h1 className="mt-2 font-display text-4xl">Events, food, and everyone&apos;s dorm gossip.</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">

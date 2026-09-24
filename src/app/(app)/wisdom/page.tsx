@@ -18,8 +18,7 @@ export default async function WisdomPage() {
     <div>
       <Reveal className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Wisdom</p>
-          <h1 className="mt-2 font-display text-4xl">The stuff only upperclassmen know.</h1>
+          <h1 className="font-display text-4xl">The stuff only upperclassmen know.</h1>
         </div>
         <LinkButton href={session ? "/wisdom/new" : "/login"}>Add a rec</LinkButton>
       </Reveal>

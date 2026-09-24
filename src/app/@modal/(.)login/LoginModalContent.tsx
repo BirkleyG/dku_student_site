@@ -12,7 +12,6 @@ export function LoginModalContent() {
 
   return (
     <>
-      <p className="mb-2 text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Life</p>
       <h2 id="login-modal-title" className="font-display text-3xl">
         Welcome back.
       </h2>
