@@ -1,6 +1,5 @@
 import type { WidgetKind as PrismaWidgetKind } from "@prisma/client";
 import { CalendarDays, UtensilsCrossed, MessagesSquare, type LucideIcon } from "lucide-react";
-import { DEMO_RESTAURANTS } from "@/lib/eats-demo";
 
 export type WidgetKind = PrismaWidgetKind;
 export type WidgetDisplaySize = "SMALL" | "MEDIUM" | "LARGE";
@@ -13,7 +12,8 @@ export type WidgetKindMeta = {
   href: string;
   blurb: string;
   configurable: boolean;
-  demo?: boolean;
+  /** Fed by DKU Eats; shows a "Sample" badge when live Eats data isn't available. */
+  eatsData?: boolean;
 };
 
 export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
@@ -43,7 +43,7 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     href: "/eats",
     blurb: "How many DKU Eats restaurants are open right now.",
     configurable: false,
-    demo: true,
+    eatsData: true,
   },
   EATS_FAVORITE: {
     kind: "EATS_FAVORITE",
@@ -53,7 +53,7 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     href: "/eats",
     blurb: "One tap to your go-to spot on DKU Eats.",
     configurable: true,
-    demo: true,
+    eatsData: true,
   },
   EATS_ORDER_TRACKER: {
     kind: "EATS_ORDER_TRACKER",
@@ -63,7 +63,7 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     href: "/eats",
     blurb: "Live status of your current DKU Eats order.",
     configurable: false,
-    demo: true,
+    eatsData: true,
   },
   EATS_ACTIVITY: {
     kind: "EATS_ACTIVITY",
@@ -73,7 +73,7 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     href: "/eats",
     blurb: "What's being ordered around campus right now.",
     configurable: false,
-    demo: true,
+    eatsData: true,
   },
   BOARD_LATEST: {
     kind: "BOARD_LATEST",
@@ -141,7 +141,7 @@ export function defaultConfigFor(kind: WidgetKind): Record<string, unknown> {
     case "EVENTS_TALLY":
       return { categories: [], timeframe: "today" };
     case "EATS_FAVORITE":
-      return { restaurantName: DEMO_RESTAURANTS[0] };
+      return {};
     default:
       return {};
   }
@@ -160,5 +160,5 @@ export const defaultLayout: Array<{ kind: WidgetKind; config?: Record<string, un
   { kind: "EVENTS_TALLY", config: { categories: [], timeframe: "today" } },
   { kind: "EVENTS_TALLY", config: { categories: ["CLUBS"], timeframe: "week" } },
   { kind: "BOARD_LATEST" },
-  { kind: "EATS_FAVORITE", config: { restaurantName: DEMO_RESTAURANTS[0] } },
+  { kind: "EATS_FAVORITE", config: {} },
 ];

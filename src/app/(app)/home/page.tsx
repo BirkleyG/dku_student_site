@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { defaultLayout } from "@/lib/widgets";
 import type { WidgetInstance } from "@/lib/widgets";
 import type { WidgetData } from "@/components/widgets/AppWidgetContent";
-import { demoEatsOpenCount, demoEatsOrder, demoEatsActivity } from "@/lib/eats-demo";
+import { demoEatsWidgetData } from "@/lib/eats-demo";
+import { fetchEatsWidgetData } from "@/lib/eats-live";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
@@ -16,11 +17,15 @@ export default async function HomePage() {
 
   let layout: WidgetInstance[] = defaultLayout.map((w) => ({ id: crypto.randomUUID(), kind: w.kind, config: w.config ?? {} }));
   let userId: string | null = null;
+  let eatsUser: { id: string; netId: string | null } | null = null;
   let savedRows: Awaited<ReturnType<typeof prisma.dashboardWidget.findMany>> = [];
 
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     userId = user?.id ?? null;
+    // DKU Eats SSO signs people in with their DKU Life user id as the Firebase
+    // uid; guest orders are keyed by netID instead, so match on both.
+    eatsUser = user ? { id: user.id, netId: user.netId } : null;
     if (user) {
       savedRows = await prisma.dashboardWidget.findMany({
         where: { userId: user.id },
@@ -88,10 +93,7 @@ export default async function HomePage() {
       commentCount: p._count.comments,
     })),
     trackedPosts,
-    eats: (() => {
-      const { open, total } = demoEatsOpenCount();
-      return { openCount: open, totalCount: total, order: demoEatsOrder(), activity: demoEatsActivity() };
-    })(),
+    eats: (await fetchEatsWidgetData(eatsUser)) ?? demoEatsWidgetData(),
   };
 
   return (

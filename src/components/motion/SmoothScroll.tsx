@@ -33,6 +33,17 @@ function LenisRouteResize() {
   const pathname = usePathname();
   const lenis = useLenis();
 
+  // Lenis caches the max scroll position. Anything that changes the page's
+  // height without a route change (an expanding panel, switching calendar
+  // views, images loading) left it stale, so scrolling stopped short of new
+  // content. Re-measure whenever <body> changes size.
+  useEffect(() => {
+    if (!lenis) return;
+    const observer = new ResizeObserver(() => lenis.resize());
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, [lenis]);
+
   useEffect(() => {
     lenis?.scrollTo(0, { immediate: true });
     const raf = requestAnimationFrame(() => lenis?.resize());

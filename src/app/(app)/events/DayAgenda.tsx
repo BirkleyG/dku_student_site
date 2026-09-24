@@ -16,6 +16,7 @@ type Props = {
 export function DayAgenda({ day, events, onClose }: Props) {
   return (
     <motion.div
+      id="day-agenda"
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
@@ -29,7 +30,7 @@ export function DayAgenda({ day, events, onClose }: Props) {
         </button>
       </div>
 
-      <div className="max-h-80 space-y-1 overflow-y-auto p-3">
+      <div className="space-y-1 p-3">
         {events.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-ink/40">Nothing on the calendar this day.</p>
         ) : (

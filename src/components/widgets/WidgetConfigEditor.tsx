@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import type { EventCategory } from "@prisma/client";
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
-import { DEMO_RESTAURANTS } from "@/lib/eats-demo";
 import { widgetCatalog, type WidgetInstance } from "@/lib/widgets";
 import type { WidgetData } from "./AppWidgetContent";
 
@@ -27,7 +26,7 @@ export function WidgetConfigEditor({
   );
   const [timeframe, setTimeframe] = useState<"today" | "week">(instance.config.timeframe === "week" ? "week" : "today");
   const [restaurantName, setRestaurantName] = useState<string>(
-    typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : DEMO_RESTAURANTS[0],
+    typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : (data.eats.vendors[0]?.name ?? ""),
   );
   const [postId, setPostId] = useState<string>(typeof instance.config.postId === "string" ? instance.config.postId : "");
 
@@ -37,7 +36,7 @@ export function WidgetConfigEditor({
 
   const save = () => {
     if (instance.kind === "EVENTS_TALLY") onSave({ categories, timeframe });
-    else if (instance.kind === "EATS_FAVORITE") onSave({ restaurantName });
+    else if (instance.kind === "EATS_FAVORITE") onSave(restaurantName ? { restaurantName } : {});
     else if (instance.kind === "BOARD_TRACKED_POST") onSave({ postId });
     else onSave({});
   };
@@ -116,7 +115,7 @@ export function WidgetConfigEditor({
           <div className="mt-4">
             <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Favorite restaurant</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {DEMO_RESTAURANTS.map((name) => (
+              {data.eats.vendors.map(({ name }) => (
                 <button
                   key={name}
                   onClick={() => setRestaurantName(name)}
