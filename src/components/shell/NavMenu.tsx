@@ -24,6 +24,10 @@ type Props = {
 };
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// Swiping the open drawer right past this offset (or fast enough) closes it,
+// the reverse of the edge swipe that opens it.
+const CLOSE_SWIPE_OFFSET = 80;
+const CLOSE_SWIPE_VELOCITY = 600;
 
 export function NavMenu({
   open,
@@ -131,11 +135,20 @@ export function NavMenu({
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-ink/10 bg-paper shadow-xl sm:w-[360px]"
+            className="fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-ink/10 bg-paper pt-[env(safe-area-inset-top)] shadow-xl sm:w-[360px]"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0, right: 0.6 }}
+            dragSnapToOrigin
+            onDragEnd={(_, info) => {
+              if (info.offset.x > CLOSE_SWIPE_OFFSET || info.velocity.x > CLOSE_SWIPE_VELOCITY) {
+                onClose();
+              }
+            }}
           >
             <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
               <span className="font-display text-xl">Menu</span>
@@ -143,7 +156,7 @@ export function NavMenu({
                 type="button"
                 onClick={onClose}
                 aria-label="Close menu"
-                className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink"
+                className="focus-ring grid h-11 w-11 place-items-center rounded-full text-ink/50 hover:text-ink"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -183,7 +196,7 @@ export function NavMenu({
                       onClick={() => onToggleStar(item.href)}
                       aria-pressed={isStarred}
                       aria-label={isStarred ? `Unstar ${item.label}` : `Star ${item.label}`}
-                      className="focus-ring rounded-full p-2 text-ink/35 transition-colors hover:text-gold-bright"
+                      className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink/35 transition-colors hover:text-gold-bright"
                     >
                       <motion.span
                         key={isStarred ? "starred" : "unstarred"}
@@ -216,7 +229,7 @@ export function NavMenu({
               )}
             </AnimatePresence>
 
-            <div className="border-t border-ink/10 p-2">
+            <div className="border-t border-ink/10 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
               <Link
                 href="/install"
                 className="focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-ink/80 transition-colors hover:bg-paper-dim"

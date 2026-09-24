@@ -10,6 +10,12 @@ import { useStarredNav } from "@/lib/useStarredNav";
 import { NavMenu } from "./NavMenu";
 
 const SCROLL_THRESHOLD = 24;
+// A swipe starting within this many px of the right screen edge, moving left
+// past SWIPE_DISTANCE with limited vertical drift, opens the drawer — mirrors
+// the drawer's own slide-in-from-the-right animation.
+const EDGE_ZONE = 32;
+const SWIPE_DISTANCE = 60;
+const SWIPE_MAX_VERTICAL = 60;
 
 type Props = {
   userLabel: string | null;
@@ -55,10 +61,45 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
     return () => observer.disconnect();
   }, []);
 
+  // Edge swipe: starting a touch near the right edge and dragging left opens
+  // the drawer, same direction it slides in from.
+  useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+    function handleTouchStart(event: TouchEvent) {
+      const touch = event.touches[0];
+      if (!touch) return;
+      tracking = window.innerWidth - touch.clientX <= EDGE_ZONE;
+      startX = touch.clientX;
+      startY = touch.clientY;
+    }
+
+    function handleTouchEnd(event: TouchEvent) {
+      if (!tracking) return;
+      tracking = false;
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      if (deltaX <= -SWIPE_DISTANCE && Math.abs(deltaY) <= SWIPE_MAX_VERTICAL) {
+        setMenuOpen(true);
+      }
+    }
+
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
+
   return (
     <motion.header
       ref={headerRef}
-      className="sticky top-0 z-30 border-b border-ink/10 backdrop-blur-md"
+      className="sticky top-0 z-30 border-b border-ink/10 pt-[env(safe-area-inset-top)] backdrop-blur-md"
       animate={{ backgroundColor: scrolled ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)" }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
@@ -92,11 +133,11 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                className={`link-sweep focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] transition-colors ${
+                className={`link-sweep focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors sm:px-0 sm:py-0 ${
                   active ? "active text-ink" : "text-ink/55 hover:text-ink"
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0 sm:hidden" strokeWidth={2} />
+                <Icon className="h-5 w-5 shrink-0 sm:hidden" strokeWidth={2} />
                 <span className="hidden sm:inline">{item.label}</span>
               </Link>
             );
@@ -107,7 +148,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
           {!isLoggedIn && (
             <Link
               href="/login"
-              className="focus-ring rounded-full bg-ink px-4 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/85 sm:px-5"
+              className="focus-ring rounded-full bg-ink px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/85 sm:px-5"
             >
               Log in
             </Link>
@@ -119,9 +160,9 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
             aria-haspopup="dialog"
             aria-label="Open menu"
             onClick={() => setMenuOpen(true)}
-            className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
+            className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
           >
-            <Menu className="h-4 w-4" strokeWidth={1.75} />
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
       </motion.div>
