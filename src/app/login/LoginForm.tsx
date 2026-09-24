@@ -6,13 +6,20 @@ import { signIn } from "next-auth/react";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
-export function LoginForm() {
+type Props = {
+  /** "modal" keeps the user on the current page instead of redirecting to /home. */
+  mode?: "page" | "modal";
+  /** Called right after a successful login when mode is "modal" (e.g. to close it). */
+  onSuccess?: () => void;
+};
+
+export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
   const router = useRouter();
   const params = useSearchParams();
   const rawCallbackUrl = params.get("callbackUrl");
   // Only ever redirect to a same-site path — never follow an absolute URL a
   // ?callbackUrl= query param could be crafted to point somewhere else.
-  const callbackUrl = rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
+  const callbackUrl = rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//") && !rawCallbackUrl.startsWith("/\\")
     ? rawCallbackUrl
     : "/home";
 
@@ -31,6 +38,10 @@ export function LoginForm() {
     setLoading(false);
     if (res?.error) {
       setError("Incorrect email or password.");
+      return;
+    }
+    if (mode === "modal") {
+      onSuccess?.();
       return;
     }
     router.push(callbackUrl);
