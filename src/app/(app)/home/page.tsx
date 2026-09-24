@@ -1,4 +1,5 @@
 import { addDays, startOfDay } from "date-fns";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { defaultLayout } from "@/lib/widgets";
@@ -11,6 +12,20 @@ import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
 import { WelcomeModal } from "@/components/layout/WelcomeModal";
+import type { EatsWidgetData } from "@/lib/eats-live";
+
+// fetchEatsWidgetData already catches its own errors and returns null on
+// failure, but this dashboard has been taken down by an unhandled query
+// error once already — belt and suspenders so a future change to that file
+// can't reopen the same hole.
+async function fetchEatsWidgetDataSafely(user: { id: string; netId: string | null } | null): Promise<EatsWidgetData> {
+  try {
+    return (await fetchEatsWidgetData(user)) ?? demoEatsWidgetData();
+  } catch (err) {
+    console.error("DKU Eats widget data threw unexpectedly, falling back to sample data:", err);
+    return demoEatsWidgetData();
+  }
+}
 
 export default async function HomePage() {
   const session = await auth();
@@ -48,17 +63,26 @@ export default async function HomePage() {
   const today = startOfDay(new Date());
   const weekAhead = addDays(today, 7);
 
-  const [events, boardPosts] = await Promise.all([
-    prisma.event.findMany({
-      where: { startsAt: { gte: today, lte: weekAhead }, approved: true },
-      orderBy: { startsAt: "asc" },
-    }),
-    prisma.boardPost.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: { author: true, _count: { select: { comments: true } } },
-    }),
-  ]);
+  const boardPostInclude = { author: true, _count: { select: { comments: true } } } satisfies Prisma.BoardPostInclude;
+  let events: Prisma.EventGetPayload<object>[] = [];
+  let boardPosts: Prisma.BoardPostGetPayload<{ include: typeof boardPostInclude }>[] = [];
+  try {
+    [events, boardPosts] = await Promise.all([
+      prisma.event.findMany({
+        where: { startsAt: { gte: today, lte: weekAhead }, approved: true },
+        orderBy: { startsAt: "asc" },
+      }),
+      prisma.boardPost.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        include: boardPostInclude,
+      }),
+    ]);
+  } catch (err) {
+    // Same principle as the widget-layout read above: a widget's own data
+    // source having a bad day shouldn't take the entire dashboard down.
+    console.error("Failed to load events/board data for the dashboard:", err);
+  }
 
   const trackedWidgets = savedRows.filter((w) => w.kind === "BOARD_TRACKED_POST");
   const trackedPosts: WidgetData["trackedPosts"] = {};
@@ -117,7 +141,7 @@ export default async function HomePage() {
       commentCount: p._count.comments,
     })),
     trackedPosts,
-    eats: (await fetchEatsWidgetData(eatsUser)) ?? demoEatsWidgetData(),
+    eats: await fetchEatsWidgetDataSafely(eatsUser),
     lilypadCategories,
     lilypadByWidget,
   };
