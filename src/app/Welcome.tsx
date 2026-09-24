@@ -104,7 +104,7 @@ function guessLastInitial(netId: string, lang: Lang) {
   return letter || (lang === "zh" ? "?" : "?");
 }
 
-export function Welcome() {
+export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "modal"; onFinish?: () => void } = {}) {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<Step>("language");
@@ -167,6 +167,11 @@ export function Welcome() {
 
   const finishToDashboard = () => {
     echo(t.pwaContinue);
+    if (onFinish) {
+      onFinish();
+      router.refresh();
+      return;
+    }
     router.push("/home");
   };
 
@@ -301,7 +306,11 @@ export function Welcome() {
   return (
     <main
       lang={lang === "zh" ? "zh-CN" : "en"}
-      className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6"
+      className={
+        variant === "modal"
+          ? "relative flex flex-col"
+          : "relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6"
+      }
     >
       <div className="relative z-10 w-full max-w-xl">
         <div className="space-y-3">

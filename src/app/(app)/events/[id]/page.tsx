@@ -27,9 +27,10 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
   return (
     <div className="mx-auto max-w-2xl">
       <Reveal>
-        <div className="relative h-64 w-full overflow-hidden rounded-3xl bg-paper-dim sm:h-80">
+        <div className="relative h-80 w-full overflow-hidden rounded-2xl bg-paper-dim sm:h-[28rem]">
           {event.posterUrl ? (
-            <Image src={event.posterUrl} alt="" fill className="object-cover" unoptimized />
+            // Posters are usually portrait: show the whole thing, never crop it.
+            <Image src={event.posterUrl} alt={`Poster for ${event.title}`} fill className="object-contain" unoptimized />
           ) : (
             <div className="flex h-full items-center justify-center font-display text-5xl italic text-ink/15">DKU</div>
           )}

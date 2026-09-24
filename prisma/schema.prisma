@@ -56,6 +56,7 @@ model User {
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
+  uploads            Upload[]
 
   @@map("users")
 }
@@ -268,4 +269,19 @@ model Club {
   createdAt     DateTime     @default(now())
 
   @@map("clubs")
+}
+
+// Small user-uploaded images (event posters), stored in Postgres so uploads
+// need no extra storage service. Images are downscaled in the browser before
+// upload and capped server-side, so rows stay small.
+model Upload {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  size        Int
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@map("uploads")
 }
