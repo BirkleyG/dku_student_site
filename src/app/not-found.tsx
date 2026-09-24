@@ -10,7 +10,7 @@ export default function NotFound() {
         Nothing here <em className="italic text-gold-bright">yet.</em>
       </h1>
       <p className="relative mt-3 max-w-sm text-ink/60">
-        Poke around — the page you're looking for doesn't exist, but the rest of DKU Life still does.
+        Poke around — the page you&rsquo;re looking for doesn&rsquo;t exist, but the rest of DKU Life still does.
       </p>
       <Link
         href="/home"
