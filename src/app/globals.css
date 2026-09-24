@@ -18,6 +18,9 @@
 
   --background: var(--color-canvas);
   --foreground: var(--color-ink);
+
+  /* Fallback until NavBar's ResizeObserver measures the real header. */
+  --header-h: 73px;
 }
 
 @theme inline {

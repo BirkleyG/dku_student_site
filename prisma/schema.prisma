@@ -42,6 +42,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   hiddenEventCategories EventCategory[] @default([])
+  starredNav            String[]        @default([])
 
   verificationTokens VerificationToken[]
   hostedEvents       Event[]              @relation("EventHost")
