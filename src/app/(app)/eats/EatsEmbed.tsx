@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ExternalLink, X } from "lucide-react";
+import { SunPulse } from "@/components/effects/SunPulse";
 
 const EATS_URL = process.env.NEXT_PUBLIC_EATS_URL ?? "https://dkueats.com";
 
@@ -51,14 +52,9 @@ export function EatsEmbed({ loggedIn }: { loggedIn: boolean }) {
 
 function EatsLoading() {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-      <motion.div
-        aria-hidden
-        className="h-10 w-10 rounded-full border-2 border-ink/15 border-t-sprout-deep"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-      />
-      <p className="text-sm text-ink/40">Loading DKU Eats…</p>
+    <div className="relative flex h-full w-full flex-col items-center justify-center gap-4">
+      <SunPulse ringCount={3} />
+      <p className="relative text-sm text-ink/40">Loading DKU Eats…</p>
     </div>
   );
 }
