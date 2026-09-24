@@ -8,7 +8,7 @@ export const ADMIN_SCOPES: { key: AdminScope; label: string; description: string
   { key: "WISDOM", label: "Wisdom", description: "Remove any wisdom post" },
   { key: "BOARD", label: "Board", description: "Remove any board post or comment" },
   { key: "EATS", label: "DKU Eats", description: "Reserved — no moderation surface yet" },
-  { key: "SLB", label: "Student Leadership Board", description: "Reserved — no moderation surface yet" },
+  { key: "SLB", label: "Student Leaders Board", description: "Add or remove SLB members and moderate SLB posts" },
   { key: "COURSES", label: "Courses", description: "Remove any course or course resource" },
   { key: "PROFESSORS", label: "Professors", description: "Remove any professor or review, verify professors" },
 ];

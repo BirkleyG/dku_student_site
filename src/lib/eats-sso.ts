@@ -1,5 +1,4 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 
 // Named "eats" (not the default app) so this never collides if DKU Life
 // ever needs its own separate Firebase project down the line.
@@ -36,8 +35,19 @@ export function getEatsAdminApp(): App {
  * Mints a Firebase custom token for the DKU Eats project, scoped to the
  * given DKU Life user id (used directly as the Firebase uid — Firebase
  * creates the matching auth record on first sign-in with that uid).
+ *
+ * `firebase-admin/auth` is imported dynamically, only here, because it
+ * pulls in `jwks-rsa` -> `jose` (an ESM-only package) and Vercel's
+ * production bundler fails to load that at the top level with
+ * ERR_REQUIRE_ESM. A static import at module scope drags that into every
+ * file that imports this module — including eats-live.ts, which only
+ * needs `getEatsAdminApp`/`isEatsConfigured` and is on the Home dashboard's
+ * render path, so that one broken import took the whole dashboard down.
+ * This function is only ever called from the actual SSO route, so scoping
+ * the import here keeps the bad dependency out of every other bundle.
  */
 export async function mintEatsSsoToken(uid: string): Promise<string> {
+  const { getAuth } = await import("firebase-admin/auth");
   const app = getEatsAdminApp();
   return getAuth(app).createCustomToken(uid);
 }

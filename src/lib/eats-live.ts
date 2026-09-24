@@ -1,4 +1,4 @@
-import { getFirestore, type Firestore, type Timestamp } from "firebase-admin/firestore";
+import type { Firestore, Timestamp } from "firebase-admin/firestore";
 import { getEatsAdminApp, isEatsConfigured } from "@/lib/eats-sso";
 import { isOpenNow } from "@/lib/eats-hours";
 
@@ -34,8 +34,15 @@ let lastFailureAt = 0;
 
 let vendorCache: { at: number; vendors: { id: string; name: string; hours: unknown }[] } | null = null;
 
-function db(): Firestore {
-  return getFirestore(getEatsAdminApp());
+// Loaded on demand (like firebase-admin/auth in eats-sso.ts) so a module-load
+// problem in the Firebase SDK can never take down pages that import this file.
+let firestore: Firestore | null = null;
+async function db(): Promise<Firestore> {
+  if (!firestore) {
+    const { getFirestore } = await import("firebase-admin/firestore");
+    firestore = getFirestore(getEatsAdminApp());
+  }
+  return firestore;
 }
 
 function toMillis(value: unknown): number {
@@ -53,7 +60,7 @@ function timeAgo(ms: number, now: number): string {
 
 async function loadVendors() {
   if (vendorCache && Date.now() - vendorCache.at < VENDOR_CACHE_MS) return vendorCache.vendors;
-  const snap = await db().collection("vendors").select("name", "hours", "approved", "display").get();
+  const snap = await (await db()).collection("vendors").select("name", "hours", "approved", "display").get();
   const vendors = snap.docs
     // Same rule the DKU Eats app uses for its own kitchen list.
     .filter((doc) => doc.get("approved") !== false && doc.get("display") !== false)
@@ -65,7 +72,7 @@ async function loadVendors() {
 }
 
 async function loadActiveOrder(uid: string | null, netId: string | null): Promise<EatsOrderStatus | null> {
-  const orders = db().collection("orders");
+  const orders = (await db()).collection("orders");
   const fields = ["vendorName", "status", "createdAt", "pickupTime", "orderCode"] as const;
   // Queried by one field each and sorted here, so no composite index is needed.
   const queries = [
@@ -99,7 +106,7 @@ async function loadActiveOrder(uid: string | null, netId: string | null): Promis
 }
 
 async function loadActivity(): Promise<EatsActivityItem[]> {
-  const snap = await db().collection("orders").orderBy("createdAt", "desc").select("vendorName", "createdAt").limit(5).get();
+  const snap = await (await db()).collection("orders").orderBy("createdAt", "desc").select("vendorName", "createdAt").limit(5).get();
   const now = Date.now();
   // Deliberately anonymous: only the kitchen and when, never who ordered.
   return snap.docs.map((doc) => ({

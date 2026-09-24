@@ -67,6 +67,14 @@ model User {
   professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
   scoreEvents         ScoreEvent[]
   uploads             Upload[]
+  slbMembership       SlbMember?
+  slbAboutEdits       SlbAbout[]
+  slbAnnouncements    SlbAnnouncement[]
+  slbPolls            SlbPoll[]
+  slbPollVotes        SlbPollVote[]
+  slbInitiatives      SlbInitiative[]
+  slbBackings         SlbInitiativeBacker[]
+  slbInitiativeVotes  SlbInitiativeVote[]
 
   @@map("users")
 }
@@ -431,4 +439,127 @@ model Upload {
   createdAt   DateTime @default(now())
 
   @@map("uploads")
+}
+
+// ---------------------------------------------------------------------------
+// Student Leaders Board: members, About page, announcements, polls, and
+// initiatives (member-sponsored proposals the community votes on).
+
+model SlbMember {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime @default(now())
+
+  @@map("slb_members")
+}
+
+// Single row (id "about"), editable by SLB members.
+model SlbAbout {
+  id          String   @id
+  body        String
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt   DateTime @updatedAt
+
+  @@map("slb_about")
+}
+
+model SlbAnnouncement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("slb_announcements")
+}
+
+model SlbPoll {
+  id        String          @id @default(cuid())
+  question  String
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  closesAt  DateTime?
+  options   SlbPollOption[]
+  votes     SlbPollVote[]
+  createdAt DateTime        @default(now())
+
+  @@map("slb_polls")
+}
+
+model SlbPollOption {
+  id       String        @id @default(cuid())
+  pollId   String
+  poll     SlbPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  label    String
+  position Int
+  votes    SlbPollVote[]
+
+  @@map("slb_poll_options")
+}
+
+model SlbPollVote {
+  id        String        @id @default(cuid())
+  pollId    String
+  poll      SlbPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    SlbPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([pollId, userId])
+  @@map("slb_poll_votes")
+}
+
+enum SlbInitiativeStatus {
+  PROPOSED
+  IN_PROGRESS
+  PASSED
+  NOT_PASSED
+}
+
+model SlbInitiative {
+  id        String                @id @default(cuid())
+  title     String
+  summary   String
+  body      String
+  status    SlbInitiativeStatus   @default(PROPOSED)
+  sponsorId String
+  sponsor   User                  @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  backers   SlbInitiativeBacker[]
+  votes     SlbInitiativeVote[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@map("slb_initiatives")
+}
+
+// SLB members (other than the sponsor) who co-sponsor an initiative.
+model SlbInitiativeBacker {
+  id           String        @id @default(cuid())
+  initiativeId String
+  initiative   SlbInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+
+  @@unique([initiativeId, userId])
+  @@map("slb_initiative_backers")
+}
+
+// Community vote: +1 = "Yes, I want this", -1 = "No".
+model SlbInitiativeVote {
+  id           String        @id @default(cuid())
+  initiativeId String
+  initiative   SlbInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value        Int
+
+  @@unique([initiativeId, userId])
+  @@map("slb_initiative_votes")
 }
