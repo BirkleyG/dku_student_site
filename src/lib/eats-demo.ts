@@ -1,7 +1,9 @@
-// DKU Eats lives in its own app (birkleyg/eats) with no shared API yet, so
-// these widgets show clearly-labeled demo data until that integration
-// exists — deterministic per day/minute so it doesn't look static or flicker
-// on every render, without needing a real backend.
+// Sample data for the DKU Eats widgets, used only when the live Firestore
+// connection (see eats-live.ts) isn't configured or doesn't answer in time.
+// The widgets label it as sample data. Deterministic per day/minute so it
+// doesn't flicker on every render.
+
+import type { EatsWidgetData } from "@/lib/eats-live";
 
 export const DEMO_RESTAURANTS = [
   "Lanzhou Noodle House",
@@ -44,4 +46,17 @@ export function demoEatsActivity(): { id: string; text: string; timeAgo: string 
     const template = templates[(now.getMinutes() + i) % templates.length];
     return { id: `demo-activity-${i}`, text: template(restaurant), timeAgo: `${(i + 1) * 3}m ago` };
   });
+}
+
+export function demoEatsWidgetData(): EatsWidgetData {
+  const { open, total } = demoEatsOpenCount();
+  const order = demoEatsOrder();
+  return {
+    live: false,
+    openCount: open,
+    totalCount: total,
+    vendors: DEMO_RESTAURANTS.map((name, i) => ({ id: `demo-${i}`, name, open: i < open })),
+    order: order ? { restaurant: order.restaurant, status: order.status, detail: `Ready in ~${order.etaMinutes} min` } : null,
+    activity: demoEatsActivity(),
+  };
 }

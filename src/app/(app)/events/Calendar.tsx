@@ -7,10 +7,12 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
   isSameDay,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
@@ -58,7 +60,9 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   const { from, to } = useMemo(() => {
     if (view === "month") return { from: startOfWeek(startOfMonth(anchor)), to: endOfWeek(endOfMonth(anchor)) };
     if (view === "week") return { from: startOfWeek(anchor), to: endOfWeek(anchor) };
-    return { from: anchor, to: addDays(anchor, 1) };
+    // Whole calendar day, not "now until this time tomorrow": `anchor` carries
+    // the current time after Today, which used to hide everything earlier today.
+    return { from: startOfDay(anchor), to: endOfDay(anchor) };
   }, [view, anchor]);
 
   // Day/Week/Month is client state, not a route change, so Lenis (see
@@ -129,9 +133,24 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   };
 
   const goToday = () => {
-    setAnchor(new Date());
-    setSelectedDay(null);
+    const today = new Date();
+    setAnchor(today);
+    // In Month view, also open today's agenda so "Today" shows today's events.
+    setSelectedDay(view === "month" ? today : null);
   };
+
+  // Bring the day's agenda into view once it has expanded below the grid.
+  useEffect(() => {
+    if (!selectedDay) return;
+    const timer = window.setTimeout(() => {
+      const agenda = document.getElementById("day-agenda");
+      if (!agenda) return;
+      const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 0;
+      if (lenis) lenis.scrollTo(agenda, { offset: -(headerHeight + 16) });
+      else agenda.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [selectedDay, lenis]);
 
   const goPrev = () => {
     setSelectedDay(null);

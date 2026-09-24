@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const initialStarred = currentUser && currentUser.starredNav.length > 0 ? currentUser.starredNav : DEFAULT_STARRED_NAV;
 
   return (
-    <div className="relative flex min-h-svh flex-col overflow-hidden bg-white">
+    <div className="relative flex min-h-svh flex-col overflow-x-clip bg-white">
       <RouteChrome userLabel={userLabel} isAdmin={isAdmin} initialStarred={initialStarred}>
         {children}
       </RouteChrome>

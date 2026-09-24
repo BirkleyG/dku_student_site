@@ -3,18 +3,14 @@ import type { EventCategory } from "@prisma/client";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { WidgetInstance } from "@/lib/widgets";
+import type { EatsWidgetData } from "@/lib/eats-live";
 
 export type WidgetData = {
   now: string;
   events: { id: string; title: string; startsAt: string; endsAt: string; location: string; category: EventCategory }[];
   boardPosts: { id: string; title: string; authorName: string; createdAt: string; commentCount: number }[];
   trackedPosts: Record<string, { postId: string; title: string; authorName: string; unreadCount: number } | null>;
-  eats: {
-    openCount: number;
-    totalCount: number;
-    order: { restaurant: string; status: string; etaMinutes: number } | null;
-    activity: { id: string; text: string; timeAgo: string }[];
-  };
+  eats: EatsWidgetData;
 };
 
 function Empty({ label }: { label: string }) {
@@ -85,16 +81,24 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
             {data.eats.openCount}
             <span className="text-base text-ink/40"> / {data.eats.totalCount}</span>
           </p>
-          <p className="mt-1.5 text-xs text-ink/50">Open right now</p>
+          <p className="mt-1.5 text-xs text-ink/50">Kitchens open right now</p>
         </div>
       );
 
     case "EATS_FAVORITE": {
-      const name = typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : "Pick a favorite";
+      const name = typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : null;
+      if (!name) return <Empty label="Pick your go-to kitchen." />;
+      const vendor = data.eats.vendors.find((v) => v.name === name);
       return (
         <div>
           <p className="text-xs text-ink/40">Your favorite</p>
           <p className="mt-0.5 truncate text-sm font-medium text-ink">{name}</p>
+          {vendor ? (
+            <p className={`mt-1 flex items-center gap-1.5 text-xs ${vendor.open ? "text-sprout-deep" : "text-ink/40"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${vendor.open ? "bg-sprout-deep" : "bg-ink/25"}`} />
+              {vendor.open ? "Open now" : "Closed"}
+            </p>
+          ) : null}
         </div>
       );
     }
@@ -104,21 +108,25 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
         <div>
           <p className="text-xs text-ink/40">{data.eats.order.restaurant}</p>
           <p className="mt-0.5 text-sm font-medium text-ink">{data.eats.order.status}</p>
-          <p className="text-xs text-ink/50">Ready in ~{data.eats.order.etaMinutes} min</p>
+          {data.eats.order.detail ? <p className="text-xs text-ink/50">{data.eats.order.detail}</p> : null}
         </div>
       ) : (
         <Empty label="No active order." />
       );
 
     case "EATS_ACTIVITY":
-      return (
-        <ul className="space-y-1.5 text-sm">
-          {data.eats.activity.slice(0, 2).map((a) => (
-            <li key={a.id} className="text-ink/75">
-              <span>{a.text}</span> <span className="text-xs text-ink/40">· {a.timeAgo}</span>
-            </li>
-          ))}
-        </ul>
+      return data.eats.activity.length ? (
+        <div>
+          <ul className="space-y-1.5 text-sm">
+            {data.eats.activity.slice(0, 2).map((a) => (
+              <li key={a.id} className="text-ink/75">
+                <span>{a.text}</span> <span className="text-xs text-ink/40">· {a.timeAgo}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <Empty label="No orders yet today." />
       );
 
     case "BOARD_LATEST": {

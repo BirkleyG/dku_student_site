@@ -31,10 +31,8 @@ export function WidgetTileCard({
           <Icon className="h-4 w-4" strokeWidth={1.75} />
         </div>
         <h3 className="truncate text-sm font-medium text-ink">{meta.label}</h3>
-        {meta.demo ? (
-          <span className="shrink-0 rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink/40">
-            Demo
-          </span>
+        {meta.eatsData && !data.eats.live ? (
+          <span className="shrink-0 rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink/40">Sample</span>
         ) : null}
       </div>
 
