@@ -2,26 +2,28 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { studentEmailDomains } from "@/lib/validation";
+import { InstallGuide } from "@/components/install/InstallGuide";
 
 type Lang = "en" | "zh";
 
 const copy = {
   en: {
-    greeting: "Hi there! Welcome to DKU Life. Which language do you prefer?",
+    greeting: "Hey! Welcome to DKU Life. Which language do you prefer?",
     english: "English",
     chinese: "中文",
-    intro: "Welcome to DKU Life, I'd love to show you around. Are you a DKU student?",
+    intro: "Hey, welcome to DKU Life. Are you a DKU student?",
     yes: "Yes",
     no: "No",
     notStudent:
-      "No worries, I'll take you to the DKU dashboard. Feel free to look around and get some more information. Happy to answer questions if you ever have any.",
+      "No worries, I'll take you to the dashboard. Look around and see what's there. Come back and make an account once you're a student.",
     goToDashboard: "Take me there",
     askFirstName: "Great! What's your first name?",
     namePlaceholder: "Your first name",
     niceToMeet: (name: string) =>
-      `Nice to meet you ${name}. If you'd like, I can take you straight to the dashboard, otherwise, would love to get to know you a little more.`,
+      `Nice to meet you ${name}. Want me to take you straight to the dashboard, or should we keep going?`,
     dashboard: "Dashboard",
     continueBtn: "Continue",
     askNetId: "What is your netID? That'll let us make you an account.",
@@ -32,7 +34,7 @@ const copy = {
     giveFullName: "Give full name",
     askFullName: "What's your full name?",
     fullNamePlaceholder: "First Last",
-    askInviteCode: "We're in early beta, so it's invite-only right now — what's your invite code?",
+    askInviteCode: "We're in early beta, so it's invite-only right now. What's your invite code?",
     inviteCodePlaceholder: "e.g. K7M2Q9PX",
     askPassword: (name: string) => `Sounds good. Last question ${name}. Could you give me a secure password for next time you want to sign up?`,
     passwordPlaceholder: "At least 8 characters",
@@ -41,11 +43,8 @@ const copy = {
     submit: "↵",
     somethingWrong: "Something went wrong. Try again?",
     pwaIntro:
-      "One more thing — want DKU Life on your home screen? It opens instantly, fills the screen, and feels like a real app.",
-    pwaIOS: 'Tap the Share icon in Safari (the square with an arrow pointing up), then scroll down and tap "Add to Home Screen."',
-    pwaAndroid: 'Tap the ⋮ menu in Chrome (top right), then tap "Install app" (or "Add to Home screen").',
-    pwaOther: 'Look for an install icon in your browser\'s address bar, or open its menu and choose "Install DKU Life."',
-    pwaContinue: "Got it — take me to the dashboard",
+      "One more thing: want DKU Life on your home screen? It opens instantly and feels like a real app.",
+    pwaContinue: "Got it, take me to the dashboard",
   },
   zh: {
     greeting: "你好！欢迎来到 DKU Life。你更喜欢哪种语言？",
@@ -78,9 +77,6 @@ const copy = {
     submit: "↵",
     somethingWrong: "出了点问题，再试一次？",
     pwaIntro: "还有一件事——要把 DKU Life 添加到主屏幕吗？这样打开更快，全屏显示，用起来就像真正的 App。",
-    pwaIOS: "在 Safari 中点击分享图标（带向上箭头的方框），然后向下滚动并点击“添加到主屏幕”。",
-    pwaAndroid: "在 Chrome 中点击右上角的 ⋮ 菜单，然后点击“安装应用”（或“添加到主屏幕”）。",
-    pwaOther: "在浏览器地址栏中查找安装图标，或打开菜单选择“安装 DKU Life”。",
     pwaContinue: "好的，带我去仪表盘",
   },
 } as const;
@@ -101,7 +97,6 @@ type Step =
   | "installPwa";
 
 type Message = { from: "dku" | "you"; text: string };
-type Platform = "ios" | "android" | "other";
 
 function guessLastInitial(netId: string, lang: Lang) {
   const alpha = netId.replace(/[^a-zA-Z]/g, "");
@@ -109,16 +104,7 @@ function guessLastInitial(netId: string, lang: Lang) {
   return letter || (lang === "zh" ? "?" : "?");
 }
 
-function detectPlatform(): Platform {
-  if (typeof navigator === "undefined") return "other";
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (isIOS) return "ios";
-  if (/Android/.test(ua)) return "android";
-  return "other";
-}
-
-export function Welcome() {
+export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "modal"; onFinish?: () => void } = {}) {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<Step>("language");
@@ -130,7 +116,6 @@ export function Welcome() {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [platform] = useState<Platform>(() => detectPlatform());
   const inputRef = useRef<HTMLInputElement>(null);
 
   const t = copy[lang];
@@ -176,13 +161,17 @@ export function Welcome() {
 
   const goToInstallStep = (label: string) => {
     echo(label);
-    const instructions = platform === "ios" ? t.pwaIOS : platform === "android" ? t.pwaAndroid : t.pwaOther;
-    say(`${t.pwaIntro} ${instructions}`);
+    say(t.pwaIntro);
     setStep("installPwa");
   };
 
   const finishToDashboard = () => {
     echo(t.pwaContinue);
+    if (onFinish) {
+      onFinish();
+      router.refresh();
+      return;
+    }
     router.push("/home");
   };
 
@@ -261,12 +250,22 @@ export function Welcome() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
         const message: string = body.error ?? t.somethingWrong;
         setError(message);
         // Send them back to whichever field actually failed, not just the last one.
-        setStep(/invite code/i.test(message) ? "inviteCode" : "password");
+        // The server tells us via `field` (invalid/used/mismatched code, rate limit,
+        // or an email/netID mismatch); fall back to sniffing the message for older
+        // responses that don't set it.
+        setStep(body.field === "inviteCode" || (!body.field && /invite code/i.test(message)) ? "inviteCode" : "password");
         return;
+      }
+
+      const signInRes = await signIn("credentials", { email, password, redirect: false });
+      if (signInRes?.error) {
+        // Account was created but the automatic sign-in failed — let them
+        // continue the flow anyway; they can log in manually from /login.
+        setError(t.somethingWrong);
       }
 
       say(t.allSet);
@@ -307,13 +306,13 @@ export function Welcome() {
   return (
     <main
       lang={lang === "zh" ? "zh-CN" : "en"}
-      className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6"
+      className={
+        variant === "modal"
+          ? "relative flex flex-col"
+          : "relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6"
+      }
     >
-      <BackgroundGlow />
-
       <div className="relative z-10 w-full max-w-xl">
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.4em] text-gold-bright">Duke Kunshan University</p>
-
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {messages.map((m, i) => (
@@ -440,11 +439,21 @@ export function Welcome() {
           ) : null}
 
           {step === "installPwa" ? (
-            <ActionRow key="installPwa">
-              <ChoiceButton primary onClick={finishToDashboard}>
-                {t.pwaContinue}
-              </ChoiceButton>
-            </ActionRow>
+            <motion.div
+              key="installPwa"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-5"
+            >
+              <InstallGuide lang={lang} />
+              <div className="mt-5 flex flex-wrap gap-3">
+                <ChoiceButton primary onClick={finishToDashboard}>
+                  {t.pwaContinue}
+                </ChoiceButton>
+              </div>
+            </motion.div>
           ) : null}
         </AnimatePresence>
 
@@ -552,27 +561,5 @@ function TextInputRow({
         {submitLabel}
       </button>
     </motion.div>
-  );
-}
-
-function BackgroundGlow() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      <motion.div
-        className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-sprout/40 blur-[120px]"
-        animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute -bottom-40 -right-20 h-[26rem] w-[26rem] rounded-full bg-gold/25 blur-[120px]"
-        animate={{ x: [0, -30, 0], y: [0, -20, 0] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute right-1/3 top-1/4 h-64 w-64 rounded-full bg-sprout-deep/20 blur-[100px]"
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </div>
   );
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { boardCommentSchema } from "@/lib/board-validation";
+import { awardPoints } from "@/lib/community-score";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -9,9 +10,6 @@ export async function POST(request: Request, { params }: Params) {
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Log in to comment" }, { status: 401 });
-  }
-  if (!session.user.verified) {
-    return NextResponse.json({ error: "Verify your DKU email before commenting" }, { status: 403 });
   }
 
   const { id: postId } = await params;
@@ -31,6 +29,7 @@ export async function POST(request: Request, { params }: Params) {
     data: { postId, authorId: user.id, body: parsed.data.body },
     include: { author: { select: { firstName: true, lastName: true } } },
   });
+  await awardPoints(user.id, "BOARD_COMMENT");
 
   return NextResponse.json({ comment }, { status: 201 });
 }

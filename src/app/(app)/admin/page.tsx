@@ -19,7 +19,7 @@ export default async function AdminPage() {
 
   const isSuperAdmin = requester.role === "ADMIN";
 
-  const [events, clubs, news, wisdomPosts, boardPosts, users, inviteCodes] = await Promise.all([
+  const [events, clubs, wisdomTopics, boardPosts, users, inviteCodes] = await Promise.all([
     hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")
       ? prisma.event.findMany({
           orderBy: { startsAt: "desc" },
@@ -30,11 +30,12 @@ export default async function AdminPage() {
     hasScope(requester, "CLUBS")
       ? prisma.club.findMany({ orderBy: { createdAt: "desc" }, take: 20 })
       : Promise.resolve([]),
-    hasScope(requester, "NEWS")
-      ? prisma.newsPost.findMany({ orderBy: { publishedAt: "desc" }, take: 20 })
-      : Promise.resolve([]),
     hasScope(requester, "WISDOM")
-      ? prisma.wisdomPost.findMany({ orderBy: { createdAt: "desc" }, take: 20 })
+      ? prisma.wisdomTopic.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: { _count: { select: { recommendations: true } } },
+        })
       : Promise.resolve([]),
     hasScope(requester, "BOARD")
       ? prisma.boardPost.findMany({
@@ -127,32 +128,19 @@ export default async function AdminPage() {
     });
   }
 
-  if (hasScope(requester, "NEWS")) {
-    tabs.push({
-      key: "news",
-      label: "News",
-      content: (
-        <ModerationList
-          empty="No articles yet."
-          rows={news.map((n) => ({
-            id: n.id,
-            title: n.title,
-            subtitle: format(n.publishedAt, "MMM d, yyyy"),
-            endpoint: `/api/news/${n.id}`,
-          }))}
-        />
-      ),
-    });
-  }
-
   if (hasScope(requester, "WISDOM")) {
     tabs.push({
       key: "wisdom",
       label: "Wisdom",
       content: (
         <ModerationList
-          empty="No posts yet."
-          rows={wisdomPosts.map((w) => ({ id: w.id, title: w.title, subtitle: w.category, endpoint: `/api/wisdom/${w.id}` }))}
+          empty="No topics yet."
+          rows={wisdomTopics.map((w) => ({
+            id: w.id,
+            title: w.title,
+            subtitle: `${w.category} · ${w._count.recommendations} rec${w._count.recommendations === 1 ? "" : "s"}`,
+            endpoint: `/api/wisdom/${w.id}`,
+          }))}
         />
       ),
     });
@@ -179,8 +167,7 @@ export default async function AdminPage() {
   return (
     <div>
       <Reveal>
-        <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">Admin</p>
-        <h1 className="mt-2 font-display text-4xl">
+        <h1 className="font-display text-4xl">
           {isSuperAdmin ? "Run the beta." : "Your moderation tools."}
         </h1>
       </Reveal>

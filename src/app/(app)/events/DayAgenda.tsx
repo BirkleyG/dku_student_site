@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { ApiEvent } from "./calendar-types";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 export function DayAgenda({ day, events, onClose }: Props) {
   return (
     <motion.div
+      id="day-agenda"
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
@@ -28,7 +30,7 @@ export function DayAgenda({ day, events, onClose }: Props) {
         </button>
       </div>
 
-      <div className="max-h-80 space-y-1 overflow-y-auto p-3">
+      <div className="space-y-1 p-3">
         {events.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-ink/40">Nothing on the calendar this day.</p>
         ) : (
@@ -43,7 +45,10 @@ export function DayAgenda({ day, events, onClose }: Props) {
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />
                 <span className="w-20 shrink-0 text-xs text-ink/45">{format(new Date(event.startsAt), "h:mm a")}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-ink">{event.title}</span>
+                  <span className="flex items-center gap-1.5 truncate text-sm text-ink">
+                    <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
+                    <span className="truncate">{event.title}</span>
+                  </span>
                   <span className="block truncate text-xs text-ink/45">{event.location}</span>
                 </span>
                 <span

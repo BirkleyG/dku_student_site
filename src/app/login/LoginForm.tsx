@@ -6,15 +6,22 @@ import { signIn } from "next-auth/react";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
-const verifiedMessages: Record<string, string> = {
-  "1": "Email verified — welcome to DKU Life.",
-  expired: "That verification link expired. Log in and we'll send you a new one.",
+type Props = {
+  /** "modal" keeps the user on the current page instead of redirecting to /home. */
+  mode?: "page" | "modal";
+  /** Called right after a successful login when mode is "modal" (e.g. to close it). */
+  onSuccess?: () => void;
 };
 
-export function LoginForm() {
+export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
   const router = useRouter();
   const params = useSearchParams();
-  const verifiedNote = params.get("verified") ? verifiedMessages[params.get("verified")!] : null;
+  const rawCallbackUrl = params.get("callbackUrl");
+  // Only ever redirect to a same-site path — never follow an absolute URL a
+  // ?callbackUrl= query param could be crafted to point somewhere else.
+  const callbackUrl = rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//") && !rawCallbackUrl.startsWith("/\\")
+    ? rawCallbackUrl
+    : "/home";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,16 +40,16 @@ export function LoginForm() {
       setError("Incorrect email or password.");
       return;
     }
-    router.push("/home");
+    if (mode === "modal") {
+      onSuccess?.();
+      return;
+    }
+    router.push(callbackUrl);
     router.refresh();
   };
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      {verifiedNote ? (
-        <p className="rounded-xl bg-sprout/25 px-4 py-3 text-sm text-sprout-deep">{verifiedNote}</p>
-      ) : null}
-
       <Field label="DKU email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <Field
         label="Password"

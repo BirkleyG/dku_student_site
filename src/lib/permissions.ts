@@ -4,11 +4,12 @@ export const ADMIN_SCOPES: { key: AdminScope; label: string; description: string
   { key: "EVENTS", label: "Events", description: "Remove any event" },
   { key: "CLUBS", label: "Clubs", description: "Remove any club listing" },
   { key: "SPORTS", label: "Sports", description: "Remove Open Play / Tournament events" },
-  { key: "NEWS", label: "News", description: "Publish and remove news articles" },
   { key: "WISDOM", label: "Wisdom", description: "Remove any wisdom post" },
   { key: "BOARD", label: "Board", description: "Remove any board post or comment" },
   { key: "EATS", label: "DKU Eats", description: "Reserved — no moderation surface yet" },
   { key: "SLB", label: "Student Leadership Board", description: "Reserved — no moderation surface yet" },
+  { key: "COURSES", label: "Courses", description: "Remove any course or course resource" },
+  { key: "PROFESSORS", label: "Professors", description: "Remove any professor or review, verify professors" },
 ];
 
 type PermissionUser = { role: Role; adminScopes: AdminScope[] };

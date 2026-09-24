@@ -11,11 +11,25 @@ export const wisdomCategoryLabels: Record<(typeof wisdomCategories)[number], str
   OTHER: "Other",
 };
 
-export const wisdomPostSchema = z.object({
+export const wisdomTopicSchema = z.object({
   title: z.string().trim().min(3, "Title is too short").max(140),
   category: z.enum(wisdomCategories),
-  location: z.string().trim().max(120).optional().or(z.literal("")),
-  body: z.string().trim().min(5, "Say a bit more").max(4000),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  requireLocation: z.boolean(),
 });
 
-export type WisdomPostInput = z.infer<typeof wisdomPostSchema>;
+export type WisdomTopicInput = z.infer<typeof wisdomTopicSchema>;
+
+export const wisdomRecommendationSchema = z
+  .object({
+    placeName: z.string().trim().min(2, "Give it a name").max(140),
+    location: z.string().trim().max(300).optional().or(z.literal("")),
+    description: z.string().trim().min(5, "Say a bit more about why").max(2000),
+    requireLocation: z.boolean().optional(),
+  })
+  .refine((data) => !data.requireLocation || (data.location && data.location.length > 0), {
+    message: "This topic requires a location or map link",
+    path: ["location"],
+  });
+
+export type WisdomRecommendationInput = z.infer<typeof wisdomRecommendationSchema>;

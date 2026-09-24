@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInviteCode } from "@/lib/invite-code";
+import { normalizeNetId } from "@/lib/validation";
 
 async function requireAdmin() {
   const session = await auth();
@@ -37,12 +38,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
+  // Normalize the netID the same way the signup route compares it (trimmed,
+  // lowercased) so issued codes always line up with what a student submits.
+  const netId = normalizeNetId(parsed.data.netId);
+
   // Extremely unlikely to collide, but the code column is globally unique
   // (not just per-netID), so retry on the off chance it does.
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const code = await prisma.inviteCode.create({
-        data: { netId: parsed.data.netId, code: generateInviteCode(), createdById: admin.id },
+        data: { netId, code: generateInviteCode(), createdById: admin.id },
       });
       return NextResponse.json({ code }, { status: 201 });
     } catch (err) {

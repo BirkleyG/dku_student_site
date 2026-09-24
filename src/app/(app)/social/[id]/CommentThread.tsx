@@ -81,7 +81,7 @@ export function CommentThread({
           </Button>
         </div>
       ) : (
-        <p className="mt-5 text-sm text-ink/40">Log in with a verified DKU account to reply.</p>
+        <p className="mt-5 text-sm text-ink/40">Log in with your DKU Life account to reply.</p>
       )}
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
     </div>

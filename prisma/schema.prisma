@@ -25,6 +25,8 @@ enum AdminScope {
   BOARD
   EATS
   SLB
+  COURSES
+  PROFESSORS
 }
 
 model User {
@@ -38,10 +40,12 @@ model User {
   adminScopes   AdminScope[] @default([])
   emailVerified DateTime?
   image         String?
+  communityScore Int      @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   hiddenEventCategories EventCategory[] @default([])
+  starredNav            String[]        @default([])
 
   verificationTokens VerificationToken[]
   hostedEvents       Event[]              @relation("EventHost")
@@ -49,12 +53,18 @@ model User {
   dashboardWidgets   DashboardWidget[]
   boardPosts         BoardPost[]          @relation("BoardAuthor")
   boardComments      BoardComment[]       @relation("BoardCommentAuthor")
-  wisdomPosts        WisdomPost[]         @relation("WisdomAuthor")
-  wisdomVotes        WisdomVote[]
-  newsPosts          NewsPost[]           @relation("NewsAuthor")
+  wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
+  wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
+  wisdomVotes           WisdomVote[]
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
+  coursesSubmitted    Course[]            @relation("CourseSubmitter")
+  professorsSubmitted Professor[]         @relation("ProfessorSubmitter")
+  courseResources     CourseResource[]    @relation("CourseResourceAuthor")
+  professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
+  scoreEvents         ScoreEvent[]
+  uploads             Upload[]
 
   @@map("users")
 }
@@ -137,23 +147,28 @@ model Rsvp {
   @@map("rsvps")
 }
 
-enum WidgetType {
-  EVENTS
-  DKU_EATS
-  SOCIAL
-  NEWS
-  WISDOM
-  CLUBS
+enum WidgetKind {
+  EVENTS_TALLY
+  EVENTS_AGENDA
+  EATS_OPEN_COUNT
+  EATS_FAVORITE
+  EATS_ORDER_TRACKER
+  EATS_ACTIVITY
+  BOARD_LATEST
+  BOARD_RECENT
+  BOARD_TRACKED_POST
+  LILYPAD_LATEST
 }
 
 model DashboardWidget {
-  id       String     @id @default(cuid())
-  userId   String
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type     WidgetType
-  position Int        @default(0)
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      WidgetKind
+  config    Json?
+  position  Int        @default(0)
+  createdAt DateTime   @default(now())
 
-  @@unique([userId, type])
   @@map("dashboard_widgets")
 }
 
@@ -190,51 +205,49 @@ enum WisdomCategory {
   OTHER
 }
 
-model WisdomPost {
-  id        String         @id @default(cuid())
-  title     String
-  category  WisdomCategory
-  location  String?
-  body      String
-  authorId  String
-  author    User           @relation("WisdomAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  votes     WisdomVote[]
-  createdAt DateTime       @default(now())
+/** A question/category people crowdsource recommendations for, e.g. "Best Western food near campus". */
+model WisdomTopic {
+  id              String                 @id @default(cuid())
+  title           String
+  description     String?
+  category        WisdomCategory         @default(OTHER)
+  requireLocation Boolean                @default(false)
+  createdById     String
+  createdBy       User                   @relation("WisdomTopicCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  recommendations WisdomRecommendation[]
+  createdAt       DateTime               @default(now())
 
-  @@map("wisdom_posts")
+  @@map("wisdom_topics")
+}
+
+/** One person's suggested answer to a WisdomTopic — a place, where it is, and why. */
+model WisdomRecommendation {
+  id          String       @id @default(cuid())
+  topicId     String
+  topic       WisdomTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  placeName   String
+  location    String?
+  description String
+  authorId    String
+  author      User         @relation("WisdomRecAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  votes       WisdomVote[]
+  createdAt   DateTime     @default(now())
+
+  @@map("wisdom_recommendations")
 }
 
 model WisdomVote {
-  id     String     @id @default(cuid())
-  postId String
-  post   WisdomPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId String
-  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  value  Int
+  id               String               @id @default(cuid())
+  recommendationId String
+  recommendation   WisdomRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value            Int
 
-  @@unique([postId, userId])
+  @@unique([recommendationId, userId])
   @@map("wisdom_votes")
 }
 
-model NewsPost {
-  id          String   @id @default(cuid())
-  title       String
-  summary     String
-  body        String
-  authorId    String
-  author      User     @relation("NewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  publishedAt DateTime @default(now())
-
-  @@map("news_posts")
-}
-
-model NewsletterSignup {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-
-  @@map("newsletter_signups")
-}
 
 enum ClubCategory {
   ACADEMIC
@@ -259,4 +272,127 @@ model Club {
   createdAt     DateTime     @default(now())
 
   @@map("clubs")
+}
+
+model Professor {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  department  String
+  email       String?
+  verified    Boolean  @default(false)
+  addedById   String
+  addedBy     User     @relation("ProfessorSubmitter", fields: [addedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  offerings CourseOffering[]
+  reviews   ProfessorReview[]
+
+  @@map("professors")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  title       String
+  department  String
+  description String?
+  createdById String
+  createdBy   User     @relation("CourseSubmitter", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  offerings CourseOffering[]
+  resources CourseResource[]
+  reviews   ProfessorReview[]
+
+  @@map("courses")
+}
+
+model CourseOffering {
+  id          String    @id @default(cuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  professorId String
+  professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  semester    String
+
+  @@unique([courseId, professorId, semester])
+  @@map("course_offerings")
+}
+
+enum CourseResourceType {
+  SYLLABUS
+  NOTES
+  EXAM
+  TIP
+}
+
+model CourseResource {
+  id        String             @id @default(cuid())
+  courseId  String
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  type      CourseResourceType
+  semester  String?
+  title     String
+  body      String?
+  fileUrl   String?
+  authorId  String
+  author    User               @relation("CourseResourceAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+
+  @@map("course_resources")
+}
+
+model ProfessorReview {
+  id               String    @id @default(cuid())
+  professorId      String
+  professor        Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  courseId         String?
+  course           Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  authorId         String
+  author           User      @relation("ProfessorReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  gradingRating    Int
+  difficultyRating Int
+  teachingRating   Int
+  comment          String?
+  createdAt        DateTime  @default(now())
+
+  @@unique([professorId, authorId, courseId])
+  @@map("professor_reviews")
+}
+
+enum ScoreReason {
+  WISDOM_POST
+  BOARD_POST
+  BOARD_COMMENT
+  PROFESSOR_REVIEW
+  COURSE_RESOURCE
+  COURSE_ADDED
+  PROFESSOR_ADDED
+}
+
+model ScoreEvent {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    ScoreReason
+  points    Int
+  createdAt DateTime    @default(now())
+
+  @@map("score_events")
+}
+
+// Small user-uploaded images (event posters), stored in Postgres so uploads
+// need no extra storage service. Images are downscaled in the browser before
+// upload and capped server-side, so rows stay small.
+model Upload {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  size        Int
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@map("uploads")
 }

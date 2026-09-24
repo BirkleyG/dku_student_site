@@ -2,6 +2,7 @@
 
 import { format, isSameDay, isSameMonth, isToday, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { ApiEvent } from "./calendar-types";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -59,10 +60,11 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
                   return (
                     <span
                       key={event.id}
-                      className="truncate rounded px-1.5 py-0.5 text-[10px] leading-tight"
+                      className="flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] leading-tight"
                       style={{ backgroundColor: meta.tint, color: meta.color }}
                     >
-                      {event.title}
+                      <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
+                      <span className="truncate">{event.title}</span>
                     </span>
                   );
                 })}

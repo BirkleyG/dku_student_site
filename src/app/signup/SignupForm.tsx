@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
 
@@ -32,11 +33,11 @@ const steps: Step[] = [
   },
   {
     key: "inviteCode",
-    prompt: "We're in early beta, so it's invite-only for now — what's your invite code?",
+    prompt: "We're in early beta, so it's invite-only for now. What's your invite code?",
     placeholder: "e.g. K7M2Q9PX",
     type: "text",
   },
-  { key: "password", prompt: "Last thing — set a password.", placeholder: "At least 8 characters", type: "password" },
+  { key: "password", prompt: "Last thing: set a password.", placeholder: "At least 8 characters", type: "password" },
 ];
 
 type Answers = Partial<Record<StepKey, string>>;
@@ -105,15 +106,36 @@ export function SignupForm() {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
       setServerError(body.error ?? "Something went wrong. Try again.");
       setStatus("chatting");
-      setStepIndex(steps.length - 1); // send them back to fix whatever failed
+      // Send them back to whichever step actually failed (an invalid/used/
+      // rate-limited invite code, or an email that doesn't match the netID)
+      // rather than always the last step.
+      const targetKey: StepKey = body.field === "email" ? "email" : "inviteCode";
+      const targetIndex = steps.findIndex((s) => s.key === targetKey);
+      setStepIndex(targetIndex >= 0 ? targetIndex : steps.length - 1);
+      return;
+    }
+
+    const signInRes = await signIn("credentials", {
+      email: payload.email,
+      password: payload.password,
+      redirect: false,
+    });
+
+    if (signInRes?.error) {
+      // Account was created but the automatic sign-in failed for some reason —
+      // send them to log in manually instead of stranding them here.
+      router.push("/login");
       return;
     }
 
     setStatus("done");
-    setTimeout(() => router.push("/login"), 2600);
+    setTimeout(() => {
+      router.push("/home");
+      router.refresh();
+    }, 1600);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -134,10 +156,8 @@ export function SignupForm() {
         animate={{ opacity: 1, scale: 1 }}
         className="rounded-3xl border border-sprout-deep/30 bg-sprout/20 p-8 text-center"
       >
-        <p className="font-display text-2xl text-sprout-deep">Almost there, {answers.firstName}.</p>
-        <p className="mt-2 text-ink/70">
-          We sent a verification link to your inbox. Confirm it, then come back and log in.
-        </p>
+        <p className="font-display text-2xl text-sprout-deep">Welcome, {answers.firstName}.</p>
+        <p className="mt-2 text-ink/70">Your DKU Life account is ready. Taking you home.</p>
       </motion.div>
     );
   }
@@ -148,7 +168,7 @@ export function SignupForm() {
         {transcript.map((step) => (
           <div key={step.key} className="space-y-2">
             <ChatBubble from="dku">{step.prompt}</ChatBubble>
-            <ChatBubble from="you">{displayValue(step.key) || "—"}</ChatBubble>
+            <ChatBubble from="you">{displayValue(step.key) || "–"}</ChatBubble>
           </div>
         ))}
       </div>
