@@ -1,86 +1,118 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { Menu } from "lucide-react";
 import { navItems, adminNavItem } from "@/lib/nav";
+import { useStarredNav } from "@/lib/useStarredNav";
+import { NavMenu } from "./NavMenu";
 
 type Props = {
   userLabel: string | null;
   isAdmin?: boolean;
+  initialStarred: string[];
 };
 
-export function NavBar({ userLabel, isAdmin }: Props) {
+export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
   const pathname = usePathname();
+  const isLoggedIn = userLabel !== null;
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
+  const { starred, toggleStar, limitHit } = useStarredNav(initialStarred, isLoggedIn);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  const starredItems = items.filter((item) => starred.includes(item.href));
+
+  // Expose the header's rendered height as --header-h so other components (e.g. the
+  // full-screen Eats layout) can size themselves against it.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const setHeaderHeight = () => {
+      document.documentElement.style.setProperty("--header-h", `${header.offsetHeight}px`);
+    };
+    setHeaderHeight();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(setHeaderHeight);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-ink/10 bg-white/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-        <Link href="/home" className="focus-ring flex items-center gap-2.5 font-display text-2xl tracking-tight text-ink">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-30 border-b border-ink/10 bg-white/85 backdrop-blur-md"
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <Link
+          href="/home"
+          className="focus-ring flex shrink-0 items-center gap-2.5 font-display text-2xl tracking-tight text-ink"
+        >
           <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-[11px] font-semibold tracking-wide text-white">
             DK
           </span>
-          DKU <em className="italic text-gold-bright">Life</em>
+          <span className="hidden sm:inline">
+            DKU <em className="italic text-gold-bright">Life</em>
+          </span>
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-center gap-7 md:flex">
-          {items.map((item) => {
+        <nav aria-label="Starred tabs" className="flex flex-1 items-center justify-center gap-2 overflow-hidden sm:gap-6">
+          {starredItems.map((item) => {
+            const Icon = item.icon;
             const active = pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`link-sweep focus-ring flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors ${
+                title={item.label}
+                className={`link-sweep focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] transition-colors ${
                   active ? "active text-ink" : "text-ink/55 hover:text-ink"
                 }`}
               >
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0 sm:hidden" strokeWidth={2} />
+                <span className="hidden sm:inline">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
-          {userLabel ? (
-            <>
-              <span className="hidden text-sm text-ink/60 sm:inline">{userLabel}</span>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="focus-ring rounded-full border border-ink/20 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink/75 transition-colors hover:border-ink/45 hover:text-ink"
-              >
-                Log out
-              </button>
-            </>
-          ) : (
+        <div className="flex shrink-0 items-center gap-2">
+          {!isLoggedIn && (
             <Link
               href="/login"
-              className="focus-ring rounded-full bg-ink px-5 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/85"
+              className="focus-ring rounded-full bg-ink px-4 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/85 sm:px-5"
             >
               Log in
             </Link>
           )}
+          <button
+            ref={menuButtonRef}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-haspopup="dialog"
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
+            className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
+          >
+            <Menu className="h-4 w-4" strokeWidth={1.75} />
+          </button>
         </div>
       </div>
 
-      <nav className="flex items-center gap-1 overflow-x-auto px-4 pb-3 md:hidden">
-        {items.map((item) => {
-          const active = pathname?.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
-                active ? "bg-paper-dim text-ink" : "text-ink/60"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <NavMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={items}
+        starred={starred}
+        onToggleStar={toggleStar}
+        limitHit={limitHit}
+        userLabel={userLabel}
+        triggerRef={menuButtonRef}
+      />
     </header>
   );
 }
