@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOut } from "next-auth/react";
-import { X, Star, Download, LogOut } from "lucide-react";
+import { X, Star, Download, LogOut, Award } from "lucide-react";
 import type { NavItem } from "@/lib/nav";
 import { MAX_STARRED_NAV } from "@/lib/nav";
 import { APP_VERSION } from "@/lib/version";
@@ -19,12 +19,23 @@ type Props = {
   onToggleStar: (href: string) => void;
   limitHit: boolean;
   userLabel: string | null;
+  communityScore?: number | null;
   triggerRef: RefObject<HTMLButtonElement | null>;
 };
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit, userLabel, triggerRef }: Props) {
+export function NavMenu({
+  open,
+  onClose,
+  items,
+  starred,
+  onToggleStar,
+  limitHit,
+  userLabel,
+  communityScore,
+  triggerRef,
+}: Props) {
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousPathname = useRef(pathname);
@@ -139,7 +150,18 @@ export function NavMenu({ open, onClose, items, starred, onToggleStar, limitHit,
             </div>
 
             {userLabel && (
-              <div className="border-b border-ink/10 px-5 py-3 text-sm font-medium text-ink/70">{userLabel}</div>
+              <Link
+                href="/profile"
+                onClick={onClose}
+                className="focus-ring flex items-center justify-between gap-2 border-b border-ink/10 px-5 py-3 text-sm font-medium text-ink/70 transition-colors hover:text-ink"
+              >
+                {userLabel}
+                {typeof communityScore === "number" ? (
+                  <span className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold-bright">
+                    <Award className="h-3 w-3" /> {communityScore}
+                  </span>
+                ) : null}
+              </Link>
             )}
 
             <p className="px-5 pt-4 text-xs text-ink/45">Star a tab to pin it to the header.</p>

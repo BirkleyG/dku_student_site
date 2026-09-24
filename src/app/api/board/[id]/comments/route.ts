@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { boardCommentSchema } from "@/lib/board-validation";
+import { awardPoints } from "@/lib/community-score";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -28,6 +29,7 @@ export async function POST(request: Request, { params }: Params) {
     data: { postId, authorId: user.id, body: parsed.data.body },
     include: { author: { select: { firstName: true, lastName: true } } },
   });
+  await awardPoints(user.id, "BOARD_COMMENT");
 
   return NextResponse.json({ comment }, { status: 201 });
 }

@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const currentUser = session?.user?.email
     ? await prisma.user.findUnique({
         where: { email: session.user.email },
-        select: { role: true, adminScopes: true, starredNav: true },
+        select: { role: true, adminScopes: true, starredNav: true, communityScore: true },
       })
     : null;
   const isAdmin = currentUser ? isAnyAdmin(currentUser) : false;
@@ -22,7 +22,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-x-clip bg-white">
-      <RouteChrome userLabel={userLabel} isAdmin={isAdmin} initialStarred={initialStarred}>
+      <RouteChrome
+        userLabel={userLabel}
+        isAdmin={isAdmin}
+        initialStarred={initialStarred}
+        communityScore={currentUser?.communityScore ?? null}
+      >
         {children}
       </RouteChrome>
     </div>

@@ -15,9 +15,10 @@ type Props = {
   userLabel: string | null;
   isAdmin?: boolean;
   initialStarred: string[];
+  communityScore?: number | null;
 };
 
-export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
+export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: Props) {
   const pathname = usePathname();
   const isLoggedIn = userLabel !== null;
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
@@ -133,6 +134,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
         onToggleStar={toggleStar}
         limitHit={limitHit}
         userLabel={userLabel}
+        communityScore={communityScore}
         triggerRef={menuButtonRef}
       />
     </motion.header>

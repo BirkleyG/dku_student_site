@@ -10,18 +10,19 @@ type Props = {
   userLabel: string | null;
   isAdmin?: boolean;
   initialStarred: string[];
+  communityScore?: number | null;
   children: ReactNode;
 };
 
 // DKU Eats renders full-bleed under the header: no max-width container and
 // no footer. Every other route keeps the normal contained layout.
-export function RouteChrome({ userLabel, isAdmin, initialStarred, children }: Props) {
+export function RouteChrome({ userLabel, isAdmin, initialStarred, communityScore, children }: Props) {
   const pathname = usePathname();
   const isFullBleed = pathname === "/eats";
 
   return (
     <>
-      <NavBar userLabel={userLabel} isAdmin={isAdmin} initialStarred={initialStarred} />
+      <NavBar userLabel={userLabel} isAdmin={isAdmin} initialStarred={initialStarred} communityScore={communityScore} />
       {isFullBleed ? (
         <div className="relative z-10 flex-1">{children}</div>
       ) : (
