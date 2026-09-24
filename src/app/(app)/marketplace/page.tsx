@@ -5,7 +5,7 @@ export default function MarketplacePage() {
     <ComingSoon
       eyebrow="DKU Marketplace"
       title="Buy and sell with your dorm mates."
-      description="Textbooks, furniture, bikes, whatever you don't need anymore — DKU Marketplace lives at its own site for now — single sign-on with DKU Life is on the roadmap."
+      description="Textbooks, furniture, bikes, whatever you don't need anymore. DKU Marketplace lives at its own site for now; single sign-on with DKU Life is on the roadmap."
     >
       <a
         href="https://dku-market.kimi.site/"

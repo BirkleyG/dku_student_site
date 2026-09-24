@@ -34,7 +34,8 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
         <ul className="space-y-1.5 text-sm">
           {items.map((e) => (
             <li key={e.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{format(new Date(e.startsAt), "MMM d, h:mm a")}</span> — {e.title}
+              <span className="text-ink/40">{format(new Date(e.startsAt), "MMM d, h:mm a")}</span>{" "}
+              {e.title}
             </li>
           ))}
         </ul>
@@ -43,7 +44,7 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
 
     case "SOCIAL": {
       const items = data.boardPosts.slice(0, n);
-      if (!items.length) return <Empty label="No posts yet — start the conversation." />;
+      if (!items.length) return <Empty label="No posts yet. Start the conversation." />;
       if (size === "SMALL") {
         return (
           <div>
@@ -56,7 +57,7 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
         <ul className="space-y-1.5 text-sm">
           {items.map((p) => (
             <li key={p.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{p.authorName}</span> — {p.title}
+              <span className="text-ink/40">{p.authorName}</span> {p.title}
             </li>
           ))}
         </ul>
@@ -78,7 +79,7 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
         <ul className="space-y-1.5 text-sm">
           {items.map((w) => (
             <li key={w.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{w.category}</span> — {w.title}
+              <span className="text-ink/40">{w.category}</span> {w.title}
             </li>
           ))}
         </ul>
@@ -118,7 +119,7 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
         <ul className="space-y-1.5 text-sm">
           {items.map((c) => (
             <li key={c.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{c.category}</span> — {c.name}
+              <span className="text-ink/40">{c.category}</span> {c.name}
             </li>
           ))}
         </ul>
@@ -135,7 +136,7 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
     case "MARKETPLACE":
       return (
         <p className="text-sm text-ink/60">
-          {size === "SMALL" ? "Buy & sell" : "Browse what students are selling — textbooks, furniture, and more."}
+          {size === "SMALL" ? "Buy & sell" : "Browse what students are selling: textbooks, furniture, and more."}
         </p>
       );
 

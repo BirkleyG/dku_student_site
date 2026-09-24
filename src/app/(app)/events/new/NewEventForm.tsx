@@ -103,7 +103,7 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
         </label>
       ) : (
         <p className="text-xs text-ink/40">
-          Need a recurring event? Email the site admin — recurring events currently need admin approval.
+          Need a recurring event? Email the site admin. Recurring events currently need admin approval.
         </p>
       )}
 

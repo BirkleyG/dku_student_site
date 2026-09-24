@@ -11,19 +11,19 @@ type Lang = "en" | "zh";
 
 const copy = {
   en: {
-    greeting: "Hi there! Welcome to DKU Life. Which language do you prefer?",
+    greeting: "Hey! Welcome to DKU Life. Which language do you prefer?",
     english: "English",
     chinese: "中文",
-    intro: "Welcome to DKU Life, I'd love to show you around. Are you a DKU student?",
+    intro: "Hey, welcome to DKU Life. Are you a DKU student?",
     yes: "Yes",
     no: "No",
     notStudent:
-      "No worries, I'll take you to the DKU dashboard. Feel free to look around and get some more information. Happy to answer questions if you ever have any.",
+      "No worries, I'll take you to the dashboard. Look around and see what's there. Come back and make an account once you're a student.",
     goToDashboard: "Take me there",
     askFirstName: "Great! What's your first name?",
     namePlaceholder: "Your first name",
     niceToMeet: (name: string) =>
-      `Nice to meet you ${name}. If you'd like, I can take you straight to the dashboard, otherwise, would love to get to know you a little more.`,
+      `Nice to meet you ${name}. Want me to take you straight to the dashboard, or should we keep going?`,
     dashboard: "Dashboard",
     continueBtn: "Continue",
     askNetId: "What is your netID? That'll let us make you an account.",
@@ -34,7 +34,7 @@ const copy = {
     giveFullName: "Give full name",
     askFullName: "What's your full name?",
     fullNamePlaceholder: "First Last",
-    askInviteCode: "We're in early beta, so it's invite-only right now — what's your invite code?",
+    askInviteCode: "We're in early beta, so it's invite-only right now. What's your invite code?",
     inviteCodePlaceholder: "e.g. K7M2Q9PX",
     askPassword: (name: string) => `Sounds good. Last question ${name}. Could you give me a secure password for next time you want to sign up?`,
     passwordPlaceholder: "At least 8 characters",
@@ -43,8 +43,8 @@ const copy = {
     submit: "↵",
     somethingWrong: "Something went wrong. Try again?",
     pwaIntro:
-      "One more thing — want DKU Life on your home screen? It opens instantly, fills the screen, and feels like a real app.",
-    pwaContinue: "Got it — take me to the dashboard",
+      "One more thing: want DKU Life on your home screen? It opens instantly and feels like a real app.",
+    pwaContinue: "Got it, take me to the dashboard",
   },
   zh: {
     greeting: "你好！欢迎来到 DKU Life。你更喜欢哪种语言？",
@@ -303,11 +303,7 @@ export function Welcome() {
       lang={lang === "zh" ? "zh-CN" : "en"}
       className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-white px-6"
     >
-      <BackgroundGlow />
-
       <div className="relative z-10 w-full max-w-xl">
-        <p className="mb-6 text-center text-xs uppercase tracking-[0.4em] text-gold-bright">Duke Kunshan University</p>
-
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {messages.map((m, i) => (
@@ -556,27 +552,5 @@ function TextInputRow({
         {submitLabel}
       </button>
     </motion.div>
-  );
-}
-
-function BackgroundGlow() {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      <motion.div
-        className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-sprout/40 blur-[120px]"
-        animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute -bottom-40 -right-20 h-[26rem] w-[26rem] rounded-full bg-gold/25 blur-[120px]"
-        animate={{ x: [0, -30, 0], y: [0, -20, 0] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute right-1/3 top-1/4 h-64 w-64 rounded-full bg-sprout-deep/20 blur-[100px]"
-        animate={{ opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </div>
   );
 }

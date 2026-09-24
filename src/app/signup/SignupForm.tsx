@@ -33,11 +33,11 @@ const steps: Step[] = [
   },
   {
     key: "inviteCode",
-    prompt: "We're in early beta, so it's invite-only for now — what's your invite code?",
+    prompt: "We're in early beta, so it's invite-only for now. What's your invite code?",
     placeholder: "e.g. K7M2Q9PX",
     type: "text",
   },
-  { key: "password", prompt: "Last thing — set a password.", placeholder: "At least 8 characters", type: "password" },
+  { key: "password", prompt: "Last thing: set a password.", placeholder: "At least 8 characters", type: "password" },
 ];
 
 type Answers = Partial<Record<StepKey, string>>;
@@ -157,7 +157,7 @@ export function SignupForm() {
         className="rounded-3xl border border-sprout-deep/30 bg-sprout/20 p-8 text-center"
       >
         <p className="font-display text-2xl text-sprout-deep">Welcome, {answers.firstName}.</p>
-        <p className="mt-2 text-ink/70">Your DKU Life account is ready — taking you home.</p>
+        <p className="mt-2 text-ink/70">Your DKU Life account is ready. Taking you home.</p>
       </motion.div>
     );
   }
@@ -168,7 +168,7 @@ export function SignupForm() {
         {transcript.map((step) => (
           <div key={step.key} className="space-y-2">
             <ChatBubble from="dku">{step.prompt}</ChatBubble>
-            <ChatBubble from="you">{displayValue(step.key) || "—"}</ChatBubble>
+            <ChatBubble from="you">{displayValue(step.key) || "–"}</ChatBubble>
           </div>
         ))}
       </div>
