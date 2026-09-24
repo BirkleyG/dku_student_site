@@ -73,6 +73,8 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   }, [from, to]);
 
   const visibleEvents = useMemo(() => events.filter((e) => !hidden.has(e.category)), [events, hidden]);
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(from, i)), [from]);
+  const dayViewDays = useMemo(() => [anchor], [anchor]);
 
   const persist = useCallback(
     (next: Set<EventCategory>) => {
@@ -180,7 +182,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
             <MonthGrid anchor={anchor} events={visibleEvents} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
           ) : view === "week" ? (
             <TimeGrid
-              days={Array.from({ length: 7 }, (_, i) => addDays(from, i))}
+              days={weekDays}
               events={visibleEvents}
               onDayHeaderClick={(day) => {
                 setAnchor(day);
@@ -188,7 +190,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
               }}
             />
           ) : (
-            <TimeGrid days={[anchor]} events={visibleEvents} />
+            <TimeGrid days={dayViewDays} events={visibleEvents} />
           )}
         </div>
 
