@@ -42,18 +42,6 @@ function LenisRouteResize() {
   return null;
 }
 
-/** Reduced-motion / full-bleed fallback: no Lenis instance exists, so the
- * page relies on native scroll — reset it the same way on every route change. */
-function ScrollToTopOnRouteChange() {
-  const pathname = usePathname();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
-}
-
 /**
  * The login modal (LoginModal.tsx) and the ☰ drawer (NavMenu.tsx) both lock
  * native scroll by setting `document.body.style.overflow = "hidden"` while
@@ -97,17 +85,13 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
 
   const disabled = reducedMotion || FULL_BLEED_ROUTES.includes(pathname ?? "");
 
-  if (disabled) {
-    return (
-      <>
-        <ScrollToTopOnRouteChange />
-        {children}
-      </>
-    );
-  }
-
+  // Always render the same tree. Swapping between a plain fragment and
+  // <ReactLenis> when `disabled` flips (e.g. navigating to /eats) remounted
+  // the entire app under it, which reset client state like the header's
+  // starred tabs. Lenis compares options by value and just rebuilds its own
+  // instance, so turning smoothing off here leaves children mounted.
   return (
-    <ReactLenis root options={{ lerp: 0.1, duration: 1.2 }}>
+    <ReactLenis root options={{ lerp: 0.1, duration: 1.2, smoothWheel: !disabled }}>
       <LenisRouteResize />
       <LenisBodyLockWatcher />
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { MAX_STARRED_NAV } from "@/lib/nav";
 
 const STORAGE_KEY = "dku-life:starred-nav";
@@ -66,31 +66,43 @@ export function useStarredNav(initialStarred: string[], isLoggedIn: boolean) {
 
   const [limitHit, setLimitHit] = useState(false);
 
-  function toggleStar(href: string) {
-    setStarred((prev) => {
-      const isStarred = prev.includes(href);
-      if (!isStarred && prev.length >= MAX_STARRED_NAV) {
-        setLimitHit(true);
-        setTimeout(() => setLimitHit(false), 2200);
-        return prev;
-      }
+  // Saves go out one at a time and only the newest value is sent next, so a
+  // slow earlier request can never land after (and overwrite) a later one.
+  const saving = useRef(false);
+  const queued = useRef<string[] | null>(null);
 
-      const next = isStarred ? prev.filter((h) => h !== href) : [...prev, href];
-
-      if (isLoggedIn) {
-        fetch("/api/user/nav-preferences", {
+  async function save(value: string[]) {
+    queued.current = value;
+    if (saving.current) return;
+    saving.current = true;
+    while (queued.current) {
+      const next = queued.current;
+      queued.current = null;
+      try {
+        await fetch("/api/user/nav-preferences", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ starredNav: next }),
-        }).catch(() => {
-          // best-effort; the header already reflects the optimistic update
         });
-      } else {
-        writeLocalStorage(next);
+      } catch {
+        // best-effort; the header already reflects the optimistic update
       }
+    }
+    saving.current = false;
+  }
 
-      return next;
-    });
+  function toggleStar(href: string) {
+    const isStarred = starred.includes(href);
+    if (!isStarred && starred.length >= MAX_STARRED_NAV) {
+      setLimitHit(true);
+      setTimeout(() => setLimitHit(false), 2200);
+      return;
+    }
+
+    const next = isStarred ? starred.filter((h) => h !== href) : [...starred, href];
+    setStarred(next);
+    if (isLoggedIn) save(next);
+    else writeLocalStorage(next);
   }
 
   return { starred, toggleStar, limitHit };

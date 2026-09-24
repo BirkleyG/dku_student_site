@@ -36,7 +36,7 @@ export const adminNavItem: NavItem = { href: "/admin", label: "Admin", icon: Shi
 export const DEFAULT_STARRED_NAV: string[] = ["/home", "/events", "/eats"];
 
 /** Header can't grow past this many starred tabs. */
-export const MAX_STARRED_NAV = 5;
+export const MAX_STARRED_NAV = 7;
 
 /** Allowlist check used by the nav-preferences API — `/admin` is only valid for admins. */
 export function isValidNavHref(href: string, isAdmin: boolean): boolean {
