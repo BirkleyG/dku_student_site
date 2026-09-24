@@ -11,7 +11,14 @@ const verifiedMessages: Record<string, string> = {
   expired: "That verification link expired. Log in and we'll send you a new one.",
 };
 
-export function LoginForm() {
+type Props = {
+  /** "modal" keeps the user on the current page instead of redirecting to /home. */
+  mode?: "page" | "modal";
+  /** Called right after a successful login when mode is "modal" (e.g. to close it). */
+  onSuccess?: () => void;
+};
+
+export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
   const router = useRouter();
   const params = useSearchParams();
   const verifiedNote = params.get("verified") ? verifiedMessages[params.get("verified")!] : null;
@@ -31,6 +38,10 @@ export function LoginForm() {
     setLoading(false);
     if (res?.error) {
       setError("Incorrect email or password.");
+      return;
+    }
+    if (mode === "modal") {
+      onSuccess?.();
       return;
     }
     router.push("/home");
