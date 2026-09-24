@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wisdomPostSchema, wisdomCategories } from "@/lib/wisdom-validation";
+import { awardPoints } from "@/lib/community-score";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
   const post = await prisma.wisdomPost.create({
     data: { title, category, location: location || null, body: text, authorId: user.id },
   });
+  await awardPoints(user.id, "WISDOM_POST");
 
   return NextResponse.json({ post }, { status: 201 });
 }

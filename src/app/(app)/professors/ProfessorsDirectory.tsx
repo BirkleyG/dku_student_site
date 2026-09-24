@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Star, ShieldCheck, Trash2 } from "lucide-react";
+import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
+import { Card } from "@/components/ui/Card";
+
+type ApiProfessor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  department: string;
+  verified: boolean;
+  addedById: string;
+  reviews: { gradingRating: number; difficultyRating: number; teachingRating: number }[];
+};
+
+function overallScore(p: ApiProfessor) {
+  if (!p.reviews.length) return null;
+  const avg = p.reviews.reduce((sum, r) => sum + r.gradingRating + r.difficultyRating + r.teachingRating, 0) / (p.reviews.length * 3);
+  return avg;
+}
+
+export function ProfessorsDirectory({
+  currentUserId,
+  isAdmin = false,
+}: {
+  currentUserId: string | null;
+  isAdmin?: boolean;
+}) {
+  const [professors, setProfessors] = useState<ApiProfessor[] | null>(null);
+  const [q, setQ] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+    const handle = setTimeout(() => {
+      fetch(`/api/professors${qs}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) setProfessors(data.professors ?? []);
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [q]);
+
+  const remove = async (id: string) => {
+    if (!window.confirm("Remove this professor?")) return;
+    const res = await fetch(`/api/professors/${id}`, { method: "DELETE" });
+    if (res.ok) setProfessors((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
+  };
+
+  return (
+    <div>
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search by name or department…"
+        className="focus-ring w-full max-w-md rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
+      />
+
+      {professors === null ? (
+        <p className="mt-10 text-sm text-ink/40">Loading professors…</p>
+      ) : professors.length === 0 ? (
+        <p className="mt-10 text-ink/50">No professors yet. Add the first one.</p>
+      ) : (
+        <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {professors.map((p) => {
+            const score = overallScore(p);
+            return (
+              <StaggerItem key={p.id}>
+                <Card className="flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="w-fit rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+                      {p.department}
+                    </span>
+                    {isAdmin || p.addedById === currentUserId ? (
+                      <button
+                        onClick={() => remove(p.id)}
+                        className="focus-ring text-ink/30 transition-colors hover:text-danger"
+                        aria-label="Remove professor"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+                  <Link href={`/professors/${p.id}`} className="focus-ring mt-3 block">
+                    <h3 className="flex items-center gap-1.5 font-display text-2xl">
+                      {p.firstName} {p.lastName}
+                      {p.verified ? <ShieldCheck className="h-4 w-4 text-gold-bright" aria-label="Verified" /> : null}
+                    </h3>
+                  </Link>
+                  <div className="mt-3 flex flex-1 items-end justify-between">
+                    {score !== null ? (
+                      <span className="flex items-center gap-1 text-sm text-ink/70">
+                        <Star className="h-4 w-4 fill-gold-bright text-gold-bright" /> {score.toFixed(1)} / 5
+                      </span>
+                    ) : (
+                      <span className="text-sm text-ink/40">No ratings yet</span>
+                    )}
+                    <span className="text-xs text-ink/40">
+                      {p.reviews.length} rating{p.reviews.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </Card>
+              </StaggerItem>
+            );
+          })}
+        </StaggerGroup>
+      )}
+    </div>
+  );
+}

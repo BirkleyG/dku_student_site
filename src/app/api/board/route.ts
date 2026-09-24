@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { boardPostSchema } from "@/lib/board-validation";
+import { awardPoints } from "@/lib/community-score";
 
 export async function GET() {
   const posts = await prisma.boardPost.findMany({
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
   const post = await prisma.boardPost.create({
     data: { title: parsed.data.title, body: parsed.data.body, authorId: user.id },
   });
+  await awardPoints(user.id, "BOARD_POST");
 
   return NextResponse.json({ post }, { status: 201 });
 }

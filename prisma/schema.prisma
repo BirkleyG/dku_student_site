@@ -25,6 +25,8 @@ enum AdminScope {
   BOARD
   EATS
   SLB
+  COURSES
+  PROFESSORS
 }
 
 model User {
@@ -38,6 +40,7 @@ model User {
   adminScopes   AdminScope[] @default([])
   emailVerified DateTime?
   image         String?
+  communityScore Int      @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -55,6 +58,11 @@ model User {
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
+  coursesSubmitted    Course[]            @relation("CourseSubmitter")
+  professorsSubmitted Professor[]         @relation("ProfessorSubmitter")
+  courseResources     CourseResource[]    @relation("CourseResourceAuthor")
+  professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
+  scoreEvents         ScoreEvent[]
 
   @@map("users")
 }
@@ -259,4 +267,112 @@ model Club {
   createdAt     DateTime     @default(now())
 
   @@map("clubs")
+}
+
+model Professor {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  department  String
+  email       String?
+  verified    Boolean  @default(false)
+  addedById   String
+  addedBy     User     @relation("ProfessorSubmitter", fields: [addedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  offerings CourseOffering[]
+  reviews   ProfessorReview[]
+
+  @@map("professors")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  title       String
+  department  String
+  description String?
+  createdById String
+  createdBy   User     @relation("CourseSubmitter", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  offerings CourseOffering[]
+  resources CourseResource[]
+  reviews   ProfessorReview[]
+
+  @@map("courses")
+}
+
+model CourseOffering {
+  id          String    @id @default(cuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  professorId String
+  professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  semester    String
+
+  @@unique([courseId, professorId, semester])
+  @@map("course_offerings")
+}
+
+enum CourseResourceType {
+  SYLLABUS
+  NOTES
+  EXAM
+  TIP
+}
+
+model CourseResource {
+  id        String             @id @default(cuid())
+  courseId  String
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  type      CourseResourceType
+  semester  String?
+  title     String
+  body      String?
+  fileUrl   String?
+  authorId  String
+  author    User               @relation("CourseResourceAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+
+  @@map("course_resources")
+}
+
+model ProfessorReview {
+  id               String    @id @default(cuid())
+  professorId      String
+  professor        Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  courseId         String?
+  course           Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  authorId         String
+  author           User      @relation("ProfessorReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  gradingRating    Int
+  difficultyRating Int
+  teachingRating   Int
+  comment          String?
+  createdAt        DateTime  @default(now())
+
+  @@unique([professorId, authorId, courseId])
+  @@map("professor_reviews")
+}
+
+enum ScoreReason {
+  WISDOM_POST
+  BOARD_POST
+  BOARD_COMMENT
+  PROFESSOR_REVIEW
+  COURSE_RESOURCE
+  COURSE_ADDED
+  PROFESSOR_ADDED
+}
+
+model ScoreEvent {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    ScoreReason
+  points    Int
+  createdAt DateTime    @default(now())
+
+  @@map("score_events")
 }

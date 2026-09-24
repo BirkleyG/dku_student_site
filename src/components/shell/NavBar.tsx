@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { Award } from "lucide-react";
 import { navItems, adminNavItem } from "@/lib/nav";
 
 type Props = {
   userLabel: string | null;
   isAdmin?: boolean;
+  communityScore?: number | null;
 };
 
-export function NavBar({ userLabel, isAdmin }: Props) {
+export function NavBar({ userLabel, isAdmin, communityScore }: Props) {
   const pathname = usePathname();
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
@@ -44,7 +46,17 @@ export function NavBar({ userLabel, isAdmin }: Props) {
         <div className="flex items-center gap-3">
           {userLabel ? (
             <>
-              <span className="hidden text-sm text-ink/60 sm:inline">{userLabel}</span>
+              <Link
+                href="/profile"
+                className="focus-ring hidden items-center gap-2 text-sm text-ink/60 transition-colors hover:text-ink sm:flex"
+              >
+                {userLabel}
+                {typeof communityScore === "number" ? (
+                  <span className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold-bright">
+                    <Award className="h-3 w-3" /> {communityScore}
+                  </span>
+                ) : null}
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="focus-ring rounded-full border border-ink/20 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink/75 transition-colors hover:border-ink/45 hover:text-ink"

@@ -7,6 +7,8 @@ import {
   Compass,
   Users2,
   ShieldCheck,
+  BookOpen,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +26,8 @@ export const navItems: NavItem[] = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/wisdom", label: "Wisdom", icon: Compass },
   { href: "/clubs", label: "Clubs", icon: Users2 },
+  { href: "/courses", label: "Courses", icon: BookOpen },
+  { href: "/professors", label: "Professors", icon: GraduationCap },
 ];
 
 export const adminNavItem: NavItem = { href: "/admin", label: "Admin", icon: ShieldCheck };
