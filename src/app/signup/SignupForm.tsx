@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
+import { useRequestPushPrompt } from "@/components/notifications/PushPromptProvider";
 
 type StepKey = "firstName" | "lastName" | "email" | "netId" | "inviteCode" | "password";
 
@@ -44,6 +45,7 @@ type Answers = Partial<Record<StepKey, string>>;
 
 export function SignupForm() {
   const router = useRouter();
+  const requestPushPrompt = useRequestPushPrompt();
   const [answers, setAnswers] = useState<Answers>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [value, setValue] = useState("");
@@ -132,6 +134,12 @@ export function SignupForm() {
     }
 
     setStatus("done");
+    // Skippable and doesn't block anything — the account is already created
+    // and we're navigating home regardless; this just opportunistically asks
+    // while we have the person's attention right after a "yes" moment. The
+    // prompt itself lives at the app root (PushPromptProvider), so it
+    // survives the redirect below instead of unmounting with this form.
+    requestPushPrompt("signup");
     setTimeout(() => {
       router.push("/home");
       router.refresh();
