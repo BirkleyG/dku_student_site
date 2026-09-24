@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
+import { ReadingProgress } from "@/components/motion/ReadingProgress";
 import { DeleteButton } from "@/components/shell/DeleteButton";
 
 export default async function NewsArticlePage({ params }: PageProps<"/news/[id]">) {
@@ -23,6 +24,7 @@ export default async function NewsArticlePage({ params }: PageProps<"/news/[id]"
 
   return (
     <div className="mx-auto max-w-2xl">
+      <ReadingProgress />
       <Reveal className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl">{post.title}</h1>

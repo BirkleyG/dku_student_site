@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { format, isSameDay, isToday, setHours } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { layoutDayEvents } from "./calendar-layout";
 import type { ApiEvent } from "./calendar-types";
 
@@ -84,7 +85,10 @@ export function TimeGrid({ days, events, onDayHeaderClick }: Props) {
                         color: meta.color,
                       }}
                     >
-                      <span className="block truncate font-medium">{event.title}</span>
+                      <span className="flex items-center gap-1 truncate font-medium">
+                        <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
+                        {event.title}
+                      </span>
                       <span className="block truncate opacity-80">{format(new Date(event.startsAt), "h:mm a")}</span>
                     </Link>
                   );

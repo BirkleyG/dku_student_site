@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Menu } from "lucide-react";
 import { navItems, adminNavItem } from "@/lib/nav";
 import { useStarredNav } from "@/lib/useStarredNav";
 import { NavMenu } from "./NavMenu";
+
+const SCROLL_THRESHOLD = 24;
 
 type Props = {
   userLabel: string | null;
@@ -24,6 +27,15 @@ export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
   const headerRef = useRef<HTMLElement>(null);
 
   const starredItems = items.filter((item) => starred.includes(item.href));
+
+  // Shrinks and frosts once the page has scrolled past a small threshold —
+  // transform/opacity/backdrop-blur only, so it stays cheap. The ResizeObserver
+  // below re-measures --header-h whenever this changes the header's height.
+  const [scrolled, setScrolled] = useState(false);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setScrolled(latest > SCROLL_THRESHOLD);
+  });
 
   // Expose the header's rendered height as --header-h so other components (e.g. the
   // full-screen Eats layout) can size themselves against it.
@@ -43,18 +55,28 @@ export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
   }, []);
 
   return (
-    <header
+    <motion.header
       ref={headerRef}
-      className="sticky top-0 z-30 border-b border-ink/10 bg-white/85 backdrop-blur-md"
+      className="sticky top-0 z-30 border-b border-ink/10 backdrop-blur-md"
+      animate={{ backgroundColor: scrolled ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)" }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <motion.div
+        className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 sm:px-6"
+        animate={{ paddingTop: scrolled ? 10 : 16, paddingBottom: scrolled ? 10 : 16 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      >
         <Link
           href="/home"
           className="focus-ring flex shrink-0 items-center gap-2.5 font-display text-2xl tracking-tight text-ink"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-[11px] font-semibold tracking-wide text-white">
+          <motion.span
+            className="grid h-8 w-8 place-items-center rounded-full bg-ink text-[11px] font-semibold tracking-wide text-white"
+            animate={{ scale: scrolled ? 0.85 : 1 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
             DK
-          </span>
+          </motion.span>
           <span className="hidden sm:inline">
             DKU <em className="italic text-gold-bright">Life</em>
           </span>
@@ -101,7 +123,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
             <Menu className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       <NavMenu
         open={menuOpen}
@@ -113,6 +135,6 @@ export function NavBar({ userLabel, isAdmin, initialStarred }: Props) {
         userLabel={userLabel}
         triggerRef={menuButtonRef}
       />
-    </header>
+    </motion.header>
   );
 }
