@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useLenis } from "lenis/react";
 import {
   addDays,
   addMonths,
   addWeeks,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
   isSameDay,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
@@ -57,8 +60,20 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   const { from, to } = useMemo(() => {
     if (view === "month") return { from: startOfWeek(startOfMonth(anchor)), to: endOfWeek(endOfMonth(anchor)) };
     if (view === "week") return { from: startOfWeek(anchor), to: endOfWeek(anchor) };
-    return { from: anchor, to: addDays(anchor, 1) };
+    // Whole calendar day, not "now until this time tomorrow": `anchor` carries
+    // the current time after Today, which used to hide everything earlier today.
+    return { from: startOfDay(anchor), to: endOfDay(anchor) };
   }, [view, anchor]);
+
+  // Day/Week/Month is client state, not a route change, so Lenis (see
+  // SmoothScroll.tsx) never re-measures on its own when switching between
+  // them — it can be left clamped to a shorter/taller view's stale scroll
+  // limit. Resize on every view/month change so it always reflects the
+  // page's real current height.
+  const lenis = useLenis();
+  useEffect(() => {
+    lenis?.resize();
+  }, [view, anchor, lenis]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +88,8 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   }, [from, to]);
 
   const visibleEvents = useMemo(() => events.filter((e) => !hidden.has(e.category)), [events, hidden]);
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(from, i)), [from]);
+  const dayViewDays = useMemo(() => [anchor], [anchor]);
 
   const persist = useCallback(
     (next: Set<EventCategory>) => {
@@ -116,9 +133,24 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   };
 
   const goToday = () => {
-    setAnchor(new Date());
-    setSelectedDay(null);
+    const today = new Date();
+    setAnchor(today);
+    // In Month view, also open today's agenda so "Today" shows today's events.
+    setSelectedDay(view === "month" ? today : null);
   };
+
+  // Bring the day's agenda into view once it has expanded below the grid.
+  useEffect(() => {
+    if (!selectedDay) return;
+    const timer = window.setTimeout(() => {
+      const agenda = document.getElementById("day-agenda");
+      if (!agenda) return;
+      const headerHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 0;
+      if (lenis) lenis.scrollTo(agenda, { offset: -(headerHeight + 16) });
+      else agenda.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [selectedDay, lenis]);
 
   const goPrev = () => {
     setSelectedDay(null);
@@ -180,7 +212,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
             <MonthGrid anchor={anchor} events={visibleEvents} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
           ) : view === "week" ? (
             <TimeGrid
-              days={Array.from({ length: 7 }, (_, i) => addDays(from, i))}
+              days={weekDays}
               events={visibleEvents}
               onDayHeaderClick={(day) => {
                 setAnchor(day);
@@ -188,7 +220,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
               }}
             />
           ) : (
-            <TimeGrid days={[anchor]} events={visibleEvents} />
+            <TimeGrid days={dayViewDays} events={visibleEvents} />
           )}
         </div>
 

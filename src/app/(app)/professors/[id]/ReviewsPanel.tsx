@@ -173,7 +173,7 @@ export function ReviewsPanel({
           </div>
         )
       ) : (
-        <p className="mt-6 text-sm text-ink/40">Log in with a verified DKU account to rate.</p>
+        <p className="mt-6 text-sm text-ink/40">Log in to rate.</p>
       )}
     </div>
   );

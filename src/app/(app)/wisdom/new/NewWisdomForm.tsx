@@ -4,39 +4,45 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { wisdomPostSchema, wisdomCategories, wisdomCategoryLabels, type WisdomPostInput } from "@/lib/wisdom-validation";
+import { wisdomTopicSchema, wisdomCategories, wisdomCategoryLabels, type WisdomTopicInput } from "@/lib/wisdom-validation";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
 
 export function NewWisdomForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [requireLocation, setRequireLocation] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<WisdomPostInput>({ resolver: zodResolver(wisdomPostSchema), defaultValues: { category: "FOOD" } });
+  } = useForm<WisdomTopicInput>({
+    resolver: zodResolver(wisdomTopicSchema),
+    defaultValues: { category: "FOOD", requireLocation: false },
+  });
 
-  const onSubmit = async (data: WisdomPostInput) => {
+  const onSubmit = async (data: WisdomTopicInput) => {
     setServerError(null);
     const res = await fetch("/api/wisdom", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, requireLocation }),
     });
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't post that.");
+      setServerError(body.error ?? "Couldn't start that topic.");
       return;
     }
 
-    router.push("/wisdom");
+    const { topic } = await res.json();
+    router.push(`/wisdom/${topic.id}`);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <Field label="Title" placeholder="Best dumplings near East Campus" {...register("title")} error={errors.title?.message} />
+      <Field label="Topic" placeholder="Best Western food near campus" {...register("title")} error={errors.title?.message} />
 
       <label className="block">
         <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Category</span>
@@ -52,27 +58,29 @@ export function NewWisdomForm() {
         </select>
       </label>
 
-      <Field
-        label="Location (optional)"
-        placeholder="Kunshan, Suzhou, Shanghai…"
-        {...register("location")}
-        error={errors.location?.message}
-      />
-
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">The recommendation</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Context (optional)</span>
         <textarea
-          rows={5}
+          rows={3}
+          placeholder="What counts as an answer? Any ground rules?"
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-          {...register("body")}
+          {...register("description")}
         />
-        {errors.body ? <span className="mt-1 block text-xs text-danger">{errors.body.message}</span> : null}
+        {errors.description ? <span className="mt-1 block text-xs text-danger">{errors.description.message}</span> : null}
       </label>
+
+      <div className="flex items-center justify-between rounded-xl border border-ink/15 bg-paper-dim px-4 py-3">
+        <div>
+          <p className="text-sm text-ink">Require a location</p>
+          <p className="text-xs text-ink/50">Recommendations must include an address or AMap link.</p>
+        </div>
+        <Switch checked={requireLocation} onChange={setRequireLocation} label="Require a location" />
+      </div>
 
       {serverError ? <p className="text-sm text-danger">{serverError}</p> : null}
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Posting…" : "Share it"}
+        {isSubmitting ? "Starting…" : "Start the topic"}
       </Button>
     </form>
   );

@@ -11,9 +11,6 @@ export async function POST(request: Request, { params }: Params) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Log in to share a resource" }, { status: 401 });
   }
-  if (!session.user.verified) {
-    return NextResponse.json({ error: "Verify your DKU email before sharing" }, { status: 403 });
-  }
 
   const { id: courseId } = await params;
   const body = await request.json().catch(() => null);

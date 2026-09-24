@@ -33,3 +33,20 @@ export const signupSchema = z.object({
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
+
+/** Trims and lowercases a netID so comparisons are consistent everywhere it's used. */
+export function normalizeNetId(netId: string): string {
+  return netId.trim().toLowerCase();
+}
+
+/**
+ * True when `email` is exactly `<netId>@<an allowed student domain>`, so an
+ * invite code issued for one netID can't be claimed with someone else's
+ * email address. Case-insensitive and trims both sides first.
+ */
+export function emailMatchesNetId(email: string, netId: string): boolean {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedNetId = normalizeNetId(netId);
+  if (!normalizedNetId) return false;
+  return studentEmailDomains.some((domain) => normalizedEmail === `${normalizedNetId}@${domain}`);
+}

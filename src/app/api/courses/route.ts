@@ -33,9 +33,6 @@ export async function POST(request: Request) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Log in to add a course" }, { status: 401 });
   }
-  if (!session.user.verified) {
-    return NextResponse.json({ error: "Verify your DKU email before adding a course" }, { status: 403 });
-  }
 
   const body = await request.json().catch(() => null);
   const parsed = courseSchema.safeParse(body);

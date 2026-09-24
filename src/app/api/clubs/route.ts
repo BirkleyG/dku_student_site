@@ -24,9 +24,6 @@ export async function POST(request: Request) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Log in to submit a club" }, { status: 401 });
   }
-  if (!session.user.verified) {
-    return NextResponse.json({ error: "Verify your DKU email before submitting a club" }, { status: 403 });
-  }
 
   const body = await request.json().catch(() => null);
   const parsed = clubSchema.safeParse(body);

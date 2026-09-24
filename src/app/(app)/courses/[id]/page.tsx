@@ -71,7 +71,7 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
         <ResourcesPanel
           courseId={course.id}
           currentUserId={currentUser?.id ?? null}
-          canManage={Boolean(session?.user?.verified)}
+          canManage={Boolean(session?.user)}
           isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
           initialResources={course.resources.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))}
         />

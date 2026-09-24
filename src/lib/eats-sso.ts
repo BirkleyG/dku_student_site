@@ -5,7 +5,13 @@ import { getAuth } from "firebase-admin/auth";
 // ever needs its own separate Firebase project down the line.
 let eatsApp: App | null = null;
 
-function getEatsAdminApp(): App {
+export function isEatsConfigured(): boolean {
+  return Boolean(
+    process.env.EATS_FIREBASE_PROJECT_ID && process.env.EATS_FIREBASE_CLIENT_EMAIL && process.env.EATS_FIREBASE_PRIVATE_KEY,
+  );
+}
+
+export function getEatsAdminApp(): App {
   const existing = eatsApp ?? getApps().find((a) => a.name === "eats");
   if (existing) {
     eatsApp = existing;

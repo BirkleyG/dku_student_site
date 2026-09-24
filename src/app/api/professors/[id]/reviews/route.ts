@@ -11,9 +11,6 @@ export async function POST(request: Request, { params }: Params) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Log in to rate a professor" }, { status: 401 });
   }
-  if (!session.user.verified) {
-    return NextResponse.json({ error: "Verify your DKU email before rating" }, { status: 403 });
-  }
 
   const { id: professorId } = await params;
   const body = await request.json().catch(() => null);

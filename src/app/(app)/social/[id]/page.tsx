@@ -37,10 +37,10 @@ export default async function BoardPostPage({ params }: PageProps<"/social/[id]"
     <div className="mx-auto max-w-2xl">
       <Reveal className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
+          <h1 className="font-display text-4xl">{post.title}</h1>
+          <p className="mt-2 text-sm text-ink/50">
             {post.author.firstName} {post.author.lastName} · {format(post.createdAt, "MMM d, h:mm a")}
           </p>
-          <h1 className="mt-2 font-display text-4xl">{post.title}</h1>
         </div>
         {canDelete ? <DeleteButton endpoint={`/api/board/${post.id}`} redirectTo="/social" /> : null}
       </Reveal>
@@ -53,7 +53,7 @@ export default async function BoardPostPage({ params }: PageProps<"/social/[id]"
         <CommentThread
           postId={post.id}
           initialComments={post.comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))}
-          canComment={Boolean(session?.user?.verified)}
+          canComment={Boolean(session?.user)}
         />
       </Reveal>
     </div>

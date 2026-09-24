@@ -63,7 +63,7 @@ export function UsersPanel({ initialUsers, currentUserId }: { initialUsers: Admi
                   </span>
                   <span className="block text-xs text-ink/45">{user.email}</span>
                 </td>
-                <td className="py-2.5 pr-4 text-ink/70">{user.netId ?? "—"}</td>
+                <td className="py-2.5 pr-4 text-ink/70">{user.netId ?? "–"}</td>
                 <td className="py-2.5 pr-4">
                   <input
                     type="checkbox"

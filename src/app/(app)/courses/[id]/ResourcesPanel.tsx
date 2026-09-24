@@ -174,7 +174,7 @@ export function ResourcesPanel({
           </Button>
         </div>
       ) : (
-        <p className="mt-6 text-sm text-ink/40">Log in with a verified DKU account to share resources.</p>
+        <p className="mt-6 text-sm text-ink/40">Log in to share resources.</p>
       )}
     </div>
   );

@@ -18,6 +18,9 @@
 
   --background: var(--color-canvas);
   --foreground: var(--color-ink);
+
+  /* Fallback until NavBar's ResizeObserver measures the real header. */
+  --header-h: 73px;
 }
 
 @theme inline {
@@ -49,18 +52,6 @@ body {
   color: var(--color-canvas);
 }
 
-/* subtle paper grain so flat white fields feel tactile, not generic */
-.grain::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 40;
-  opacity: 0.025;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-}
-
 /* editorial underline sweep for nav-style links */
 .link-sweep {
   position: relative;
@@ -90,13 +81,16 @@ body {
   border-radius: 4px;
 }
 
-/* iOS-style "jiggle mode" for widgets in edit state */
+/* iOS-style "jiggle mode" for widgets in edit state — subtle, with each
+   tile's start staggered via --jiggle-delay so the grid doesn't wiggle
+   in lockstep. */
 @keyframes jiggle {
-  0%, 100% { transform: rotate(-0.6deg); }
-  50% { transform: rotate(0.6deg); }
+  0%, 100% { transform: rotate(-0.3deg); }
+  50% { transform: rotate(0.3deg); }
 }
 .animate-jiggle {
-  animation: jiggle 0.22s ease-in-out infinite;
+  animation: jiggle 0.32s ease-in-out infinite;
+  animation-delay: var(--jiggle-delay, 0ms);
   animation-play-state: paused;
 }
 @media (prefers-reduced-motion: no-preference) {

@@ -70,7 +70,7 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
           courses={courses.map((c) => ({ id: c.id, code: c.code, title: c.title }))}
           currentUserId={currentUser?.id ?? null}
           isAdmin={currentUser ? hasScope(currentUser, "PROFESSORS") : false}
-          canReview={Boolean(session?.user?.verified)}
+          canReview={Boolean(session?.user)}
           initialReviews={professor.reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))}
         />
       </Reveal>
