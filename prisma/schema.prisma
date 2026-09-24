@@ -58,6 +58,7 @@ model User {
   wisdomVotes           WisdomVote[]
   newsPosts          NewsPost[]           @relation("NewsAuthor")
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
+  clubMemberships    ClubMembership[]     @relation("ClubMember")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?          @relation("InviteCodeRedeemer")
   coursesSubmitted    Course[]            @relation("CourseSubmitter")
@@ -268,29 +269,92 @@ model NewsletterSignup {
   @@map("newsletter_signups")
 }
 
+// CLUB is a student-run interest group; ORGANIZATION covers non-club bodies
+// (e.g. the Athletics department itself, hosting varsity teams and rec clubs).
+enum GroupType {
+  CLUB
+  ORGANIZATION
+}
+
 enum ClubCategory {
   ACADEMIC
   ARTS
-  SPORTS
   CULTURAL
   SERVICE
   SOCIAL
+  PROFESSIONAL
+  ATHLETIC
   OTHER
 }
 
+// Only meaningful when category is ATHLETIC — distinguishes a varsity team
+// from a recreational sports club.
+enum AthleticKind {
+  VARSITY_TEAM
+  SPORTS_CLUB
+}
+
+enum ContactMethod {
+  EMAIL
+  WECHAT
+  PHONE
+  OTHER
+}
+
+enum ClubMemberRole {
+  MEMBER
+  MANAGER
+}
+
 model Club {
-  id            String       @id @default(cuid())
+  id            String        @id @default(cuid())
+  type          GroupType     @default(CLUB)
   name          String
   category      ClubCategory
+  athleticKind  AthleticKind?
+  sportName     String?
   description   String
-  contact       String?
+  contactMethod ContactMethod @default(EMAIL)
+  contactValue  String?
+  contactQrUrl  String?
+  website       String?
   logoUrl       String?
-  approved      Boolean      @default(true)
+  openJoin      Boolean       @default(true)
+  approved      Boolean       @default(true)
   submittedById String
-  submittedBy   User         @relation("ClubSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
-  createdAt     DateTime     @default(now())
+  submittedBy   User          @relation("ClubSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  officers ClubOfficer[]
+  members  ClubMembership[]
 
   @@map("clubs")
+}
+
+model ClubOfficer {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name      String
+  title     String
+  contact   String?
+  createdAt DateTime @default(now())
+
+  @@map("club_officers")
+}
+
+model ClubMembership {
+  id       String         @id @default(cuid())
+  clubId   String
+  club     Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User           @relation("ClubMember", fields: [userId], references: [id], onDelete: Cascade)
+  role     ClubMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  @@unique([clubId, userId])
+  @@map("club_memberships")
 }
 
 model Professor {

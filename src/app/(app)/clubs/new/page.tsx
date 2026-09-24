@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Reveal } from "@/components/motion/Reveal";
 import { GuidelinesNote } from "@/components/shell/GuidelinesNote";
-import { NewClubForm } from "./NewClubForm";
+import { ClubForm } from "../ClubForm";
 
 export default async function NewClubPage() {
   const session = await auth();
@@ -15,7 +15,7 @@ export default async function NewClubPage() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">
-        <NewClubForm />
+        <ClubForm mode="create" />
         <GuidelinesNote />
       </Reveal>
     </div>
