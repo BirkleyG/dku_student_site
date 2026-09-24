@@ -1,9 +1,10 @@
 import { format } from "date-fns";
 import type { WidgetApp, WidgetSize } from "@/lib/widgets";
 import { sizeSpec } from "@/lib/widgets";
+import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 
 export type WidgetData = {
-  events: { id: string; title: string; startsAt: string; location: string }[];
+  events: { id: string; title: string; startsAt: string; endsAt: string; location: string }[];
   boardPosts: { id: string; title: string; authorName: string; createdAt: string }[];
   wisdomPosts: { id: string; title: string; category: string; createdAt: string }[];
   newsPosts: { id: string; title: string; summary: string; publishedAt: string }[];
@@ -24,7 +25,10 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
       if (size === "SMALL") {
         return (
           <div>
-            <p className="text-xs text-ink/40">Up next</p>
+            <p className="flex items-center gap-1.5 text-xs text-ink/40">
+              <HappeningNowDot startsAt={items[0].startsAt} endsAt={items[0].endsAt} />
+              Up next
+            </p>
             <p className="mt-0.5 truncate text-sm font-medium text-ink">{items[0].title}</p>
             <p className="text-xs text-ink/50">{format(new Date(items[0].startsAt), "MMM d, h:mm a")}</p>
           </div>
@@ -33,8 +37,11 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
       return (
         <ul className="space-y-1.5 text-sm">
           {items.map((e) => (
-            <li key={e.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{format(new Date(e.startsAt), "MMM d, h:mm a")}</span> — {e.title}
+            <li key={e.id} className="flex items-center gap-1.5 truncate text-ink/75">
+              <HappeningNowDot startsAt={e.startsAt} endsAt={e.endsAt} />
+              <span className="truncate">
+                <span className="text-ink/40">{format(new Date(e.startsAt), "MMM d, h:mm a")}</span> — {e.title}
+              </span>
             </li>
           ))}
         </ul>

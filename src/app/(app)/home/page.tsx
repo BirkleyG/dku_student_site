@@ -55,7 +55,13 @@ export default async function HomePage() {
   ]);
 
   const data: WidgetData = {
-    events: events.map((e) => ({ id: e.id, title: e.title, startsAt: e.startsAt.toISOString(), location: e.location })),
+    events: events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startsAt: e.startsAt.toISOString(),
+      endsAt: e.endsAt.toISOString(),
+      location: e.location,
+    })),
     boardPosts: boardPosts.map((p) => ({
       id: p.id,
       title: p.title,
