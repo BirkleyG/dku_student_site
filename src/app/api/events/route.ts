@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventSchema } from "@/lib/event-validation";
+import { broadcastPush } from "@/lib/push";
+import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -58,6 +60,23 @@ export async function POST(request: Request) {
       category,
       hostId: user.id,
     },
+  });
+
+  // Notify subscribed users after the response goes out — a push failure or
+  // slow push service should never delay or break event creation. `after()`
+  // still runs to completion (including our own retry/backoff) even though
+  // the response has already been sent.
+  after(async () => {
+    const categoryLabel = EVENT_CATEGORY_MAP[event.category]?.label ?? "Events";
+    await broadcastPush(
+      {
+        category: "EVENTS",
+        title: `New event: ${event.title}`,
+        body: `${categoryLabel} · ${event.location}`,
+        url: `/events/${event.id}`,
+      },
+      { excludeUserId: user.id },
+    );
   });
 
   return NextResponse.json({ event }, { status: 201 });

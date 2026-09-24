@@ -29,6 +29,23 @@ enum AdminScope {
   PROFESSORS
 }
 
+// Coordinate this with the "[Notifications] Per-category notification
+// preferences in Settings" card — these are the categories a user will be
+// able to opt in/out of. This card ships a "send everything" default;
+// per-category filtering happens on top of PushSubscription in that card.
+enum NotificationCategory {
+  EVENTS
+  POSTS
+  RECOMMENDATIONS
+  ORDERS
+}
+
+enum PushDeliveryStatus {
+  SENT
+  FAILED
+  PRUNED
+}
+
 model User {
   id            String    @id @default(cuid())
   netId         String?   @unique
@@ -67,6 +84,8 @@ model User {
   professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
   scoreEvents         ScoreEvent[]
   uploads             Upload[]
+  pushSubscriptions   PushSubscription[]
+  pushDeliveries      PushDelivery[]
   slbMembership       SlbMember?
   slbAboutEdits       SlbAbout[]
   slbAnnouncements    SlbAnnouncement[]
@@ -562,4 +581,48 @@ model SlbInitiativeVote {
 
   @@unique([initiativeId, userId])
   @@map("slb_initiative_votes")
+}
+
+// One row per browser/device push subscription (a user may have several —
+// phone, laptop, etc). endpoint is the push service URL PushManager.subscribe()
+// returns; it's globally unique per subscription.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  deliveries PushDelivery[]
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// Delivery record for a single push send to a single subscription, used to
+// drive retry-with-backoff and to give an auditable trail of what was sent
+// and why a send failed. Not a full job queue (see PR notes) — attempts
+// happen inline (with backoff) during the triggering request via
+// `next/server`'s `after()`, and this table lets a follow-up sweep retry
+// anything left FAILED.
+model PushDelivery {
+  id             String                @id @default(cuid())
+  category       NotificationCategory
+  title          String
+  body           String
+  url            String?
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   PushSubscription?     @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  status         PushDeliveryStatus
+  attempts       Int                   @default(1)
+  lastError      String?
+  createdAt      DateTime              @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@map("push_deliveries")
 }
