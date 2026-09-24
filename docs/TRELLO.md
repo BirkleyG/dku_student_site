@@ -11,7 +11,7 @@ Use the Trello MCP tools (`mcp__Trello__*`) to read and update it.
 | Templates | The "How this board works" guide and the task template. Never work these cards. |
 | To Do | Ready to pick up. |
 | Working | An agent is actively on it. |
-| Completed | Merged or PR opened and done. |
+| Completed | Done and merged to `main`. |
 | Stuck | Blocked. The latest comment says why. |
 
 ## Labels = job type
@@ -51,3 +51,7 @@ Each card's description holds the full instructions for that task: Goal, Current
 3. Check **Conflicts with**. Don't edit files another card in Working owns.
 4. When you finish, comment with the PR link and a one-line summary. Update the `Branch:` and `PR:` lines, then move the card to **Completed**.
 5. If you're blocked, move the card to **Stuck** and comment with exactly what's needed.
+
+## Merging
+
+Birkley's standing rule: **all finished work gets merged into `main`.** Sub-agents push their own `claude/...` branch and don't merge. The lead session merges each finished branch into `main`, resolves conflicts, runs `npm run lint`, `npx tsc --noEmit`, and `npx next build`, then pushes `main` and comments the merge commit on the card.
