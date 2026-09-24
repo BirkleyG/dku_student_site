@@ -75,6 +75,7 @@ model User {
   slbInitiatives      SlbInitiative[]
   slbBackings         SlbInitiativeBacker[]
   slbInitiativeVotes  SlbInitiativeVote[]
+  notificationPreferences NotificationPreference[]
 
   @@map("users")
 }
@@ -562,4 +563,36 @@ model SlbInitiativeVote {
 
   @@unique([initiativeId, userId])
   @@map("slb_initiative_votes")
+}
+
+// Push notification categories a user can opt in/out of individually.
+//
+// NOTE for reconciliation: this enum is defined independently of the
+// "[Notifications] Push notification infrastructure & delivery" card, which
+// was still being built on a sibling branch (claude/push-notifications-infra)
+// when this was written and wasn't merged into this worktree yet. These four
+// names (EVENTS, POSTS, RECOMMENDATIONS, ORDERS) match the categories named
+// in this card's own Details section. When merging both branches, rename/
+// reuse the infra branch's category enum here instead if it differs.
+enum NotificationCategory {
+  EVENTS
+  POSTS
+  RECOMMENDATIONS
+  ORDERS
+}
+
+// Per-user, per-category push notification preference. Opt-out model: a
+// missing row for a (userId, category) pair means "enabled" — see
+// src/lib/notification-preferences.ts for the default-on read helper.
+model NotificationPreference {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  NotificationCategory
+  enabled   Boolean              @default(true)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@unique([userId, category])
+  @@map("notification_preferences")
 }
