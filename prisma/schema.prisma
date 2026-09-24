@@ -139,30 +139,26 @@ model Rsvp {
   @@map("rsvps")
 }
 
-enum WidgetType {
-  EVENTS
-  DKU_EATS
-  SOCIAL
-  NEWS
-  WISDOM
-  CLUBS
-  MARKETPLACE
-  SLB
-}
-
-enum WidgetSize {
-  SMALL
-  MEDIUM
-  LARGE
+enum WidgetKind {
+  EVENTS_TALLY
+  EVENTS_AGENDA
+  EATS_OPEN_COUNT
+  EATS_FAVORITE
+  EATS_ORDER_TRACKER
+  EATS_ACTIVITY
+  BOARD_LATEST
+  BOARD_RECENT
+  BOARD_TRACKED_POST
 }
 
 model DashboardWidget {
-  id       String     @id @default(cuid())
-  userId   String
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type     WidgetType
-  size     WidgetSize @default(MEDIUM)
-  position Int        @default(0)
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      WidgetKind
+  config    Json?
+  position  Int        @default(0)
+  createdAt DateTime   @default(now())
 
   @@map("dashboard_widgets")
 }

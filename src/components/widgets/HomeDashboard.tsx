@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Check } from "lucide-react";
 import {
   DndContext,
+  DragOverlay,
   closestCenter,
   PointerSensor,
   TouchSensor,
@@ -12,18 +13,16 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, rectSortingStrategy } from "@dnd-kit/sortable";
 import { AnimatePresence } from "framer-motion";
 import { WidgetTile } from "./WidgetTile";
+import { WidgetTileCard } from "./WidgetTileCard";
 import { WidgetGallery } from "./WidgetGallery";
+import { WidgetConfigEditor } from "./WidgetConfigEditor";
 import type { WidgetData } from "./AppWidgetContent";
-import type { WidgetApp, WidgetInstance, WidgetSize } from "@/lib/widgets";
+import type { WidgetInstance, WidgetKind } from "@/lib/widgets";
 
 export function HomeDashboard({
   initialLayout,
@@ -38,6 +37,8 @@ export function HomeDashboard({
   const [layout, setLayout] = useState<WidgetInstance[]>(initialLayout);
   const [editing, setEditing] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [configuringId, setConfiguringId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const sensors = useSensors(
@@ -53,14 +54,17 @@ export function HomeDashboard({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        widgets: next.map((w) => ({ type: w.app, size: w.size })),
+        widgets: next.map((w) => ({ id: w.id, kind: w.kind, config: w.config })),
       }),
     });
     setSaving(false);
     router.refresh();
   };
 
+  const handleDragStart = (event: DragStartEvent) => setActiveId(String(event.active.id));
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setLayout((prev) => {
@@ -81,15 +85,28 @@ export function HomeDashboard({
     });
   };
 
-  const addWidget = (app: WidgetApp, size: WidgetSize) => {
+  const addWidget = (kind: WidgetKind, config: Record<string, unknown> = {}) => {
     setLayout((prev) => {
-      const next = [...prev, { id: crypto.randomUUID(), app, size }];
+      const next = [...prev, { id: crypto.randomUUID(), kind, config }];
+      save(next);
+      return next;
+    });
+  };
+
+  const configureWidget = (id: string, config: Record<string, unknown>) => {
+    setLayout((prev) => {
+      // Fresh id so the server treats this as a new instance — resets any
+      // "since you added this" tracking (e.g. unread comments) instead of
+      // silently rewriting history under the old one.
+      const next = prev.map((w) => (w.id === id ? { id: crypto.randomUUID(), kind: w.kind, config } : w));
       save(next);
       return next;
     });
   };
 
   const doneEditing = () => setEditing(false);
+  const activeInstance = activeId ? (layout.find((w) => w.id === activeId) ?? null) : null;
+  const configuringInstance = configuringId ? (layout.find((w) => w.id === configuringId) ?? null) : null;
 
   return (
     <div>
@@ -108,25 +125,31 @@ export function HomeDashboard({
         <p className="mt-2 text-xs text-ink/40">Log in to save your dashboard layout.</p>
       ) : null}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
         <SortableContext items={layout.map((w) => w.id)} strategy={rectSortingStrategy}>
           <div className="mt-5 grid auto-rows-[8.5rem] grid-cols-2 gap-4 sm:auto-rows-[9.5rem] sm:grid-cols-4 lg:grid-cols-6">
-            {layout.map((w) => (
+            {layout.map((w, i) => (
               <WidgetTile
                 key={w.id}
-                id={w.id}
-                app={w.app}
-                size={w.size}
+                instance={w}
                 data={data}
                 editing={editing}
+                index={i}
                 onRemove={removeWidget}
+                onConfigure={setConfiguringId}
               />
             ))}
 
             {editing ? (
               <button
                 onClick={() => setGalleryOpen(true)}
-                className="focus-ring col-span-1 row-span-1 flex flex-col items-center justify-center gap-1.5 rounded-3xl border-2 border-dashed border-ink/20 text-ink/40 transition-colors hover:border-gold hover:text-gold"
+                className="focus-ring col-span-1 row-span-1 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-ink/20 text-ink/40 transition-colors hover:border-gold hover:text-gold"
               >
                 <Plus className="h-5 w-5" />
                 <span className="text-xs font-medium">Add widget</span>
@@ -134,11 +157,34 @@ export function HomeDashboard({
             ) : null}
           </div>
         </SortableContext>
+
+        {/* Rendered as a floating clone at the dragged tile's own natural size,
+            decoupled from the grid — so it never stretches/shrinks to match
+            whatever slot it's currently hovering over. */}
+        <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
+          {activeInstance ? (
+            <WidgetTileCard instance={activeInstance} data={data} className="shadow-xl ring-2 ring-gold/40" />
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       <AnimatePresence>
         {galleryOpen ? (
           <WidgetGallery data={data} onAdd={addWidget} onClose={() => setGalleryOpen(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {configuringInstance ? (
+          <WidgetConfigEditor
+            instance={configuringInstance}
+            data={data}
+            onSave={(config) => {
+              configureWidget(configuringInstance.id, config);
+              setConfiguringId(null);
+            }}
+            onClose={() => setConfiguringId(null)}
+          />
         ) : null}
       </AnimatePresence>
     </div>

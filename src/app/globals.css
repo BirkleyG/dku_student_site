@@ -81,13 +81,16 @@ body {
   border-radius: 4px;
 }
 
-/* iOS-style "jiggle mode" for widgets in edit state */
+/* iOS-style "jiggle mode" for widgets in edit state — subtle, with each
+   tile's start staggered via --jiggle-delay so the grid doesn't wiggle
+   in lockstep. */
 @keyframes jiggle {
-  0%, 100% { transform: rotate(-0.6deg); }
-  50% { transform: rotate(0.6deg); }
+  0%, 100% { transform: rotate(-0.3deg); }
+  50% { transform: rotate(0.3deg); }
 }
 .animate-jiggle {
-  animation: jiggle 0.22s ease-in-out infinite;
+  animation: jiggle 0.32s ease-in-out infinite;
+  animation-delay: var(--jiggle-delay, 0ms);
   animation-play-state: paused;
 }
 @media (prefers-reduced-motion: no-preference) {

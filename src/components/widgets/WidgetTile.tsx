@@ -1,31 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { X, GripVertical } from "lucide-react";
+import { X, GripVertical, Settings2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { appCatalog, sizeSpec, type WidgetApp, type WidgetSize } from "@/lib/widgets";
-import { AppWidgetContent, type WidgetData } from "./AppWidgetContent";
+import { widgetCatalog, sizeSpec, hrefForInstance, type WidgetInstance } from "@/lib/widgets";
+import { WidgetTileCard } from "./WidgetTileCard";
+import type { WidgetData } from "./AppWidgetContent";
 
 export function WidgetTile({
-  id,
-  app,
-  size,
+  instance,
   data,
   editing,
+  index,
   onRemove,
+  onConfigure,
 }: {
-  id: string;
-  app: WidgetApp;
-  size: WidgetSize;
+  instance: WidgetInstance;
   data: WidgetData;
   editing: boolean;
+  index: number;
   onRemove: (id: string) => void;
+  onConfigure: (id: string) => void;
 }) {
-  const meta = appCatalog[app];
-  const Icon = meta.icon;
+  const meta = widgetCatalog[instance.kind];
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
+    id: instance.id,
     disabled: !editing,
   });
 
@@ -38,45 +38,50 @@ export function WidgetTile({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${sizeSpec[size].className} relative ${isDragging ? "z-20 opacity-90" : ""}`}
+      className={`${sizeSpec[meta.size].className} relative ${isDragging ? "z-20 opacity-30" : ""}`}
     >
-      <div
-        className={`group/tile relative flex h-full flex-col overflow-hidden rounded-lg border border-ink/10 bg-paper p-4 transition-transform duration-150 ${
-          editing ? "animate-jiggle cursor-grab active:cursor-grabbing" : "hover:-translate-y-1 hover:border-ink/20"
-        }`}
-        {...(editing ? { ...attributes, ...listeners } : {})}
-      >
-        {editing ? (
+      {editing ? (
+        <div className="pointer-events-none absolute inset-0 z-30">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onRemove(id);
+              onRemove(instance.id);
             }}
-            className="focus-ring absolute -left-1.5 -top-1.5 z-10 grid h-6 w-6 place-items-center rounded-full bg-danger text-white shadow-md"
+            className="focus-ring pointer-events-auto absolute -left-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-danger text-white shadow-md ring-2 ring-paper"
             aria-label={`Remove ${meta.label} widget`}
           >
             <X className="h-3.5 w-3.5" strokeWidth={2.5} />
           </button>
-        ) : null}
-
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-gold/25 to-sprout/30 text-ink">
-              <Icon className="h-4 w-4" strokeWidth={1.75} />
-            </div>
-            <h3 className="truncate text-sm font-medium text-ink">{meta.label}</h3>
-          </div>
-          {editing ? <GripVertical className="h-4 w-4 shrink-0 text-ink/25" /> : null}
+          {meta.configurable ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onConfigure(instance.id);
+              }}
+              className="focus-ring pointer-events-auto absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-ink text-white shadow-md ring-2 ring-paper"
+              aria-label={`Configure ${meta.label} widget`}
+            >
+              <Settings2 className="h-3.5 w-3.5" strokeWidth={2.25} />
+            </button>
+          ) : null}
         </div>
+      ) : null}
 
-        <div className="mt-3 min-w-0 flex-1 overflow-hidden">
-          <AppWidgetContent app={app} size={size} data={data} />
-        </div>
+      <div
+        className={`relative h-full transition-transform duration-150 ${
+          editing ? "cursor-grab active:cursor-grabbing" : "hover:-translate-y-1"
+        }`}
+        {...(editing ? { ...attributes, ...listeners } : {})}
+      >
+        <WidgetTileCard instance={instance} data={data} jiggle={editing} jiggleIndex={index} className="hover:border-ink/20" />
 
-        {!editing ? (
-          <Link href={meta.href} className="focus-ring absolute inset-0" aria-label={`Open ${meta.label}`} />
-        ) : null}
+        {editing ? (
+          <GripVertical className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-ink/25" />
+        ) : (
+          <Link href={hrefForInstance(instance)} className="focus-ring absolute inset-0 rounded-lg" aria-label={`Open ${meta.label}`} />
+        )}
       </div>
     </div>
   );

@@ -1,65 +1,140 @@
-import { format } from "date-fns";
-import type { WidgetApp, WidgetSize } from "@/lib/widgets";
-import { sizeSpec } from "@/lib/widgets";
+import { format, isSameWeek, isToday } from "date-fns";
+import type { EventCategory } from "@prisma/client";
+import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
+import type { WidgetInstance } from "@/lib/widgets";
 
 export type WidgetData = {
-  events: { id: string; title: string; startsAt: string; endsAt: string; location: string }[];
-  boardPosts: { id: string; title: string; authorName: string; createdAt: string }[];
-  wisdomPosts: { id: string; title: string; category: string; createdAt: string }[];
-  newsPosts: { id: string; title: string; summary: string; publishedAt: string }[];
-  clubs: { id: string; name: string; category: string; description: string }[];
+  now: string;
+  events: { id: string; title: string; startsAt: string; endsAt: string; location: string; category: EventCategory }[];
+  boardPosts: { id: string; title: string; authorName: string; createdAt: string; commentCount: number }[];
+  trackedPosts: Record<string, { postId: string; title: string; authorName: string; unreadCount: number } | null>;
+  eats: {
+    openCount: number;
+    totalCount: number;
+    order: { restaurant: string; status: string; etaMinutes: number } | null;
+    activity: { id: string; text: string; timeAgo: string }[];
+  };
 };
 
 function Empty({ label }: { label: string }) {
   return <p className="text-sm text-ink/40">{label}</p>;
 }
 
-export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: WidgetSize; data: WidgetData }) {
-  const n = sizeSpec[size].itemCount;
+function eventsTallyConfig(config: Record<string, unknown>) {
+  const categories = Array.isArray(config.categories) ? (config.categories as EventCategory[]) : [];
+  const timeframe = config.timeframe === "week" ? "week" : "today";
+  return { categories, timeframe: timeframe as "today" | "week" };
+}
 
-  switch (app) {
-    case "EVENTS": {
-      const items = data.events.slice(0, n);
-      if (!items.length) return <Empty label="No events on the calendar yet." />;
-      if (size === "SMALL") {
-        return (
-          <div>
-            <p className="flex items-center gap-1.5 text-xs text-ink/40">
-              <HappeningNowDot startsAt={items[0].startsAt} endsAt={items[0].endsAt} />
-              Up next
-            </p>
-            <p className="mt-0.5 truncate text-sm font-medium text-ink">{items[0].title}</p>
-            <p className="text-xs text-ink/50">{format(new Date(items[0].startsAt), "MMM d, h:mm a")}</p>
-          </div>
-        );
-      }
+export function AppWidgetContent({ instance, data }: { instance: WidgetInstance; data: WidgetData }) {
+  const now = new Date(data.now);
+
+  switch (instance.kind) {
+    case "EVENTS_TALLY": {
+      const { categories, timeframe } = eventsTallyConfig(instance.config);
+      const inRange = data.events.filter((e) => {
+        const start = new Date(e.startsAt);
+        return timeframe === "today" ? isToday(start) : isSameWeek(start, now, { weekStartsOn: 0 });
+      });
+      const matching = categories.length ? inRange.filter((e) => categories.includes(e.category)) : inRange;
+      const filterLabel =
+        categories.length === 0 ? "All events" : categories.length === 1 ? EVENT_CATEGORY_MAP[categories[0]].label : `${categories.length} types`;
+      return (
+        <div>
+          <p className="font-display text-3xl leading-none text-ink">{matching.length}</p>
+          <p className="mt-1.5 text-xs text-ink/50">
+            {timeframe === "today" ? "Today" : "This week"} · {filterLabel}
+          </p>
+        </div>
+      );
+    }
+
+    case "EVENTS_AGENDA": {
+      const upcoming = data.events
+        .filter((e) => isToday(new Date(e.startsAt)) && new Date(e.endsAt) >= now)
+        .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+      const visible = upcoming.slice(0, 4);
+      const remaining = upcoming.length - visible.length;
+      return (
+        <div className="flex h-full flex-col">
+          <p className="text-xs text-ink/40">{format(now, "EEEE, MMM d · h:mm a")}</p>
+          {visible.length ? (
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {visible.map((e) => (
+                <li key={e.id} className="flex items-center gap-1.5 truncate text-ink/75">
+                  <HappeningNowDot startsAt={e.startsAt} endsAt={e.endsAt} />
+                  <span className="truncate">
+                    <span className="text-ink/40">{format(new Date(e.startsAt), "h:mm a")}</span> {e.title}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-ink/40">Nothing left on today&apos;s calendar.</p>
+          )}
+          {remaining > 0 ? <p className="mt-auto pt-1 text-xs text-ink/40">+{remaining} more today</p> : null}
+        </div>
+      );
+    }
+
+    case "EATS_OPEN_COUNT":
+      return (
+        <div>
+          <p className="font-display text-3xl leading-none text-ink">
+            {data.eats.openCount}
+            <span className="text-base text-ink/40"> / {data.eats.totalCount}</span>
+          </p>
+          <p className="mt-1.5 text-xs text-ink/50">Open right now</p>
+        </div>
+      );
+
+    case "EATS_FAVORITE": {
+      const name = typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : "Pick a favorite";
+      return (
+        <div>
+          <p className="text-xs text-ink/40">Your favorite</p>
+          <p className="mt-0.5 truncate text-sm font-medium text-ink">{name}</p>
+        </div>
+      );
+    }
+
+    case "EATS_ORDER_TRACKER":
+      return data.eats.order ? (
+        <div>
+          <p className="text-xs text-ink/40">{data.eats.order.restaurant}</p>
+          <p className="mt-0.5 text-sm font-medium text-ink">{data.eats.order.status}</p>
+          <p className="text-xs text-ink/50">Ready in ~{data.eats.order.etaMinutes} min</p>
+        </div>
+      ) : (
+        <Empty label="No active order." />
+      );
+
+    case "EATS_ACTIVITY":
       return (
         <ul className="space-y-1.5 text-sm">
-          {items.map((e) => (
-            <li key={e.id} className="flex items-center gap-1.5 truncate text-ink/75">
-              <HappeningNowDot startsAt={e.startsAt} endsAt={e.endsAt} />
-              <span className="truncate">
-                <span className="text-ink/40">{format(new Date(e.startsAt), "MMM d, h:mm a")}</span>{" "}
-                {e.title}
-              </span>
+          {data.eats.activity.slice(0, 2).map((a) => (
+            <li key={a.id} className="text-ink/75">
+              <span>{a.text}</span> <span className="text-xs text-ink/40">· {a.timeAgo}</span>
             </li>
           ))}
         </ul>
       );
+
+    case "BOARD_LATEST": {
+      const item = data.boardPosts[0];
+      if (!item) return <Empty label="No posts yet. Start the conversation." />;
+      return (
+        <div>
+          <p className="text-xs text-ink/40">{item.authorName}</p>
+          <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{item.title}</p>
+        </div>
+      );
     }
 
-    case "SOCIAL": {
-      const items = data.boardPosts.slice(0, n);
+    case "BOARD_RECENT": {
+      const items = data.boardPosts.slice(0, 4);
       if (!items.length) return <Empty label="No posts yet. Start the conversation." />;
-      if (size === "SMALL") {
-        return (
-          <div>
-            <p className="text-xs text-ink/40">Latest</p>
-            <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{items[0].title}</p>
-          </div>
-        );
-      }
       return (
         <ul className="space-y-1.5 text-sm">
           {items.map((p) => (
@@ -71,88 +146,18 @@ export function AppWidgetContent({ app, size, data }: { app: WidgetApp; size: Wi
       );
     }
 
-    case "WISDOM": {
-      const items = data.wisdomPosts.slice(0, n);
-      if (!items.length) return <Empty label="No wisdom dropped yet." />;
-      if (size === "SMALL") {
-        return (
-          <div>
-            <p className="text-xs text-ink/40">{items[0].category}</p>
-            <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{items[0].title}</p>
-          </div>
-        );
-      }
+    case "BOARD_TRACKED_POST": {
+      const tracked = data.trackedPosts[instance.id];
+      if (!tracked) return <Empty label="Pick a post to track." />;
       return (
-        <ul className="space-y-1.5 text-sm">
-          {items.map((w) => (
-            <li key={w.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{w.category}</span> {w.title}
-            </li>
-          ))}
-        </ul>
+        <div>
+          <p className="line-clamp-2 text-sm font-medium text-ink">{tracked.title}</p>
+          <p className="mt-1.5 text-xs text-ink/50">
+            {tracked.unreadCount > 0 ? `${tracked.unreadCount} new comment${tracked.unreadCount === 1 ? "" : "s"}` : "No new comments"}
+          </p>
+        </div>
       );
     }
-
-    case "NEWS": {
-      const items = data.newsPosts.slice(0, n);
-      if (!items.length) return <Empty label="Nothing published yet." />;
-      if (size === "SMALL") {
-        return <p className="line-clamp-3 text-sm font-medium text-ink">{items[0].title}</p>;
-      }
-      return (
-        <ul className="space-y-2 text-sm">
-          {items.map((a) => (
-            <li key={a.id} className="text-ink/75">
-              <p className="font-medium text-ink">{a.title}</p>
-              {size === "LARGE" ? <p className="line-clamp-1 text-xs text-ink/50">{a.summary}</p> : null}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    case "CLUBS": {
-      const items = data.clubs.slice(0, n);
-      if (!items.length) return <Empty label="No clubs listed yet." />;
-      if (size === "SMALL") {
-        return (
-          <div>
-            <p className="text-xs text-ink/40">{items[0].category}</p>
-            <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{items[0].name}</p>
-          </div>
-        );
-      }
-      return (
-        <ul className="space-y-1.5 text-sm">
-          {items.map((c) => (
-            <li key={c.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{c.category}</span> {c.name}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    case "DKU_EATS":
-      return (
-        <p className="text-sm text-ink/60">
-          {size === "SMALL" ? "Order food" : "Order student-cooked food and drinks, delivered on campus."}
-        </p>
-      );
-
-    case "MARKETPLACE":
-      return (
-        <p className="text-sm text-ink/60">
-          {size === "SMALL" ? "Buy & sell" : "Browse what students are selling: textbooks, furniture, and more."}
-        </p>
-      );
-
-    case "SLB":
-      return (
-        <p className="text-sm text-ink/60">
-          {size === "SMALL" ? "Ask a rep" : "See your reps, ask questions, and submit issues to SLB."}
-        </p>
-      );
 
     default:
       return null;

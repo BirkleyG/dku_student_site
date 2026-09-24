@@ -1,8 +1,10 @@
+import { addDays, startOfDay } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { defaultLayout } from "@/lib/widgets";
 import type { WidgetInstance } from "@/lib/widgets";
 import type { WidgetData } from "@/components/widgets/AppWidgetContent";
+import { demoEatsOpenCount, demoEatsOrder, demoEatsActivity } from "@/lib/eats-demo";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
@@ -12,66 +14,84 @@ export default async function HomePage() {
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0];
 
-  let layout: WidgetInstance[] = defaultLayout.map((w) => ({ id: crypto.randomUUID(), ...w }));
+  let layout: WidgetInstance[] = defaultLayout.map((w) => ({ id: crypto.randomUUID(), kind: w.kind, config: w.config ?? {} }));
   let userId: string | null = null;
+  let savedRows: Awaited<ReturnType<typeof prisma.dashboardWidget.findMany>> = [];
 
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     userId = user?.id ?? null;
     if (user) {
-      const saved = await prisma.dashboardWidget.findMany({
+      savedRows = await prisma.dashboardWidget.findMany({
         where: { userId: user.id },
         orderBy: { position: "asc" },
       });
-      if (saved.length) {
-        layout = saved.map((w) => ({ id: w.id, app: w.type, size: w.size }));
+      if (savedRows.length) {
+        layout = savedRows.map((w) => ({ id: w.id, kind: w.kind, config: (w.config ?? {}) as Record<string, unknown> }));
       }
     }
   }
 
-  const [events, boardPosts, wisdomPosts, newsPosts, clubs] = await Promise.all([
+  const today = startOfDay(new Date());
+  const weekAhead = addDays(today, 7);
+
+  const [events, boardPosts] = await Promise.all([
     prisma.event.findMany({
-      where: { startsAt: { gte: new Date() }, approved: true },
+      where: { startsAt: { gte: today, lte: weekAhead }, approved: true },
       orderBy: { startsAt: "asc" },
-      take: 4,
     }),
     prisma.boardPost.findMany({
       orderBy: { createdAt: "desc" },
-      take: 4,
-      include: { author: true },
-    }),
-    prisma.wisdomPost.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    }),
-    prisma.newsPost.findMany({
-      orderBy: { publishedAt: "desc" },
-      take: 4,
-    }),
-    prisma.club.findMany({
-      where: { approved: true },
-      orderBy: { createdAt: "desc" },
-      take: 4,
+      take: 8,
+      include: { author: true, _count: { select: { comments: true } } },
     }),
   ]);
 
+  const trackedWidgets = savedRows.filter((w) => w.kind === "BOARD_TRACKED_POST");
+  const trackedPosts: WidgetData["trackedPosts"] = {};
+  await Promise.all(
+    trackedWidgets.map(async (w) => {
+      const config = (w.config ?? {}) as Record<string, unknown>;
+      const postId = typeof config.postId === "string" ? config.postId : null;
+      if (!postId) {
+        trackedPosts[w.id] = null;
+        return;
+      }
+      const post = await prisma.boardPost.findUnique({
+        where: { id: postId },
+        include: {
+          author: true,
+          _count: { select: { comments: { where: { createdAt: { gt: w.createdAt } } } } },
+        },
+      });
+      trackedPosts[w.id] = post
+        ? { postId: post.id, title: post.title, authorName: post.author.firstName, unreadCount: post._count.comments }
+        : null;
+    }),
+  );
+
   const data: WidgetData = {
+    now: new Date().toISOString(),
     events: events.map((e) => ({
       id: e.id,
       title: e.title,
       startsAt: e.startsAt.toISOString(),
       endsAt: e.endsAt.toISOString(),
       location: e.location,
+      category: e.category,
     })),
     boardPosts: boardPosts.map((p) => ({
       id: p.id,
       title: p.title,
       authorName: p.author.firstName,
       createdAt: p.createdAt.toISOString(),
+      commentCount: p._count.comments,
     })),
-    wisdomPosts: wisdomPosts.map((w) => ({ id: w.id, title: w.title, category: w.category, createdAt: w.createdAt.toISOString() })),
-    newsPosts: newsPosts.map((n) => ({ id: n.id, title: n.title, summary: n.summary, publishedAt: n.publishedAt.toISOString() })),
-    clubs: clubs.map((c) => ({ id: c.id, name: c.name, category: c.category, description: c.description })),
+    trackedPosts,
+    eats: (() => {
+      const { open, total } = demoEatsOpenCount();
+      return { openCount: open, totalCount: total, order: demoEatsOrder(), activity: demoEatsActivity() };
+    })(),
   };
 
   return (

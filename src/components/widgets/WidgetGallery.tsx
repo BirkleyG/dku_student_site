@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus } from "lucide-react";
-import { appCatalog, appOrder, sizeOrder, sizeSpec, type WidgetApp, type WidgetSize } from "@/lib/widgets";
+import { X } from "lucide-react";
+import { widgetCatalog, widgetGroups, defaultConfigFor, type WidgetKind } from "@/lib/widgets";
 import { AppWidgetContent, type WidgetData } from "./AppWidgetContent";
 
 export function WidgetGallery({
@@ -12,10 +12,11 @@ export function WidgetGallery({
   onClose,
 }: {
   data: WidgetData;
-  onAdd: (app: WidgetApp, size: WidgetSize) => void;
+  onAdd: (kind: WidgetKind, config?: Record<string, unknown>) => void;
   onClose: () => void;
 }) {
-  const [activeApp, setActiveApp] = useState<WidgetApp>(appOrder[0]);
+  const [activeGroup, setActiveGroup] = useState(widgetGroups[0].key);
+  const group = widgetGroups.find((g) => g.key === activeGroup) ?? widgetGroups[0];
 
   return (
     <motion.div
@@ -42,54 +43,63 @@ export function WidgetGallery({
 
         <div className="flex min-h-0 flex-1">
           <div className="flex w-28 shrink-0 flex-col gap-1 overflow-y-auto border-r border-ink/10 p-2 sm:w-40">
-            {appOrder.map((app) => {
-              const meta = appCatalog[app];
-              const Icon = meta.icon;
-              const active = app === activeApp;
+            {widgetGroups.map((g) => {
+              const Icon = g.icon;
+              const active = g.key === activeGroup;
               return (
                 <button
-                  key={app}
-                  onClick={() => setActiveApp(app)}
+                  key={g.key}
+                  onClick={() => setActiveGroup(g.key)}
                   className={`focus-ring flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors sm:text-sm ${
                     active ? "bg-gold/15 text-ink" : "text-ink/55 hover:bg-paper-dim"
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  <span className="truncate">{meta.label}</span>
+                  <span className="truncate">{g.label}</span>
                 </button>
               );
             })}
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
-            <p className="text-sm text-ink/55">{appCatalog[activeApp].blurb}</p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {sizeOrder.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => {
-                    onAdd(activeApp, size);
-                    onClose();
-                  }}
-                  className="focus-ring group text-left"
-                >
-                  <div
-                    className={`grid overflow-hidden rounded-2xl border border-ink/10 bg-paper p-3 text-[13px] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-gold ${
-                      size === "SMALL" ? "aspect-square max-w-[9rem]" : size === "MEDIUM" ? "aspect-[2/1] max-w-[13rem]" : "aspect-square max-w-[13rem]"
-                    }`}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {group.kinds.map((kind) => {
+                const meta = widgetCatalog[kind];
+                const previewConfig = kind === "EATS_FAVORITE" ? defaultConfigFor(kind) : {};
+                return (
+                  <button
+                    key={kind}
+                    onClick={() => {
+                      onAdd(kind, defaultConfigFor(kind));
+                      onClose();
+                    }}
+                    className="focus-ring group text-left"
                   >
-                    <div className="min-w-0 overflow-hidden">
-                      <AppWidgetContent app={activeApp} size={size} data={data} />
+                    <div
+                      className={`overflow-hidden rounded-2xl border border-ink/10 bg-paper p-3 text-[13px] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-gold ${
+                        meta.size === "SMALL"
+                          ? "aspect-square max-w-[10rem]"
+                          : meta.size === "MEDIUM"
+                            ? "aspect-[2/1] max-w-[16rem]"
+                            : "aspect-square max-w-[16rem]"
+                      }`}
+                    >
+                      <div className="min-w-0 overflow-hidden">
+                        <AppWidgetContent instance={{ id: `preview-${kind}`, kind, config: previewConfig }} data={data} />
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-ink/50">
-                      {sizeSpec[size].label}
-                    </span>
-                    <Plus className="h-3.5 w-3.5 text-ink/40 transition-colors group-hover:text-gold" />
-                  </div>
-                </button>
-              ))}
+                    <div className="mt-2">
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-ink">
+                        {meta.label}
+                        {meta.demo ? (
+                          <span className="rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink/40">Demo</span>
+                        ) : null}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink/50">{meta.blurb}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
