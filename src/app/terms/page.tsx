@@ -1,9 +1,11 @@
 import { Reveal } from "@/components/motion/Reveal";
+import { BackHome } from "@/components/shell/BackHome";
 
 export default function TermsPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <Reveal>
+        <BackHome className="mb-8" />
         <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Life</p>
         <h1 className="mt-2 font-display text-4xl">Community guidelines.</h1>
         <p className="mt-3 text-ink/60">
