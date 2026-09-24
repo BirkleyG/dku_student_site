@@ -27,12 +27,19 @@ export default async function HomePage() {
     // uid; guest orders are keyed by netID instead, so match on both.
     eatsUser = user ? { id: user.id, netId: user.netId } : null;
     if (user) {
-      savedRows = await prisma.dashboardWidget.findMany({
-        where: { userId: user.id },
-        orderBy: { position: "asc" },
-      });
-      if (savedRows.length) {
-        layout = savedRows.map((w) => ({ id: w.id, kind: w.kind, config: (w.config ?? {}) as Record<string, unknown> }));
+      try {
+        savedRows = await prisma.dashboardWidget.findMany({
+          where: { userId: user.id },
+          orderBy: { position: "asc" },
+        });
+        if (savedRows.length) {
+          layout = savedRows.map((w) => ({ id: w.id, kind: w.kind, config: (w.config ?? {}) as Record<string, unknown> }));
+        }
+      } catch (err) {
+        // A saved-layout read failing (e.g. the DB hasn't picked up a recent
+        // widget-schema migration yet) shouldn't take the whole dashboard
+        // down — fall back to the default layout instead of 500ing.
+        console.error("Failed to load saved dashboard layout, falling back to default:", err);
       }
     }
   }
@@ -62,16 +69,21 @@ export default async function HomePage() {
         trackedPosts[w.id] = null;
         return;
       }
-      const post = await prisma.boardPost.findUnique({
-        where: { id: postId },
-        include: {
-          author: true,
-          _count: { select: { comments: { where: { createdAt: { gt: w.createdAt } } } } },
-        },
-      });
-      trackedPosts[w.id] = post
-        ? { postId: post.id, title: post.title, authorName: post.author.firstName, unreadCount: post._count.comments }
-        : null;
+      try {
+        const post = await prisma.boardPost.findUnique({
+          where: { id: postId },
+          include: {
+            author: true,
+            _count: { select: { comments: { where: { createdAt: { gt: w.createdAt } } } } },
+          },
+        });
+        trackedPosts[w.id] = post
+          ? { postId: post.id, title: post.title, authorName: post.author.firstName, unreadCount: post._count.comments }
+          : null;
+      } catch (err) {
+        console.error(`Failed to load tracked post for widget ${w.id}:`, err);
+        trackedPosts[w.id] = null;
+      }
     }),
   );
 
