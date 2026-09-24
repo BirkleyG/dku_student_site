@@ -152,6 +152,14 @@ enum WidgetType {
   NEWS
   WISDOM
   CLUBS
+  MARKETPLACE
+  SLB
+}
+
+enum WidgetSize {
+  SMALL
+  MEDIUM
+  LARGE
 }
 
 model DashboardWidget {
@@ -159,9 +167,9 @@ model DashboardWidget {
   userId   String
   user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   type     WidgetType
+  size     WidgetSize @default(MEDIUM)
   position Int        @default(0)
 
-  @@unique([userId, type])
   @@map("dashboard_widgets")
 }
 

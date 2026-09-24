@@ -6,6 +6,8 @@ import {
   Newspaper,
   Compass,
   Users2,
+  ShoppingBag,
+  Landmark,
   ShieldCheck,
   BookOpen,
   GraduationCap,
@@ -28,6 +30,8 @@ export const navItems: NavItem[] = [
   { href: "/clubs", label: "Clubs", icon: Users2 },
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/professors", label: "Professors", icon: GraduationCap },
+  { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
+  { href: "/slb", label: "SLB", icon: Landmark },
 ];
 
 export const adminNavItem: NavItem = { href: "/admin", label: "Admin", icon: ShieldCheck };
