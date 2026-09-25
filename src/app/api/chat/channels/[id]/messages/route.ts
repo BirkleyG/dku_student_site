@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isChannelMember } from "@/lib/chat";
+import { isChannelMember, notifyNewChatMessage } from "@/lib/chat";
 import { chatMessageSchema } from "@/lib/chat-validation";
 import { awardPoints } from "@/lib/community-score";
 
@@ -91,6 +91,16 @@ export async function POST(request: Request, { params }: Params) {
   if (channel.kind !== "DIRECT") {
     await awardPoints(user.id, parsed.data.parentId ? "CHAT_REPLY" : "CHAT_MESSAGE");
   }
+
+  // Notify recipients after the response goes out — a push failure or slow
+  // push service should never delay or break sending a message.
+  after(async () => {
+    await notifyNewChatMessage({
+      channel: { id: channel.id, kind: channel.kind, name: channel.name },
+      message: { authorId: user.id, body: message.body, parentId: message.parentId },
+      authorName: `${user.firstName} ${user.lastName}`,
+    });
+  });
 
   return NextResponse.json({ message }, { status: 201 });
 }
