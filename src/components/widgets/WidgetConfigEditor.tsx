@@ -7,6 +7,7 @@ import type { EventCategory } from "@prisma/client";
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { widgetCatalog, type WidgetInstance } from "@/lib/widgets";
 import type { WidgetData } from "./AppWidgetContent";
+import { useT } from "@/lib/i18n/client";
 
 export function WidgetConfigEditor({
   instance,
@@ -19,6 +20,7 @@ export function WidgetConfigEditor({
   onSave: (config: Record<string, unknown>) => void;
   onClose: () => void;
 }) {
+  const t = useT("widgets");
   const meta = widgetCatalog[instance.kind];
 
   const [categories, setCategories] = useState<EventCategory[]>(
@@ -64,8 +66,8 @@ export function WidgetConfigEditor({
         className="max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border border-ink/10 bg-paper p-5 sm:max-w-md sm:rounded-3xl"
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl">Configure {meta.label}</h2>
-          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label="Close">
+          <h2 className="font-display text-xl">{t("configure", { label: meta.label })}</h2>
+          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label={t("close")}>
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -73,7 +75,7 @@ export function WidgetConfigEditor({
         {instance.kind === "EVENTS_TALLY" ? (
           <div className="mt-4 space-y-4">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Timeframe</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("timeframe")}</p>
               <div className="mt-2 flex w-fit gap-1 rounded-full border border-ink/15 p-1">
                 {(["today", "week"] as const).map((tf) => (
                   <button
@@ -83,13 +85,13 @@ export function WidgetConfigEditor({
                       timeframe === tf ? "bg-ink text-white" : "text-ink/60 hover:text-ink"
                     }`}
                   >
-                    {tf === "today" ? "Today" : "This week"}
+                    {tf === "today" ? t("today") : t("thisWeek")}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Event types (none = all)</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("eventTypesNone")}</p>
               <div className="mt-2 max-h-56 space-y-3 overflow-y-auto pr-1">
                 {EVENT_CATEGORY_GROUPS.map((g) => (
                   <div key={g.group}>
@@ -119,7 +121,7 @@ export function WidgetConfigEditor({
 
         {instance.kind === "EATS_FAVORITE" ? (
           <div className="mt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Favorite restaurant</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("favoriteRestaurant")}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {data.eats.vendors.map(({ name }) => (
                 <button
@@ -138,7 +140,7 @@ export function WidgetConfigEditor({
 
         {instance.kind === "CHAT_TRACKED_CHANNEL" ? (
           <div className="mt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Channel to track</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("channelToTrack")}</p>
             <div className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
               {data.chatChannels.length ? (
                 data.chatChannels.map((c) => (
@@ -153,7 +155,7 @@ export function WidgetConfigEditor({
                   </button>
                 ))
               ) : (
-                <p className="text-sm text-ink/40">No channels joined yet.</p>
+                <p className="text-sm text-ink/40">{t("noChannelsYet")}</p>
               )}
             </div>
           </div>
@@ -161,7 +163,7 @@ export function WidgetConfigEditor({
 
         {instance.kind === "LILYPAD_LATEST" ? (
           <div className="mt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Category</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("category")}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
                 onClick={() => setLilypadCategoryId(null)}
@@ -169,7 +171,7 @@ export function WidgetConfigEditor({
                   lilypadCategoryId === null ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/50 hover:border-ink/35"
                 }`}
               >
-                All
+                {t("all")}
               </button>
               {data.lilypadCategories.map((c) => (
                 <button
@@ -190,7 +192,7 @@ export function WidgetConfigEditor({
           onClick={save}
           className="focus-ring mt-5 w-full rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-ink/85"
         >
-          Save
+          {t("save")}
         </button>
       </motion.div>
     </motion.div>

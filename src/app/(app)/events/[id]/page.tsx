@@ -5,10 +5,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { getT } from "@/lib/i18n/server";
 import { RsvpButton } from "./RsvpButton";
 
 export default async function EventDetailPage({ params }: PageProps<"/events/[id]">) {
   const { id } = await params;
+  const t = await getT("events");
   const [session, event] = await Promise.all([
     auth(),
     prisma.event.findUnique({
@@ -46,8 +48,8 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
         </span>
         <h1 className="mt-2 font-display text-4xl">{event.title}</h1>
         <p className="mt-2 text-ink/60">
-          {format(event.startsAt, "EEEE, MMMM d · h:mm a")}–{format(event.endsAt, "h:mm a")} · {event.location} · Hosted by{" "}
-          {event.host.firstName} {event.host.lastName}
+          {format(event.startsAt, "EEEE, MMMM d · h:mm a")}–{format(event.endsAt, "h:mm a")} · {event.location} ·{" "}
+          {t("hostedBy", { name: `${event.host.firstName} ${event.host.lastName}` })}
         </p>
       </Reveal>
 

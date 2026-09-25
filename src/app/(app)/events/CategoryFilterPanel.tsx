@@ -2,6 +2,7 @@
 
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { Switch } from "@/components/ui/Switch";
+import { useT } from "@/lib/i18n/client";
 import type { EventCategory } from "@prisma/client";
 
 type Props = {
@@ -12,17 +13,18 @@ type Props = {
 };
 
 export function CategoryFilterPanel({ hidden, onToggle, onShowAll, onHideAll }: Props) {
+  const t = useT("events");
   return (
     <div className="rounded-3xl border border-ink/10 bg-paper p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg">Event types</h2>
+        <h2 className="font-display text-lg">{t("eventTypes")}</h2>
         <div className="flex gap-2 text-[11px] uppercase tracking-wide text-ink/45">
           <button onClick={onShowAll} className="focus-ring hover:text-ink">
-            All
+            {t("all")}
           </button>
           <span>·</span>
           <button onClick={onHideAll} className="focus-ring hover:text-ink">
-            None
+            {t("none")}
           </button>
         </div>
       </div>

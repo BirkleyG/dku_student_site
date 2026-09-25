@@ -8,8 +8,10 @@ import { professorSchema, type ProfessorInput } from "@/lib/professor-validation
 import { DKU_DEPARTMENTS } from "@/lib/departments";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 export function NewProfessorForm() {
+  const t = useT("professors");
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -31,7 +33,7 @@ export function NewProfessorForm() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't add that professor.");
+      setServerError(body.error ?? t("couldntAddProfessor"));
       return;
     }
 
@@ -42,12 +44,12 @@ export function NewProfessorForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
-        <Field label="First name" {...register("firstName")} error={errors.firstName?.message} />
-        <Field label="Last name" {...register("lastName")} error={errors.lastName?.message} />
+        <Field label={t("firstNameLabel")} {...register("firstName")} error={errors.firstName?.message} />
+        <Field label={t("lastNameLabel")} {...register("lastName")} error={errors.lastName?.message} />
       </div>
 
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Department</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("departmentLabel")}</span>
         <select
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
           {...register("department")}
@@ -62,19 +64,19 @@ export function NewProfessorForm() {
 
       {department === "Other" ? (
         <Field
-          label="Which department?"
-          placeholder="Type it in — we'll add it to the list next update"
+          label={t("whichDepartmentLabel")}
+          placeholder={t("whichDepartmentPlaceholder")}
           {...register("otherDepartment")}
           error={errors.otherDepartment?.message}
         />
       ) : null}
 
-      <Field label="Email (optional)" placeholder="name@dukekunshan.edu.cn" {...register("email")} error={errors.email?.message} />
+      <Field label={t("emailLabel")} placeholder="name@dukekunshan.edu.cn" {...register("email")} error={errors.email?.message} />
 
       {serverError ? <p className="text-sm text-danger">{serverError}</p> : null}
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Adding…" : "Add professor"}
+        {isSubmitting ? t("adding") : t("addProfessor")}
       </Button>
     </form>
   );

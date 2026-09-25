@@ -6,6 +6,7 @@ import { Link as LinkIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DocumentUpload } from "@/components/ui/DocumentUpload";
 import { courseResourceTypes, courseResourceTypeLabels, type CourseResourceInput } from "@/lib/course-validation";
+import { useT } from "@/lib/i18n/client";
 
 type ApiResource = {
   id: string;
@@ -32,6 +33,7 @@ export function ResourcesPanel({
   isAdmin: boolean;
   initialResources: ApiResource[];
 }) {
+  const t = useT("courses");
   const [resources, setResources] = useState(initialResources);
   const [filter, setFilter] = useState<(typeof courseResourceTypes)[number] | "ALL">("ALL");
   const [form, setForm] = useState<Partial<CourseResourceInput>>({ type: "NOTES" });
@@ -43,7 +45,7 @@ export function ResourcesPanel({
   const submit = async () => {
     setError(null);
     if (!form.title?.trim()) {
-      setError("Give it a title");
+      setError(t("errGiveTitle"));
       return;
     }
     setSubmitting(true);
@@ -54,7 +56,7 @@ export function ResourcesPanel({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't add that.");
+      setError(body.error ?? t("couldntAdd"));
       setSubmitting(false);
       return;
     }
@@ -65,18 +67,18 @@ export function ResourcesPanel({
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm("Remove this resource?")) return;
+    if (!window.confirm(t("confirmRemoveResource"))) return;
     const res = await fetch(`/api/courses/${courseId}/resources/${id}`, { method: "DELETE" });
     if (res.ok) setResources((prev) => prev.filter((r) => r.id !== id));
   };
 
   return (
     <div className="mt-10">
-      <h2 className="font-display text-xl">Shared by students</h2>
+      <h2 className="font-display text-xl">{t("sharedByStudentsHeading")}</h2>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <FilterChip active={filter === "ALL"} onClick={() => setFilter("ALL")}>
-          All
+          {t("allFilter")}
         </FilterChip>
         {courseResourceTypes.map((t) => (
           <FilterChip key={t} active={filter === t} onClick={() => setFilter(t)}>
@@ -87,7 +89,7 @@ export function ResourcesPanel({
 
       <div className="mt-5 space-y-3">
         {visible.length === 0 ? (
-          <p className="text-sm text-ink/40">Nothing shared yet — be the first.</p>
+          <p className="text-sm text-ink/40">{t("resourcesEmptyState")}</p>
         ) : (
           visible.map((r) => (
             <div key={r.id} className="rounded-2xl bg-paper-dim p-4">
@@ -108,7 +110,7 @@ export function ResourcesPanel({
                       rel="noreferrer noopener"
                       className="focus-ring mt-2 inline-flex items-center gap-1.5 text-xs text-ink/60 underline decoration-ink/25 underline-offset-2 hover:text-ink"
                     >
-                      <LinkIcon className="h-3.5 w-3.5" /> Open file
+                      <LinkIcon className="h-3.5 w-3.5" /> {t("openFileLink")}
                     </a>
                   ) : null}
                   <p className="mt-2 text-xs text-ink/40">
@@ -119,7 +121,7 @@ export function ResourcesPanel({
                   <button
                     onClick={() => remove(r.id)}
                     className="focus-ring shrink-0 text-ink/30 transition-colors hover:text-danger"
-                    aria-label="Remove resource"
+                    aria-label={t("removeResourceAria")}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -132,7 +134,7 @@ export function ResourcesPanel({
 
       {canManage ? (
         <div className="mt-6 space-y-3 rounded-2xl border border-ink/10 bg-paper-dim/60 p-4">
-          <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Share something</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{t("shareSomethingHeading")}</p>
           <select
             value={form.type ?? "NOTES"}
             onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as CourseResourceInput["type"] }))}
@@ -147,19 +149,19 @@ export function ResourcesPanel({
           <input
             value={form.title ?? ""}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Title — e.g. Midterm 1 review notes"
+            placeholder={t("titlePlaceholder")}
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
           <input
             value={form.semester ?? ""}
             onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-            placeholder="Semester — e.g. Fall 2025 (optional)"
+            placeholder={t("semesterPlaceholder")}
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
           <textarea
             value={form.body ?? ""}
             onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-            placeholder="Notes, tips, tricks…"
+            placeholder={t("notesPlaceholder")}
             rows={3}
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
@@ -168,17 +170,17 @@ export function ResourcesPanel({
             <input
               value={form.fileUrl ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
-              placeholder="…or paste a link (Drive, etc — optional)"
+              placeholder={t("fileLinkOrPastePlaceholder")}
               className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
             />
           ) : null}
           {error ? <p className="text-sm text-danger">{error}</p> : null}
           <Button onClick={submit} disabled={submitting} className="w-full">
-            {submitting ? "Sharing…" : "Share"}
+            {submitting ? t("sharing") : t("share")}
           </Button>
         </div>
       ) : (
-        <p className="mt-6 text-sm text-ink/40">Log in to share resources.</p>
+        <p className="mt-6 text-sm text-ink/40">{t("logInToShare")}</p>
       )}
     </div>
   );

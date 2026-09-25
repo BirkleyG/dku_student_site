@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   /** "modal" keeps the user on the current page instead of redirecting to /home. */
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
+  const t = useT("auth");
   const router = useRouter();
   const params = useSearchParams();
   const rawCallbackUrl = params.get("callbackUrl");
@@ -37,7 +39,7 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
 
     setLoading(false);
     if (res?.error) {
-      setError("Incorrect email or password.");
+      setError(t("incorrectCredentials"));
       return;
     }
     if (mode === "modal") {
@@ -50,9 +52,9 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <Field label="DKU email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <Field label={t("dkuEmail")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <Field
-        label="Password"
+        label={t("password")}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -62,7 +64,7 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Logging in…" : "Log in"}
+        {loading ? t("loggingIn") : t("logIn")}
       </Button>
     </form>
   );

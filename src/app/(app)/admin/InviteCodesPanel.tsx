@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type InviteCode = {
   id: string;
@@ -12,6 +13,7 @@ type InviteCode = {
 };
 
 export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] }) {
+  const t = useT("admin");
   const [codes, setCodes] = useState(initialCodes);
   const [netId, setNetId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
     const body = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      setError(body.error ?? "Couldn't create that invite code.");
+      setError(body.error ?? t("createInviteError"));
     } else {
       setCodes((prev) => [{ ...body.code, usedBy: null }, ...prev]);
       setNetId("");
@@ -41,7 +43,7 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
   };
 
   const revoke = async (id: string) => {
-    if (!window.confirm("Revoke this invite code?")) return;
+    if (!window.confirm(t("revokeConfirm"))) return;
     const res = await fetch(`/api/admin/invite-codes/${id}`, { method: "DELETE" });
     if (res.ok) setCodes((prev) => prev.filter((c) => c.id !== id));
   };
@@ -56,7 +58,7 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
     <div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">NetID to invite</span>
+          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("netIdLabel")}</span>
           <input
             value={netId}
             onChange={(e) => setNetId(e.target.value)}
@@ -70,14 +72,14 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
           disabled={creating || !netId.trim()}
           className="focus-ring rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
         >
-          {creating ? "Generating…" : "Generate invite code"}
+          {creating ? t("generating") : t("generateButton")}
         </button>
       </div>
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
 
       <div className="mt-8 space-y-2">
         {codes.length === 0 ? (
-          <p className="text-sm text-ink/40">No invite codes yet.</p>
+          <p className="text-sm text-ink/40">{t("noInviteCodes")}</p>
         ) : (
           codes.map((c) => (
             <div
@@ -91,15 +93,17 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
 
               {c.usedAt ? (
                 <span className="text-xs text-ink/45">
-                  Used by {c.usedBy ? `${c.usedBy.firstName} ${c.usedBy.lastName}` : "someone"}
+                  {t("usedBy", {
+                    name: c.usedBy ? `${c.usedBy.firstName} ${c.usedBy.lastName}` : t("someone"),
+                  })}
                 </span>
               ) : (
                 <div className="flex items-center gap-3">
                   <button onClick={() => copy(c)} className="focus-ring text-xs text-ink/60 hover:text-ink">
-                    {copiedId === c.id ? "Copied!" : "Copy"}
+                    {copiedId === c.id ? t("copied") : t("copy")}
                   </button>
                   <button onClick={() => void revoke(c.id)} className="focus-ring text-xs text-danger/80 hover:text-danger">
-                    Revoke
+                    {t("revoke")}
                   </button>
                 </div>
               )}

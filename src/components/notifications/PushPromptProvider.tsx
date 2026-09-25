@@ -12,7 +12,7 @@ const COPY: Record<PushPromptTrigger, PushPromptCopy> = {
   signup: {
     title: "Stay in the loop",
     description:
-      "Turn on notifications for event reminders, RSVP updates, and Board replies. You can fine-tune categories anytime in Settings.",
+      "Turn on notifications for event reminders, RSVP updates, and Chat replies. You can fine-tune categories anytime in Settings.",
   },
   "event-created": {
     title: "Get notified about your event",

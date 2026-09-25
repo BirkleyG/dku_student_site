@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
+import { useT } from "@/lib/i18n/client";
 import type { ApiEvent } from "./calendar-types";
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function DayAgenda({ day, events, onClose }: Props) {
+  const t = useT("events");
   return (
     <motion.div
       id="day-agenda"
@@ -26,13 +28,13 @@ export function DayAgenda({ day, events, onClose }: Props) {
       <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
         <h3 className="font-display text-xl">{format(day, "EEEE, MMMM d")}</h3>
         <button onClick={onClose} className="focus-ring text-sm text-ink/50 hover:text-ink">
-          Close
+          {t("close")}
         </button>
       </div>
 
       <div className="space-y-1 p-3">
         {events.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-ink/40">Nothing on the calendar this day.</p>
+          <p className="px-2 py-6 text-center text-sm text-ink/40">{t("nothingThisDay")}</p>
         ) : (
           events.map((event) => {
             const meta = EVENT_CATEGORY_MAP[event.category];

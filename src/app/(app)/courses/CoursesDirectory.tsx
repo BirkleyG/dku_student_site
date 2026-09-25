@@ -6,6 +6,7 @@ import { FileText, MessageSquare, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { DKU_DEPARTMENTS } from "@/lib/departments";
+import { useT } from "@/lib/i18n/client";
 
 type ApiCourse = {
   id: string;
@@ -25,6 +26,7 @@ export function CoursesDirectory({
   currentUserId: string | null;
   isAdmin?: boolean;
 }) {
+  const t = useT("courses");
   const [courses, setCourses] = useState<ApiCourse[] | null>(null);
   const [q, setQ] = useState("");
   const [department, setDepartment] = useState<string | "ALL">("ALL");
@@ -49,7 +51,7 @@ export function CoursesDirectory({
   }, [q, department]);
 
   const remove = async (id: string) => {
-    if (!window.confirm("Remove this course?")) return;
+    if (!window.confirm(t("confirmRemoveCourse"))) return;
     const res = await fetch(`/api/courses/${id}`, { method: "DELETE" });
     if (res.ok) setCourses((prev) => (prev ? prev.filter((c) => c.id !== id) : prev));
   };
@@ -60,7 +62,7 @@ export function CoursesDirectory({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by code, title, or department…"
+          placeholder={t("searchPlaceholder")}
           className="focus-ring w-full max-w-md flex-1 rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
         />
         <select
@@ -68,7 +70,7 @@ export function CoursesDirectory({
           onChange={(e) => setDepartment(e.target.value)}
           className="focus-ring rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
         >
-          <option value="ALL">All departments</option>
+          <option value="ALL">{t("allDepartments")}</option>
           {DKU_DEPARTMENTS.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -78,9 +80,9 @@ export function CoursesDirectory({
       </div>
 
       {courses === null ? (
-        <p className="mt-10 text-sm text-ink/40">Loading courses…</p>
+        <p className="mt-10 text-sm text-ink/40">{t("loadingCourses")}</p>
       ) : courses.length === 0 ? (
-        <p className="mt-10 text-ink/50">No courses match yet. Add the first one.</p>
+        <p className="mt-10 text-ink/50">{t("noMatchEmptyState")}</p>
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
@@ -94,7 +96,7 @@ export function CoursesDirectory({
                     <button
                       onClick={() => remove(course.id)}
                       className="focus-ring text-ink/30 transition-colors hover:text-danger"
-                      aria-label="Remove course"
+                      aria-label={t("removeCourseAria")}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -112,7 +114,7 @@ export function CoursesDirectory({
                           .map((o) => `${o.professor.firstName} ${o.professor.lastName}`)
                           .filter((v, i, a) => a.indexOf(v) === i)
                           .join(", ")
-                      : "No professor listed"}
+                      : t("noProfessorListed")}
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
                     <span className="flex items-center gap-1">
