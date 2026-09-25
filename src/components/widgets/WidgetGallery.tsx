@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { widgetCatalog, widgetGroups, defaultConfigFor, type WidgetKind } from "@/lib/widgets";
 import { AppWidgetContent, type WidgetData } from "./AppWidgetContent";
+import { useT } from "@/lib/i18n/client";
 
 export function WidgetGallery({
   data,
@@ -15,6 +16,7 @@ export function WidgetGallery({
   onAdd: (kind: WidgetKind, config?: Record<string, unknown>) => void;
   onClose: () => void;
 }) {
+  const t = useT("widgets");
   const [activeGroup, setActiveGroup] = useState(widgetGroups[0].key);
   const group = widgetGroups.find((g) => g.key === activeGroup) ?? widgetGroups[0];
 
@@ -35,8 +37,8 @@ export function WidgetGallery({
         className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-3xl border border-ink/10 bg-paper sm:max-w-2xl sm:rounded-3xl"
       >
         <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
-          <h2 className="font-display text-2xl">Add a widget</h2>
-          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label="Close">
+          <h2 className="font-display text-2xl">{t("addAWidget")}</h2>
+          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label={t("close")}>
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -92,7 +94,7 @@ export function WidgetGallery({
                       <p className="flex items-center gap-1.5 text-xs font-medium text-ink">
                         {meta.label}
                         {meta.eatsData && !data.eats.live ? (
-                          <span className="rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink/40">Sample</span>
+                          <span className="rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink/40">{t("sample")}</span>
                         ) : null}
                       </p>
                       <p className="mt-0.5 text-xs text-ink/50">{meta.blurb}</p>

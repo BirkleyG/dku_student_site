@@ -1,6 +1,7 @@
 import type { WidgetInstance } from "@/lib/widgets";
 import { widgetCatalog } from "@/lib/widgets";
 import { AppWidgetContent, type WidgetData } from "./AppWidgetContent";
+import { useT } from "@/lib/i18n/client";
 
 /** Presentational-only tile face — shared by the live sortable tile and the DragOverlay clone. */
 export function WidgetTileCard({
@@ -16,6 +17,7 @@ export function WidgetTileCard({
   jiggleIndex?: number;
   className?: string;
 }) {
+  const t = useT("widgets");
   const meta = widgetCatalog[instance.kind];
   const Icon = meta.icon;
 
@@ -32,7 +34,7 @@ export function WidgetTileCard({
         </div>
         <h3 className="truncate text-sm font-medium text-ink">{meta.label}</h3>
         {meta.eatsData && !data.eats.live ? (
-          <span className="shrink-0 rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink/40">Sample</span>
+          <span className="shrink-0 rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink/40">{t("sample")}</span>
         ) : null}
       </div>
 

@@ -1,0 +1,151 @@
+import type { Locale } from "../locale";
+
+export const courses: Record<Locale, Record<string, string>> = {
+  en: {
+    // CoursesDirectory
+    searchPlaceholder: "Search by code, title, or department…",
+    loadingCourses: "Loading courses…",
+    emptyState: "No courses yet. Add the first one.",
+    noMatchEmptyState: "No courses match yet. Add the first one.",
+    allDepartments: "All departments",
+    removeCourseAria: "Remove course",
+    confirmRemoveCourse: "Remove this course?",
+    noProfessorListed: "No professor listed",
+
+    // ResourcesPanel
+    sharedByStudentsHeading: "Shared by students",
+    allFilter: "All",
+    resourcesEmptyState: "Nothing shared yet — be the first.",
+    openFileLink: "Open file",
+    errGiveTitle: "Give it a title",
+    couldntAdd: "Couldn't add that.",
+    confirmRemoveResource: "Remove this resource?",
+    removeResourceAria: "Remove resource",
+    shareSomethingHeading: "Share something",
+    titlePlaceholder: "Title — e.g. Midterm 1 review notes",
+    semesterPlaceholder: "Semester — e.g. Fall 2025 (optional)",
+    notesPlaceholder: "Notes, tips, tricks…",
+    fileLinkPlaceholder: "Link to a file (Drive, etc — optional)",
+    fileLinkOrPastePlaceholder: "…or paste a link (Drive, etc — optional)",
+    sharing: "Sharing…",
+    share: "Share",
+    logInToShare: "Log in to share resources.",
+
+    // [id]/page.tsx
+    noProfessorLinked: "No professor linked yet.",
+    creditsSuffix: "{n} credits",
+
+    // new/NewCourseForm
+    catalogCantFindIt: "Can't find it — enter it by hand",
+    catalogFromOfficial: "From the official catalog — double check it below",
+    catalogSearchAgain: "Search again",
+    catalogBackToSearch: "← Back to catalog search",
+    whichDepartmentLabel: "Which department?",
+    whichDepartmentPlaceholder: "Type it in — we'll add it to the list next update",
+    creditsOptionalLabel: "Credits (optional)",
+    thatsItCourse:
+      "That's it — once it's added, you and anyone else can fill in the description, link a professor, and upload notes, syllabuses, and past exams.",
+    courseCodeLabel: "Course code",
+    courseCodePlaceholder: "COMPSCI 201",
+    departmentLabel: "Department",
+    departmentPlaceholder: "Computer Science",
+    titleLabel: "Title",
+    titleFieldPlaceholder: "Data Structures",
+    descriptionOptionalLabel: "Description (optional)",
+    professorOptionalLabel: "Professor (optional)",
+    noProfessorYetOption: "No professor yet",
+    addNewProfessorLink: "Their name isn't listed — add a new professor",
+    firstNameLabel: "First name",
+    lastNameLabel: "Last name",
+    theirDepartmentLabel: "Their department",
+    defaultsToCourseDeptPlaceholder: "Defaults to course department",
+    pickExistingProfessorLink: "Pick an existing professor instead",
+    semesterTaughtLabel: "Semester taught (optional)",
+    semesterTaughtPlaceholder: "Fall 2025",
+    couldntAddCourse: "Couldn't add that course.",
+    adding: "Adding…",
+    addCourse: "Add course",
+
+    // new/page.tsx
+    newCourseEyebrow: "New course",
+    newCourseHeading: "Add it to the archive.",
+
+    // page.tsx
+    pageEyebrow: "DKU Courses",
+    pageHeading: "Syllabuses, notes, exams — passed down.",
+    addCourseButton: "Add a course",
+  },
+  zh: {
+    // CoursesDirectory
+    searchPlaceholder: "按课程代码、标题或院系搜索…",
+    loadingCourses: "正在加载课程…",
+    emptyState: "还没有课程，快来添加第一个吧。",
+    noMatchEmptyState: "没有匹配的课程，快来添加第一个吧。",
+    allDepartments: "全部院系",
+    removeCourseAria: "移除课程",
+    confirmRemoveCourse: "确定要移除该课程吗？",
+    noProfessorListed: "暂无教授信息",
+
+    // ResourcesPanel
+    sharedByStudentsHeading: "同学分享的资料",
+    allFilter: "全部",
+    resourcesEmptyState: "还没有人分享——快来做第一个吧。",
+    openFileLink: "打开文件",
+    errGiveTitle: "请填写标题",
+    couldntAdd: "添加失败。",
+    confirmRemoveResource: "确定要移除该资料吗？",
+    removeResourceAria: "移除资料",
+    shareSomethingHeading: "分享资料",
+    titlePlaceholder: "标题 — 例如：期中考试复习笔记",
+    semesterPlaceholder: "学期 — 例如：2025 秋季（选填）",
+    notesPlaceholder: "笔记、心得、技巧…",
+    fileLinkPlaceholder: "文件链接（如网盘链接，选填）",
+    fileLinkOrPastePlaceholder: "…或粘贴链接（如网盘链接，选填）",
+    sharing: "分享中…",
+    share: "分享",
+    logInToShare: "登录后即可分享资料。",
+
+    // [id]/page.tsx
+    noProfessorLinked: "暂未关联教授。",
+    creditsSuffix: "{n} 学分",
+
+    // new/NewCourseForm
+    catalogCantFindIt: "找不到？手动输入",
+    catalogFromOfficial: "来自官方课程目录 — 请在下方仔细核对",
+    catalogSearchAgain: "重新搜索",
+    catalogBackToSearch: "← 返回课程目录搜索",
+    whichDepartmentLabel: "属于哪个院系？",
+    whichDepartmentPlaceholder: "请输入 — 我们会在下次更新时加入列表",
+    creditsOptionalLabel: "学分（选填）",
+    thatsItCourse: "就这样——添加之后，你和其他同学都可以补充简介、关联教授，并上传笔记、教学大纲和往年试卷。",
+    courseCodeLabel: "课程代码",
+    courseCodePlaceholder: "COMPSCI 201",
+    departmentLabel: "院系",
+    departmentPlaceholder: "计算机科学",
+    titleLabel: "标题",
+    titleFieldPlaceholder: "数据结构",
+    descriptionOptionalLabel: "简介（选填）",
+    professorOptionalLabel: "任课教授（选填）",
+    noProfessorYetOption: "暂无教授",
+    addNewProfessorLink: "没有找到对应教授——添加新教授",
+    firstNameLabel: "名",
+    lastNameLabel: "姓",
+    theirDepartmentLabel: "所属院系",
+    defaultsToCourseDeptPlaceholder: "默认与课程院系相同",
+    pickExistingProfessorLink: "改为选择已有教授",
+    semesterTaughtLabel: "授课学期（选填）",
+    semesterTaughtPlaceholder: "2025 秋季",
+    couldntAddCourse: "添加课程失败。",
+    adding: "添加中…",
+    addCourse: "添加课程",
+
+    // new/page.tsx
+    newCourseEyebrow: "新建课程",
+    newCourseHeading: "将它收录进课程库。",
+
+    // page.tsx
+    pageEyebrow: "DKU 课程",
+    pageHeading: "教学大纲、笔记、试卷 — 代代相传。",
+    addCourseButton: "添加课程",
+  },
+};

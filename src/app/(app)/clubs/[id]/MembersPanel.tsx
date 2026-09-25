@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserMinus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 type Member = { userId: string; role: "MEMBER" | "MANAGER"; name: string; email: string };
 
@@ -24,6 +25,7 @@ export function MembersPanel({
   isCreator: boolean;
   initialMembers: Member[];
 }) {
+  const t = useT("clubs");
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
   const [member, setMember] = useState(isMember);
@@ -40,7 +42,7 @@ export function MembersPanel({
       router.refresh();
     } else {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't join.");
+      setError(body.error ?? t("couldntJoin"));
     }
     setPending(false);
   };
@@ -54,7 +56,7 @@ export function MembersPanel({
       router.refresh();
     } else {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't leave.");
+      setError(body.error ?? t("couldntLeave"));
     }
     setPending(false);
   };
@@ -73,13 +75,13 @@ export function MembersPanel({
       setMembers((prev) => [...prev, { userId: body.membership.userId, role: body.membership.role, name: `${body.membership.user.firstName} ${body.membership.user.lastName}`, email: body.membership.user.email }]);
       setNewEmail("");
     } else {
-      setError(body.error ?? "Couldn't add that person.");
+      setError(body.error ?? t("couldntAddPerson"));
     }
     setPending(false);
   };
 
   const removeMember = async (userId: string) => {
-    if (!window.confirm("Remove this member?")) return;
+    if (!window.confirm(t("confirmRemoveMember"))) return;
     const res = await fetch(`/api/clubs/${clubId}/members/${userId}`, { method: "DELETE" });
     if (res.ok) setMembers((prev) => prev.filter((m) => m.userId !== userId));
   };
@@ -97,22 +99,22 @@ export function MembersPanel({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">Members ({members.length})</h2>
+        <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">{t("membersHeading", { n: members.length })}</h2>
         {isLoggedIn && !isCreator ? (
           openJoin ? (
             member ? (
               <Button variant="secondary" onClick={leave} disabled={pending}>
-                Leave club
+                {t("leaveClub")}
               </Button>
             ) : (
               <Button onClick={join} disabled={pending}>
-                Join club
+                {t("joinClub")}
               </Button>
             )
           ) : member ? (
-            <span className="text-xs text-ink/50">You&rsquo;re a member</span>
+            <span className="text-xs text-ink/50">{t("youAreMember")}</span>
           ) : (
-            <span className="text-xs text-ink/40">Ask an officer to add you</span>
+            <span className="text-xs text-ink/40">{t("askOfficerToAddYou")}</span>
           )
         ) : null}
       </div>
@@ -125,18 +127,18 @@ export function MembersPanel({
               <span className="text-ink">{m.name}</span>
               {m.role === "MANAGER" ? (
                 <span className="ml-2 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold-deep">
-                  Manager
+                  {t("managerBadge")}
                 </span>
               ) : null}
             </div>
             {canManage ? (
               <div className="flex items-center gap-3">
                 <button onClick={() => toggleRole(m.userId, m.role)} className="focus-ring text-xs text-ink/50 hover:text-ink">
-                  {m.role === "MANAGER" ? "Make member" : "Make manager"}
+                  {m.role === "MANAGER" ? t("makeMember") : t("makeManager")}
                 </button>
                 <button
                   onClick={() => removeMember(m.userId)}
-                  aria-label="Remove member"
+                  aria-label={t("removeMemberAria")}
                   className="focus-ring text-ink/30 hover:text-danger"
                 >
                   <UserMinus className="h-3.5 w-3.5" />
@@ -145,7 +147,7 @@ export function MembersPanel({
             ) : null}
           </li>
         ))}
-        {members.length === 0 ? <li className="py-2 text-sm text-ink/40">No members yet.</li> : null}
+        {members.length === 0 ? <li className="py-2 text-sm text-ink/40">{t("noMembersYet")}</li> : null}
       </ul>
 
       {canManage && !openJoin ? (
@@ -154,7 +156,7 @@ export function MembersPanel({
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            placeholder="Add member by email"
+            placeholder={t("addMemberByEmailPlaceholder")}
             className="focus-ring flex-1 rounded-xl border border-ink/15 bg-paper-dim px-3 py-2 text-sm text-ink placeholder:text-ink/30 focus:border-gold"
           />
           <button
@@ -162,7 +164,7 @@ export function MembersPanel({
             disabled={pending}
             className="focus-ring flex items-center gap-1.5 rounded-xl border border-ink/15 px-3 py-2 text-sm text-ink/70 hover:border-gold hover:text-ink"
           >
-            <UserPlus className="h-4 w-4" /> Add
+            <UserPlus className="h-4 w-4" /> {t("addButton")}
           </button>
         </div>
       ) : null}

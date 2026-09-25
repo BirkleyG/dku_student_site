@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -49,6 +50,7 @@ export function LoginModal({
   labelledBy?: string;
   className?: string;
 }) {
+  const t = useT("shell");
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,7 @@ export function LoginModal({
                 <button
                   type="button"
                   onClick={() => requestClose()}
-                  aria-label="Close"
+                  aria-label={t("close")}
                   className="focus-ring absolute right-4 top-4 rounded-full p-1.5 text-ink/50 transition-colors hover:text-ink"
                 >
                   <X className="h-5 w-5" />

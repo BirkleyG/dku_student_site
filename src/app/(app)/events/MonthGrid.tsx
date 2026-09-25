@@ -3,6 +3,7 @@
 import { format, isSameDay, isSameMonth, isToday, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
+import { useT } from "@/lib/i18n/client";
 import type { ApiEvent } from "./calendar-types";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
+  const t = useT("events");
   const gridStart = startOfWeek(startOfMonth(anchor));
   const gridEnd = endOfWeek(endOfMonth(anchor));
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
@@ -69,7 +71,7 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
                   );
                 })}
                 {dayEvents.length > MAX_VISIBLE ? (
-                  <span className="px-1.5 text-[10px] text-ink/40">+{dayEvents.length - MAX_VISIBLE} more</span>
+                  <span className="px-1.5 text-[10px] text-ink/40">{t("moreCount", { n: dayEvents.length - MAX_VISIBLE })}</span>
                 ) : null}
               </span>
             </button>

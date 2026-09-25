@@ -8,6 +8,7 @@ import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { LilypadCategory, LilypadPost } from "@/lib/lilypad";
+import { useT } from "@/lib/i18n/client";
 
 export function LilypadFeed({
   initialPosts,
@@ -18,6 +19,7 @@ export function LilypadFeed({
   initialTotalPages: number;
   categories: LilypadCategory[];
 }) {
+  const t = useT("news");
   const [categoryId, setCategoryId] = useState<number | "ALL">("ALL");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -83,7 +85,7 @@ export function LilypadFeed({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <FilterChip active={categoryId === "ALL"} onClick={() => setCategoryId("ALL")}>
-            All
+            {t("allCategory")}
           </FilterChip>
           {categories.map((c) => (
             <FilterChip key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(c.id)}>
@@ -98,16 +100,16 @@ export function LilypadFeed({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search articles…"
+            placeholder={t("searchPlaceholder")}
             className="focus-ring w-full rounded-full border border-ink/15 bg-paper py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink/35"
           />
         </div>
       </div>
 
       {loading ? (
-        <p className="mt-10 text-sm text-ink/40">Loading articles…</p>
+        <p className="mt-10 text-sm text-ink/40">{t("loadingArticles")}</p>
       ) : posts.length === 0 ? (
-        <p className="mt-10 text-ink/50">No articles found.</p>
+        <p className="mt-10 text-ink/50">{t("noArticles")}</p>
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
@@ -121,7 +123,7 @@ export function LilypadFeed({
       {!loading && page < totalPages ? (
         <div className="mt-8 flex justify-center">
           <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
-            {loadingMore ? "Loading…" : "Load more"}
+            {loadingMore ? t("loadingMore") : t("loadMore")}
           </Button>
         </div>
       ) : null}
@@ -130,6 +132,7 @@ export function LilypadFeed({
 }
 
 function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; activeCategoryId: number | "ALL" }) {
+  const t = useT("news");
   const displayCategory =
     activeCategoryId !== "ALL" ? (post.categories.find((c) => c.id === activeCategoryId)?.name ?? null) : post.category;
 
@@ -158,7 +161,7 @@ function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; active
           <h3 className="mt-1.5 font-display text-xl leading-snug">{post.title}</h3>
           <p className="mt-1.5 line-clamp-3 text-sm text-ink/60">{post.excerpt}</p>
           <p className="mt-auto flex items-center gap-1 pt-4 text-xs font-medium text-ink/50">
-            Read on The Lilypad <ArrowUpRight className="h-3.5 w-3.5" />
+            {t("readOnLilypad")} <ArrowUpRight className="h-3.5 w-3.5" />
           </p>
         </div>
       </Card>

@@ -8,9 +8,11 @@ import { wisdomTopicSchema, wisdomCategories, wisdomCategoryLabels, type WisdomT
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
+import { useT } from "@/lib/i18n/client";
 
 export function NewWisdomForm() {
   const router = useRouter();
+  const t = useT("wisdom");
   const [serverError, setServerError] = useState<string | null>(null);
   const [requireLocation, setRequireLocation] = useState(false);
   const {
@@ -32,7 +34,7 @@ export function NewWisdomForm() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't start that topic.");
+      setServerError(body.error ?? t("couldntStartTopic"));
       return;
     }
 
@@ -42,10 +44,10 @@ export function NewWisdomForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <Field label="Topic" placeholder="Best Western food near campus" {...register("title")} error={errors.title?.message} />
+      <Field label={t("topicLabel")} placeholder={t("topicPlaceholder")} {...register("title")} error={errors.title?.message} />
 
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Category</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("categoryLabel")}</span>
         <select
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
           {...register("category")}
@@ -59,10 +61,10 @@ export function NewWisdomForm() {
       </label>
 
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Context (optional)</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("contextLabel")}</span>
         <textarea
           rows={3}
-          placeholder="What counts as an answer? Any ground rules?"
+          placeholder={t("contextPlaceholder")}
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           {...register("description")}
         />
@@ -71,16 +73,16 @@ export function NewWisdomForm() {
 
       <div className="flex items-center justify-between rounded-xl border border-ink/15 bg-paper-dim px-4 py-3">
         <div>
-          <p className="text-sm text-ink">Require a location</p>
-          <p className="text-xs text-ink/50">Recommendations must include an address or AMap link.</p>
+          <p className="text-sm text-ink">{t("requireLocationLabel")}</p>
+          <p className="text-xs text-ink/50">{t("requireLocationDescription")}</p>
         </div>
-        <Switch checked={requireLocation} onChange={setRequireLocation} label="Require a location" />
+        <Switch checked={requireLocation} onChange={setRequireLocation} label={t("requireLocationLabel")} />
       </div>
 
       {serverError ? <p className="text-sm text-danger">{serverError}</p> : null}
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Starting…" : "Start the topic"}
+        {isSubmitting ? t("starting") : t("startTheTopic")}
       </Button>
     </form>
   );

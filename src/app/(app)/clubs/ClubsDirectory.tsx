@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
+import { useT } from "@/lib/i18n/client";
 import {
   clubCategories,
   clubCategoryLabels,
@@ -27,6 +28,7 @@ type ApiClub = {
 };
 
 export function ClubsDirectory() {
+  const t = useT("clubs");
   const [clubs, setClubs] = useState<ApiClub[] | null>(null);
   const [type, setType] = useState<(typeof groupTypes)[number] | "ALL">("ALL");
   const [category, setCategory] = useState<(typeof clubCategories)[number] | "ALL">("ALL");
@@ -51,7 +53,7 @@ export function ClubsDirectory() {
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <FilterChip active={type === "ALL"} onClick={() => setType("ALL")}>
-          Everything
+          {t("filterEverything")}
         </FilterChip>
         {groupTypes.map((t) => (
           <FilterChip key={t} active={type === t} onClick={() => setType(t)}>
@@ -62,7 +64,7 @@ export function ClubsDirectory() {
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <FilterChip active={category === "ALL"} onClick={() => setCategory("ALL")}>
-          All categories
+          {t("filterAllCategories")}
         </FilterChip>
         {clubCategories.map((c) => (
           <FilterChip key={c} active={category === c} onClick={() => setCategory(c)}>
@@ -72,9 +74,9 @@ export function ClubsDirectory() {
       </div>
 
       {clubs === null ? (
-        <p className="mt-10 text-sm text-ink/40">Loading…</p>
+        <p className="mt-10 text-sm text-ink/40">{t("loading")}</p>
       ) : clubs.length === 0 ? (
-        <p className="mt-10 text-ink/50">Nothing here yet. Add the first one.</p>
+        <p className="mt-10 text-ink/50">{t("emptyState")}</p>
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {clubs.map((club) => {
@@ -90,7 +92,7 @@ export function ClubsDirectory() {
                       </span>
                       {club.type === "ORGANIZATION" ? (
                         <span className="rounded-full border border-ink/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink/50">
-                          Organization
+                          {t("organizationBadge")}
                         </span>
                       ) : null}
                     </div>

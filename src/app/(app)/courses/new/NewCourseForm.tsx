@@ -10,8 +10,10 @@ import type { CatalogCourse } from "@/lib/course-catalog";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { CatalogPicker } from "./CatalogPicker";
+import { useT } from "@/lib/i18n/client";
 
 export function NewCourseForm() {
+  const t = useT("courses");
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
@@ -47,7 +49,7 @@ export function NewCourseForm() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't add that course.");
+      setServerError(body.error ?? t("couldntAddCourse"));
       return;
     }
 
@@ -65,7 +67,7 @@ export function NewCourseForm() {
             onClick={() => setManual(true)}
             className="focus-ring text-xs text-ink/50 underline decoration-ink/25 underline-offset-2 hover:text-ink"
           >
-            Can&apos;t find it — enter it by hand
+            {t("catalogCantFindIt")}
           </button>
         </>
       ) : (
@@ -76,7 +78,7 @@ export function NewCourseForm() {
                 <p className="truncate text-sm font-medium text-ink">
                   {code} {title ? `· ${title}` : ""}
                 </p>
-                <p className="text-xs text-ink/50">From the official catalog — double check it below</p>
+                <p className="text-xs text-ink/50">{t("catalogFromOfficial")}</p>
               </div>
               <button
                 type="button"
@@ -88,7 +90,7 @@ export function NewCourseForm() {
                 }}
                 className="focus-ring shrink-0 text-xs text-ink/45 underline decoration-ink/25 underline-offset-2 hover:text-ink"
               >
-                Search again
+                {t("catalogSearchAgain")}
               </button>
             </div>
           ) : (
@@ -97,12 +99,12 @@ export function NewCourseForm() {
               onClick={() => setManual(false)}
               className="focus-ring text-xs text-ink/50 underline decoration-ink/25 underline-offset-2 hover:text-ink"
             >
-              ← Back to catalog search
+              {t("catalogBackToSearch")}
             </button>
           )}
 
           <label className="block">
-            <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Department</span>
+            <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("departmentLabel")}</span>
             <select
               className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink focus:border-gold"
               {...register("department")}
@@ -117,26 +119,23 @@ export function NewCourseForm() {
 
           {department === "Other" ? (
             <Field
-              label="Which department?"
-              placeholder="Type it in — we'll add it to the list next update"
+              label={t("whichDepartmentLabel")}
+              placeholder={t("whichDepartmentPlaceholder")}
               {...register("otherDepartment")}
               error={errors.otherDepartment?.message}
             />
           ) : null}
 
-          <Field label="Course code" placeholder="COMPSCI 201" {...register("code")} error={errors.code?.message} />
-          <Field label="Title" placeholder="Data Structures" {...register("title")} error={errors.title?.message} />
-          <Field label="Credits (optional)" placeholder="4" {...register("credits")} error={errors.credits?.message} />
+          <Field label={t("courseCodeLabel")} placeholder={t("courseCodePlaceholder")} {...register("code")} error={errors.code?.message} />
+          <Field label={t("titleLabel")} placeholder={t("titleFieldPlaceholder")} {...register("title")} error={errors.title?.message} />
+          <Field label={t("creditsOptionalLabel")} placeholder="4" {...register("credits")} error={errors.credits?.message} />
 
-          <p className="text-xs text-ink/40">
-            That&apos;s it — once it&apos;s added, you and anyone else can fill in the description, link a professor,
-            and upload notes, syllabuses, and past exams.
-          </p>
+          <p className="text-xs text-ink/40">{t("thatsItCourse")}</p>
 
           {serverError ? <p className="text-sm text-danger">{serverError}</p> : null}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Adding…" : "Add course"}
+            {isSubmitting ? t("adding") : t("addCourse")}
           </Button>
         </form>
       )}

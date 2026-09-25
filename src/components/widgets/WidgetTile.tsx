@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { widgetCatalog, sizeSpec, hrefForInstance, type WidgetInstance } from "@/lib/widgets";
 import { WidgetTileCard } from "./WidgetTileCard";
 import type { WidgetData } from "./AppWidgetContent";
+import { useT } from "@/lib/i18n/client";
 
 export function WidgetTile({
   instance,
@@ -23,6 +24,7 @@ export function WidgetTile({
   onRemove: (id: string) => void;
   onConfigure: (id: string) => void;
 }) {
+  const t = useT("widgets");
   const meta = widgetCatalog[instance.kind];
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: instance.id,
@@ -49,7 +51,7 @@ export function WidgetTile({
               onRemove(instance.id);
             }}
             className="focus-ring pointer-events-auto absolute -left-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-danger text-white shadow-md ring-2 ring-paper"
-            aria-label={`Remove ${meta.label} widget`}
+            aria-label={t("remove", { label: meta.label })}
           >
             <X className="h-3.5 w-3.5" strokeWidth={2.5} />
           </button>
@@ -61,7 +63,7 @@ export function WidgetTile({
                 onConfigure(instance.id);
               }}
               className="focus-ring pointer-events-auto absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-ink text-white shadow-md ring-2 ring-paper"
-              aria-label={`Configure ${meta.label} widget`}
+              aria-label={t("configureWidget", { label: meta.label })}
             >
               <Settings2 className="h-3.5 w-3.5" strokeWidth={2.25} />
             </button>
@@ -80,7 +82,7 @@ export function WidgetTile({
         {editing ? (
           <GripVertical className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-ink/25" />
         ) : (
-          <Link href={hrefForInstance(instance)} className="focus-ring absolute inset-0 rounded-lg" aria-label={`Open ${meta.label}`} />
+          <Link href={hrefForInstance(instance)} className="focus-ring absolute inset-0 rounded-lg" aria-label={t("open", { label: meta.label })} />
         )}
       </div>
     </div>

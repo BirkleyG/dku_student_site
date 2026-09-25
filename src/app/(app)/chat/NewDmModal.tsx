@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 type FoundUser = { id: string; firstName: string; lastName: string };
 
@@ -13,6 +14,7 @@ export function NewDmModal({
   onClose: () => void;
   onSelected: (user: FoundUser) => void;
 }) {
+  const t = useT("chat");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoundUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,23 +59,23 @@ export function NewDmModal({
         className="w-full rounded-t-3xl border border-ink/10 bg-paper p-5 sm:max-w-sm sm:rounded-3xl"
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl">New message</h2>
-          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label="Close">
+          <h2 className="font-display text-xl">{t("newMessage")}</h2>
+          <button onClick={onClose} className="focus-ring rounded-full p-1.5 text-ink/50 hover:text-ink" aria-label={t("closeAria")}>
             <X className="h-5 w-5" />
           </button>
         </div>
-        <p className="mt-2 text-sm text-ink/50">Look someone up by name to message them directly.</p>
+        <p className="mt-2 text-sm text-ink/50">{t("newDmDescription")}</p>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name"
+          placeholder={t("searchByNamePlaceholder")}
           autoFocus
           className="focus-ring mt-4 w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-ink placeholder:text-ink/30 focus:border-gold"
         />
         <div className="mt-3 max-h-64 space-y-1 overflow-y-auto">
-          {loading ? <p className="px-1 py-2 text-sm text-ink/40">Searching…</p> : null}
+          {loading ? <p className="px-1 py-2 text-sm text-ink/40">{t("searching")}</p> : null}
           {!loading && query.trim().length >= 2 && results.length === 0 ? (
-            <p className="px-1 py-2 text-sm text-ink/40">No one found.</p>
+            <p className="px-1 py-2 text-sm text-ink/40">{t("noOneFound")}</p>
           ) : null}
           {results.map((u) => (
             <button

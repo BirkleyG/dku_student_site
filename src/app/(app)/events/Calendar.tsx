@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useT } from "@/lib/i18n/client";
 import { useLenis } from "lenis/react";
 import {
   addDays,
@@ -35,6 +36,7 @@ type Props = {
 };
 
 export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
+  const t = useT("events");
   const [view, setView] = useState<CalendarView>("month");
   const [anchor, setAnchor] = useState(() => new Date());
   const [events, setEvents] = useState<ApiEvent[]>([]);
@@ -179,12 +181,12 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
               onClick={goToday}
               className="focus-ring rounded-full border border-ink/15 px-4 py-1.5 text-sm text-ink/70 hover:border-ink/35"
             >
-              Today
+              {t("today")}
             </button>
-            <button onClick={goPrev} className="focus-ring rounded-full p-2 text-ink/60 hover:bg-paper-dim" aria-label="Previous">
+            <button onClick={goPrev} className="focus-ring rounded-full p-2 text-ink/60 hover:bg-paper-dim" aria-label={t("previous")}>
               ‹
             </button>
-            <button onClick={goNext} className="focus-ring rounded-full p-2 text-ink/60 hover:bg-paper-dim" aria-label="Next">
+            <button onClick={goNext} className="focus-ring rounded-full p-2 text-ink/60 hover:bg-paper-dim" aria-label={t("next")}>
               ›
             </button>
             <h2 className="ml-1 font-display text-xl">{label}</h2>
@@ -199,7 +201,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
                   view === v ? "bg-ink text-white" : "text-ink/60 hover:text-ink"
                 }`}
               >
-                {v}
+                {v === "day" ? t("viewDay") : v === "week" ? t("viewWeek") : t("viewMonth")}
               </button>
             ))}
           </div>
@@ -207,7 +209,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
 
         <div className="mt-4">
           {isPending && events.length === 0 ? (
-            <p className="py-10 text-center text-sm text-ink/40">Loading events…</p>
+            <p className="py-10 text-center text-sm text-ink/40">{t("loadingEvents")}</p>
           ) : view === "month" ? (
             <MonthGrid anchor={anchor} events={visibleEvents} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
           ) : view === "week" ? (

@@ -23,6 +23,7 @@ import { WidgetGallery } from "./WidgetGallery";
 import { WidgetConfigEditor } from "./WidgetConfigEditor";
 import type { WidgetData } from "./AppWidgetContent";
 import type { WidgetInstance, WidgetKind } from "@/lib/widgets";
+import { useT } from "@/lib/i18n/client";
 
 export function HomeDashboard({
   initialLayout,
@@ -33,6 +34,7 @@ export function HomeDashboard({
   data: WidgetData;
   canSave: boolean;
 }) {
+  const t = useT("widgets");
   const router = useRouter();
   const [layout, setLayout] = useState<WidgetInstance[]>(initialLayout);
   const [editing, setEditing] = useState(false);
@@ -116,13 +118,13 @@ export function HomeDashboard({
           className="focus-ring flex items-center gap-1.5 text-sm font-medium text-ink/60 hover:text-ink"
         >
           {editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-          {editing ? "Done" : "Edit widgets"}
+          {editing ? t("done") : t("editWidgets")}
         </button>
-        {saving ? <span className="text-xs text-ink/35">Saving…</span> : null}
+        {saving ? <span className="text-xs text-ink/35">{t("saving")}</span> : null}
       </div>
 
       {editing && !canSave ? (
-        <p className="mt-2 text-xs text-ink/40">Log in to save your dashboard layout.</p>
+        <p className="mt-2 text-xs text-ink/40">{t("loginToSave")}</p>
       ) : null}
 
       <DndContext
@@ -152,7 +154,7 @@ export function HomeDashboard({
                 className="focus-ring col-span-1 row-span-1 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-ink/20 text-ink/40 transition-colors hover:border-gold hover:text-gold"
               >
                 <Plus className="h-5 w-5" />
-                <span className="text-xs font-medium">Add widget</span>
+                <span className="text-xs font-medium">{t("addWidget")}</span>
               </button>
             ) : null}
           </div>

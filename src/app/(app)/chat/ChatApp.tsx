@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
 import { REACTION_EMOJI } from "@/lib/chat-reactions";
+import { useT } from "@/lib/i18n/client";
 
 const POLL_MS = 4000;
 
@@ -36,6 +37,7 @@ async function jsonFetch(url: string, init?: RequestInit) {
 }
 
 export function ChatApp({ currentUserId, currentUserName }: { currentUserId: string; currentUserName: string }) {
+  const t = useT("chat");
   const router = useRouter();
   const [sidebar, setSidebar] = useState<SidebarData | null>(null);
   const [selected, setSelected] = useState<SelectedChannel | null>(null);
@@ -60,10 +62,10 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       setSidebar(data);
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load Chat");
+      setError(err instanceof Error ? err.message : t("loadError"));
       return null;
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,12 +76,12 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         setSelected((prev) => prev ?? { ...data.general, kind: "GENERAL" });
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't load Chat");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("loadError"));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const loadMessages = useCallback(async (channelId: string) => {
     try {
@@ -176,7 +178,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         setComposer("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send that message");
+      setError(err instanceof Error ? err.message : t("sendError"));
     } finally {
       setSending(false);
     }
@@ -194,7 +196,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       setThreadRoot((prev) => (prev && prev.id === messageId ? { ...prev, reactions } : prev));
       setThreadReplies((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't react to that message");
+      setError(err instanceof Error ? err.message : t("reactError"));
     }
   };
 
@@ -215,14 +217,14 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       await loadSidebar();
       selectChannel({ id: data.channel.id, name: data.channel.name, description: null, kind: "DIRECT" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't start that conversation");
+      setError(err instanceof Error ? err.message : t("dmError"));
     }
   };
 
   if (!sidebar || !selected) {
     return (
       <div className="flex h-[calc(100svh-var(--header-h))] items-center justify-center">
-        <p className="text-sm text-ink/40">{error ?? "Loading Chat…"}</p>
+        <p className="text-sm text-ink/40">{error ?? t("loading")}</p>
       </div>
     );
   }
@@ -230,7 +232,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
   return (
     <div className="flex h-[calc(100svh-var(--header-h))] w-full">
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex">
-        <SidebarSection label="Everyone">
+        <SidebarSection label={t("everyoneSection")}>
           <SidebarRow
             icon={<Hash className="h-4 w-4" />}
             label={sidebar.general.name}
@@ -240,15 +242,15 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         </SidebarSection>
 
         <SidebarSection
-          label="Groups"
+          label={t("groupsSection")}
           action={
-            <button onClick={() => setShowJoin(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label="Join a group">
+            <button onClick={() => setShowJoin(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("joinGroup")}>
               <Plus className="h-3.5 w-3.5" />
             </button>
           }
         >
           {sidebar.groups.length === 0 ? (
-            <p className="px-2.5 py-1 text-xs text-ink/35">No groups joined yet.</p>
+            <p className="px-2.5 py-1 text-xs text-ink/35">{t("noGroupsYet")}</p>
           ) : (
             sidebar.groups.map((g) => (
               <SidebarRow
@@ -264,20 +266,20 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             onClick={() => setShowJoin(true)}
             className="focus-ring mt-1 block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
           >
-            + Join with invite code
+            {t("joinWithInviteCode")}
           </button>
         </SidebarSection>
 
         <SidebarSection
-          label="Direct messages"
+          label={t("directMessagesSection")}
           action={
-            <button onClick={() => setShowDm(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label="New message">
+            <button onClick={() => setShowDm(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("newMessage")}>
               <UserPlus className="h-3.5 w-3.5" />
             </button>
           }
         >
           {sidebar.dms.length === 0 ? (
-            <p className="px-2.5 py-1 text-xs text-ink/35">No conversations yet.</p>
+            <p className="px-2.5 py-1 text-xs text-ink/35">{t("noConversationsYet")}</p>
           ) : (
             sidebar.dms.map((d) => (
               <SidebarRow
@@ -302,7 +304,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {messages.length === 0 ? (
-            <p className="mt-10 text-center text-sm text-ink/40">Nothing here yet. Say the first thing.</p>
+            <p className="mt-10 text-center text-sm text-ink/40">{t("emptyChannel")}</p>
           ) : (
             <div className="space-y-3">
               {messages.map((m) => (
@@ -328,7 +330,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             onChange={setComposer}
             onSend={() => void send()}
             disabled={sending}
-            placeholder={`Message ${selected.name}`}
+            placeholder={t("messagePlaceholder", { name: selected.name })}
           />
         </div>
       </div>
@@ -362,7 +364,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         {showDm ? <NewDmModal onClose={() => setShowDm(false)} onSelected={(u) => void startDm(u)} /> : null}
       </AnimatePresence>
 
-      <p className="sr-only">Signed in as {currentUserName}</p>
+      <p className="sr-only">{t("signedInAs", { name: currentUserName })}</p>
     </div>
   );
 }
@@ -446,6 +448,7 @@ function MessageRow({
   onOpenThread?: () => void;
   onReact: (emoji: string) => void;
 }) {
+  const t = useT("chat");
   const [pickerOpen, setPickerOpen] = useState(false);
   const replyCount = message._count?.replies ?? 0;
   const reactionGroups = groupReactions(message.reactions, currentUserId);
@@ -456,7 +459,7 @@ function MessageRow({
       <div className={`flex max-w-[75%] flex-col ${isMine ? "items-end" : "items-start"}`}>
         <div className={`flex items-baseline gap-2 px-1 ${isMine ? "flex-row-reverse" : ""}`}>
           <span className="text-xs font-medium text-ink/70">
-            {isMine ? "You" : `${message.author.firstName} ${message.author.lastName}`}
+            {isMine ? t("you") : `${message.author.firstName} ${message.author.lastName}`}
           </span>
           <span className="text-[11px] text-ink/35">{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</span>
         </div>
@@ -495,14 +498,18 @@ function MessageRow({
               }`}
             >
               <MessageSquare className="h-3 w-3" />
-              {replyCount > 0 ? `${replyCount} repl${replyCount === 1 ? "y" : "ies"}` : "Reply in thread"}
+              {replyCount > 0
+                ? replyCount === 1
+                  ? t("replyCountOne", { n: replyCount })
+                  : t("replyCountOther", { n: replyCount })
+                : t("replyInThread")}
             </button>
           ) : null}
 
           <button
             onClick={() => setPickerOpen((v) => !v)}
             className="focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-ink/40 transition-colors hover:bg-paper-dim hover:text-ink"
-            aria-label="Add reaction"
+            aria-label={t("addReactionAria")}
           >
             <SmilePlus className="h-3.5 w-3.5" />
           </button>
@@ -549,6 +556,7 @@ function Composer({
   disabled: boolean;
   placeholder: string;
 }) {
+  const t = useT("chat");
   return (
     <div className="flex items-end gap-2">
       <textarea
@@ -569,7 +577,7 @@ function Composer({
         disabled={disabled || !value.trim()}
         className="focus-ring shrink-0 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
       >
-        Send
+        {t("send")}
       </button>
     </div>
   );
@@ -596,11 +604,12 @@ function ThreadPanel({
   currentUserId: string;
   onReact: (messageId: string, emoji: string) => void;
 }) {
+  const t = useT("chat");
   return (
     <div className="flex w-full max-w-sm shrink-0 flex-col border-l border-ink/10 bg-paper sm:w-96">
       <header className="flex shrink-0 items-center justify-between border-b border-ink/10 px-4 py-3.5">
-        <h2 className="font-display text-base text-ink">Thread</h2>
-        <button onClick={onClose} className="focus-ring rounded-full p-1 text-ink/50 hover:text-ink" aria-label="Close thread">
+        <h2 className="font-display text-base text-ink">{t("threadHeading")}</h2>
+        <button onClick={onClose} className="focus-ring rounded-full p-1 text-ink/50 hover:text-ink" aria-label={t("closeThreadAria")}>
           <X className="h-4 w-4" />
         </button>
       </header>
@@ -624,7 +633,7 @@ function ThreadPanel({
         ))}
       </div>
       <div className="shrink-0 border-t border-ink/10 p-3">
-        <Composer value={composer} onChange={onComposerChange} onSend={onSend} disabled={sending} placeholder="Reply in thread" />
+        <Composer value={composer} onChange={onComposerChange} onSend={onSend} disabled={sending} placeholder={t("replyInThread")} />
       </div>
     </div>
   );

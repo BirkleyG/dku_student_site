@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type ChatGroup = {
   id: string;
@@ -12,6 +13,7 @@ type ChatGroup = {
 };
 
 export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] }) {
+  const t = useT("admin");
   const [groups, setGroups] = useState(initialGroups);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -33,7 +35,7 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
     const body = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      setError(body.error ?? "Couldn't create that group.");
+      setError(body.error ?? t("chatGroupCreateError"));
     } else {
       setGroups((prev) => [{ ...body.channel, memberCount: 1 }, ...prev]);
       setName("");
@@ -43,7 +45,7 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm("Delete this chat group? Its messages go with it.")) return;
+    if (!window.confirm(t("chatGroupDeleteConfirm"))) return;
     const res = await fetch(`/api/chat/channels/${id}`, { method: "DELETE" });
     if (res.ok) setGroups((prev) => prev.filter((g) => g.id !== id));
   };
@@ -59,20 +61,20 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
     <div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Group name</span>
+          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("chatGroupNameLabel")}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="International Students"
+            placeholder={t("chatGroupNamePlaceholder")}
             className="focus-ring rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-ink placeholder:text-ink/30 focus:border-gold"
           />
         </label>
         <label className="block">
-          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">Description (optional)</span>
+          <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("chatGroupDescriptionLabel")}</span>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="For international students to connect"
+            placeholder={t("chatGroupDescriptionPlaceholder")}
             className="focus-ring w-64 rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-ink placeholder:text-ink/30 focus:border-gold"
           />
         </label>
@@ -81,14 +83,14 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
           disabled={creating || !name.trim()}
           className="focus-ring rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
         >
-          {creating ? "Creating…" : "Create group"}
+          {creating ? t("chatGroupCreating") : t("chatGroupCreateButton")}
         </button>
       </div>
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
 
       <div className="mt-8 space-y-2">
         {groups.length === 0 ? (
-          <p className="text-sm text-ink/40">No chat groups yet.</p>
+          <p className="text-sm text-ink/40">{t("noChatGroupsYet")}</p>
         ) : (
           groups.map((g) => (
             <div
@@ -98,17 +100,17 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-ink">{g.name}</p>
                 <p className="truncate text-xs text-ink/45">
-                  {g.memberCount} member{g.memberCount === 1 ? "" : "s"}
+                  {g.memberCount === 1 ? t("chatGroupMemberOne", { n: g.memberCount }) : t("chatGroupMemberOther", { n: g.memberCount })}
                   {g.description ? ` · ${g.description}` : ""}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-sm font-medium tracking-wide text-ink">{g.inviteCode}</span>
                 <button onClick={() => copy(g)} className="focus-ring text-xs text-ink/60 hover:text-ink">
-                  {copiedId === g.id ? "Copied!" : "Copy"}
+                  {copiedId === g.id ? t("copied") : t("copy")}
                 </button>
                 <button onClick={() => void remove(g.id)} className="focus-ring text-xs text-danger/80 hover:text-danger">
-                  Delete
+                  {t("chatGroupDeleteButton")}
                 </button>
               </div>
             </div>
