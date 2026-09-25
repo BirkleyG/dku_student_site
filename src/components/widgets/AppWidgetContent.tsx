@@ -9,8 +9,9 @@ import type { LilypadCategory, LilypadPost } from "@/lib/lilypad";
 export type WidgetData = {
   now: string;
   events: { id: string; title: string; startsAt: string; endsAt: string; location: string; category: EventCategory }[];
-  boardPosts: { id: string; title: string; authorName: string; createdAt: string; commentCount: number }[];
-  trackedPosts: Record<string, { postId: string; title: string; authorName: string; unreadCount: number } | null>;
+  chatMessages: { id: string; channelName: string; body: string; authorName: string; createdAt: string }[];
+  trackedChannels: Record<string, { channelId: string; channelName: string; unreadCount: number } | null>;
+  chatChannels: { id: string; name: string }[];
   eats: EatsWidgetData;
   lilypadCategories: LilypadCategory[];
   lilypadByWidget: Record<string, LilypadPost[]>;
@@ -132,39 +133,41 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
         <Empty label="No orders yet today." />
       );
 
-    case "BOARD_LATEST": {
-      const item = data.boardPosts[0];
-      if (!item) return <Empty label="No posts yet. Start the conversation." />;
+    case "CHAT_LATEST": {
+      const item = data.chatMessages[0];
+      if (!item) return <Empty label="No messages yet. Say something." />;
       return (
         <div>
-          <p className="text-xs text-ink/40">{item.authorName}</p>
-          <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{item.title}</p>
+          <p className="text-xs text-ink/40">
+            {item.authorName} · {item.channelName}
+          </p>
+          <p className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{item.body}</p>
         </div>
       );
     }
 
-    case "BOARD_RECENT": {
-      const items = data.boardPosts.slice(0, 4);
-      if (!items.length) return <Empty label="No posts yet. Start the conversation." />;
+    case "CHAT_RECENT": {
+      const items = data.chatMessages.slice(0, 4);
+      if (!items.length) return <Empty label="No messages yet. Say something." />;
       return (
         <ul className="space-y-1.5 text-sm">
-          {items.map((p) => (
-            <li key={p.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{p.authorName}</span> {p.title}
+          {items.map((m) => (
+            <li key={m.id} className="truncate text-ink/75">
+              <span className="text-ink/40">{m.authorName}</span> {m.body}
             </li>
           ))}
         </ul>
       );
     }
 
-    case "BOARD_TRACKED_POST": {
-      const tracked = data.trackedPosts[instance.id];
-      if (!tracked) return <Empty label="Pick a post to track." />;
+    case "CHAT_TRACKED_CHANNEL": {
+      const tracked = data.trackedChannels[instance.id];
+      if (!tracked) return <Empty label="Pick a channel to track." />;
       return (
         <div>
-          <p className="line-clamp-2 text-sm font-medium text-ink">{tracked.title}</p>
+          <p className="line-clamp-2 text-sm font-medium text-ink">{tracked.channelName}</p>
           <p className="mt-1.5 text-xs text-ink/50">
-            {tracked.unreadCount > 0 ? `${tracked.unreadCount} new comment${tracked.unreadCount === 1 ? "" : "s"}` : "No new comments"}
+            {tracked.unreadCount > 0 ? `${tracked.unreadCount} new message${tracked.unreadCount === 1 ? "" : "s"}` : "No new messages"}
           </p>
         </div>
       );

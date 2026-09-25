@@ -74,7 +74,7 @@ async function run() {
     await setNotificationPreference("user-1", "ORDERS", false, store);
     assert.equal(await isNotificationEnabled("user-1", "ORDERS", store), false);
     assert.equal(await isNotificationEnabled("user-1", "EVENTS", store), true);
-    assert.equal(await isNotificationEnabled("user-1", "POSTS", store), true);
+    assert.equal(await isNotificationEnabled("user-1", "MESSAGES", store), true);
     assert.equal(await isNotificationEnabled("user-1", "RECOMMENDATIONS", store), true);
   });
 
@@ -87,10 +87,10 @@ async function run() {
 
   await test("re-enabling a category after disabling it works", async () => {
     const store = createMockStore();
-    await setNotificationPreference("user-1", "POSTS", false, store);
-    assert.equal(await isNotificationEnabled("user-1", "POSTS", store), false);
-    await setNotificationPreference("user-1", "POSTS", true, store);
-    assert.equal(await isNotificationEnabled("user-1", "POSTS", store), true);
+    await setNotificationPreference("user-1", "MESSAGES", false, store);
+    assert.equal(await isNotificationEnabled("user-1", "MESSAGES", store), false);
+    await setNotificationPreference("user-1", "MESSAGES", true, store);
+    assert.equal(await isNotificationEnabled("user-1", "MESSAGES", store), true);
   });
 
   await test("getNotificationPreferences returns all four categories, defaulting missing ones on", async () => {
@@ -99,7 +99,7 @@ async function run() {
     const prefs = await getNotificationPreferences("user-1", store);
     assert.deepEqual(prefs, {
       EVENTS: true,
-      POSTS: true,
+      MESSAGES: true,
       RECOMMENDATIONS: false,
       ORDERS: true,
     });

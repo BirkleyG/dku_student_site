@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Update-in-place by id (not delete-all-recreate-all) so a row's createdAt
-  // survives unrelated edits — BOARD_TRACKED_POST's "unread since" baseline
+  // survives unrelated edits — CHAT_TRACKED_CHANNEL's "unread since" baseline
   // depends on it staying put when the user just reorders or removes some
   // other widget.
   const existing = await prisma.dashboardWidget.findMany({ where: { userId: user.id }, select: { id: true } });

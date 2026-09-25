@@ -9,6 +9,7 @@ import { DeleteButton } from "@/components/shell/DeleteButton";
 import { TabsShell } from "./TabsShell";
 import { UsersPanel } from "./UsersPanel";
 import { InviteCodesPanel } from "./InviteCodesPanel";
+import { ChatGroupsPanel } from "./ChatGroupsPanel";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -19,7 +20,7 @@ export default async function AdminPage() {
 
   const isSuperAdmin = requester.role === "ADMIN";
 
-  const [events, clubs, wisdomTopics, boardPosts, users, inviteCodes] = await Promise.all([
+  const [events, clubs, wisdomTopics, chatGroups, users, inviteCodes] = await Promise.all([
     hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")
       ? prisma.event.findMany({
           orderBy: { startsAt: "desc" },
@@ -37,11 +38,11 @@ export default async function AdminPage() {
           include: { _count: { select: { recommendations: true } } },
         })
       : Promise.resolve([]),
-    hasScope(requester, "BOARD")
-      ? prisma.boardPost.findMany({
+    hasScope(requester, "CHAT")
+      ? prisma.chatChannel.findMany({
+          where: { kind: "GROUP" },
           orderBy: { createdAt: "desc" },
-          take: 20,
-          include: { author: { select: { firstName: true, lastName: true } } },
+          include: { _count: { select: { members: true } } },
         })
       : Promise.resolve([]),
     isSuperAdmin
@@ -146,18 +147,19 @@ export default async function AdminPage() {
     });
   }
 
-  if (hasScope(requester, "BOARD")) {
+  if (hasScope(requester, "CHAT")) {
     tabs.push({
-      key: "board",
-      label: "Board",
+      key: "chat",
+      label: "Chat groups",
       content: (
-        <ModerationList
-          empty="No posts yet."
-          rows={boardPosts.map((b) => ({
-            id: b.id,
-            title: b.title,
-            subtitle: `${b.author.firstName} ${b.author.lastName} · ${format(b.createdAt, "MMM d")}`,
-            endpoint: `/api/board/${b.id}`,
+        <ChatGroupsPanel
+          initialGroups={chatGroups.map((g) => ({
+            id: g.id,
+            name: g.name,
+            description: g.description,
+            inviteCode: g.inviteCode,
+            memberCount: g._count.members,
+            createdAt: g.createdAt.toISOString(),
           }))}
         />
       ),
