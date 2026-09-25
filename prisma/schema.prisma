@@ -22,7 +22,7 @@ enum AdminScope {
   SPORTS
   NEWS
   WISDOM
-  BOARD
+  CHAT
   EATS
   SLB
   COURSES
@@ -35,7 +35,7 @@ enum AdminScope {
 // per-category filtering happens on top of PushSubscription in that card.
 enum NotificationCategory {
   EVENTS
-  POSTS
+  MESSAGES
   RECOMMENDATIONS
   ORDERS
 }
@@ -68,8 +68,9 @@ model User {
   hostedEvents       Event[]              @relation("EventHost")
   rsvps              Rsvp[]
   dashboardWidgets   DashboardWidget[]
-  boardPosts         BoardPost[]          @relation("BoardAuthor")
-  boardComments      BoardComment[]       @relation("BoardCommentAuthor")
+  chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
+  chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
+  chatMessages           ChatMessage[]        @relation("ChatMessageAuthor")
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
   wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
   wisdomVotes           WisdomVote[]
@@ -184,9 +185,9 @@ enum WidgetKind {
   EATS_FAVORITE
   EATS_ORDER_TRACKER
   EATS_ACTIVITY
-  BOARD_LATEST
-  BOARD_RECENT
-  BOARD_TRACKED_POST
+  CHAT_LATEST
+  CHAT_RECENT
+  CHAT_TRACKED_CHANNEL
   LILYPAD_LATEST
 }
 
@@ -202,28 +203,59 @@ model DashboardWidget {
   @@map("dashboard_widgets")
 }
 
-model BoardPost {
-  id        String         @id @default(cuid())
-  title     String
-  body      String
-  authorId  String
-  author    User           @relation("BoardAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  comments  BoardComment[]
-  createdAt DateTime       @default(now())
-
-  @@map("board_posts")
+enum ChatChannelKind {
+  GENERAL
+  GROUP
+  DIRECT
 }
 
-model BoardComment {
-  id        String    @id @default(cuid())
-  postId    String
-  post      BoardPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User      @relation("BoardCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  body      String
-  createdAt DateTime  @default(now())
+// One row per chat surface: the single sitewide GENERAL channel (id "general",
+// implicit membership for every user), an admin-created GROUP channel joined
+// via inviteCode (nationality/class-year communities etc.), or a 2-member
+// DIRECT channel created on demand between two users.
+model ChatChannel {
+  id          String              @id @default(cuid())
+  kind        ChatChannelKind
+  name        String
+  description String?
+  inviteCode  String?             @unique
+  createdById String?
+  createdBy   User?               @relation("ChatChannelCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  members     ChatChannelMember[]
+  messages    ChatMessage[]
+  createdAt   DateTime            @default(now())
 
-  @@map("board_comments")
+  @@map("chat_channels")
+}
+
+model ChatChannelMember {
+  id        String      @id @default(cuid())
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("ChatChannelMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime    @default(now())
+
+  @@unique([channelId, userId])
+  @@map("chat_channel_members")
+}
+
+// parentId null = a top-level message in the channel; non-null = a threaded
+// reply (Slack-style — one level deep, replies don't nest further).
+model ChatMessage {
+  id        String        @id @default(cuid())
+  channelId String
+  channel   ChatChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation("ChatMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  parentId  String?
+  parent    ChatMessage?  @relation("ChatMessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ChatMessage[] @relation("ChatMessageReplies")
+  createdAt DateTime      @default(now())
+
+  @@index([channelId, parentId, createdAt])
+  @@map("chat_messages")
 }
 
 enum WisdomCategory {
@@ -471,8 +503,8 @@ model ProfessorReview {
 
 enum ScoreReason {
   WISDOM_POST
-  BOARD_POST
-  BOARD_COMMENT
+  CHAT_MESSAGE
+  CHAT_REPLY
   PROFESSOR_REVIEW
   COURSE_RESOURCE
   COURSE_ADDED

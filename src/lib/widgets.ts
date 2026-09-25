@@ -75,31 +75,31 @@ export const widgetCatalog: Record<WidgetKind, WidgetKindMeta> = {
     configurable: false,
     eatsData: true,
   },
-  BOARD_LATEST: {
-    kind: "BOARD_LATEST",
-    label: "Latest post",
+  CHAT_LATEST: {
+    kind: "CHAT_LATEST",
+    label: "Latest message",
     size: "SMALL",
     icon: MessagesSquare,
-    href: "/social",
-    blurb: "The single most recent post on the Board.",
+    href: "/chat",
+    blurb: "The single most recent message across your chats.",
     configurable: false,
   },
-  BOARD_RECENT: {
-    kind: "BOARD_RECENT",
-    label: "Recent posts",
+  CHAT_RECENT: {
+    kind: "CHAT_RECENT",
+    label: "Recent messages",
     size: "LARGE",
     icon: MessagesSquare,
-    href: "/social",
-    blurb: "A running feed of the latest Board posts.",
+    href: "/chat",
+    blurb: "A running feed of the latest messages across your chats.",
     configurable: false,
   },
-  BOARD_TRACKED_POST: {
-    kind: "BOARD_TRACKED_POST",
-    label: "Track a post",
+  CHAT_TRACKED_CHANNEL: {
+    kind: "CHAT_TRACKED_CHANNEL",
+    label: "Track a channel",
     size: "SMALL",
     icon: MessagesSquare,
-    href: "/social",
-    blurb: "Pick a post and see how many new comments it's gotten since.",
+    href: "/chat",
+    blurb: "Pick a channel and see how many new messages it's gotten since.",
     configurable: true,
   },
   LILYPAD_LATEST: {
@@ -128,7 +128,7 @@ export const widgetGroups: WidgetGroup[] = [
     icon: UtensilsCrossed,
     kinds: ["EATS_OPEN_COUNT", "EATS_FAVORITE", "EATS_ORDER_TRACKER", "EATS_ACTIVITY"],
   },
-  { key: "board", label: "The Board", icon: MessagesSquare, kinds: ["BOARD_LATEST", "BOARD_RECENT", "BOARD_TRACKED_POST"] },
+  { key: "chat", label: "Chat", icon: MessagesSquare, kinds: ["CHAT_LATEST", "CHAT_RECENT", "CHAT_TRACKED_CHANNEL"] },
   { key: "lilypad", label: "The Lilypad", icon: Newspaper, kinds: ["LILYPAD_LATEST"] },
 ];
 
@@ -160,9 +160,6 @@ export function defaultConfigFor(kind: WidgetKind): Record<string, unknown> {
 }
 
 export function hrefForInstance(instance: WidgetInstance): string {
-  if (instance.kind === "BOARD_TRACKED_POST" && typeof instance.config.postId === "string" && instance.config.postId) {
-    return `/social/${instance.config.postId}`;
-  }
   return widgetCatalog[instance.kind].href;
 }
 
@@ -171,7 +168,7 @@ export const defaultLayout: Array<{ kind: WidgetKind; config?: Record<string, un
   { kind: "EATS_OPEN_COUNT" },
   { kind: "EVENTS_TALLY", config: { categories: [], timeframe: "today" } },
   { kind: "EVENTS_TALLY", config: { categories: ["CLUBS"], timeframe: "week" } },
-  { kind: "BOARD_LATEST" },
+  { kind: "CHAT_LATEST" },
   { kind: "EATS_FAVORITE", config: {} },
   { kind: "LILYPAD_LATEST", config: { categoryId: null } },
 ];

@@ -8,7 +8,7 @@ const sendSchema = z.object({
   title: z.string().trim().min(1).max(120),
   body: z.string().trim().min(1).max(500),
   url: z.string().trim().max(500).optional(),
-  category: z.enum(["EVENTS", "POSTS", "RECOMMENDATIONS", "ORDERS"]).default("EVENTS"),
+  category: z.enum(["EVENTS", "MESSAGES", "RECOMMENDATIONS", "ORDERS"]).default("EVENTS"),
 });
 
 /**

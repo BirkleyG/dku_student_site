@@ -28,7 +28,9 @@ export function WidgetConfigEditor({
   const [restaurantName, setRestaurantName] = useState<string>(
     typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : (data.eats.vendors[0]?.name ?? ""),
   );
-  const [postId, setPostId] = useState<string>(typeof instance.config.postId === "string" ? instance.config.postId : "");
+  const [channelId, setChannelId] = useState<string>(
+    typeof instance.config.channelId === "string" ? instance.config.channelId : "",
+  );
   const [lilypadCategoryId, setLilypadCategoryId] = useState<number | null>(
     typeof instance.config.categoryId === "number" ? instance.config.categoryId : null,
   );
@@ -40,7 +42,7 @@ export function WidgetConfigEditor({
   const save = () => {
     if (instance.kind === "EVENTS_TALLY") onSave({ categories, timeframe });
     else if (instance.kind === "EATS_FAVORITE") onSave(restaurantName ? { restaurantName } : {});
-    else if (instance.kind === "BOARD_TRACKED_POST") onSave({ postId });
+    else if (instance.kind === "CHAT_TRACKED_CHANNEL") onSave({ channelId });
     else if (instance.kind === "LILYPAD_LATEST") onSave({ categoryId: lilypadCategoryId });
     else onSave({});
   };
@@ -134,25 +136,24 @@ export function WidgetConfigEditor({
           </div>
         ) : null}
 
-        {instance.kind === "BOARD_TRACKED_POST" ? (
+        {instance.kind === "CHAT_TRACKED_CHANNEL" ? (
           <div className="mt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Post to track</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Channel to track</p>
             <div className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
-              {data.boardPosts.length ? (
-                data.boardPosts.map((p) => (
+              {data.chatChannels.length ? (
+                data.chatChannels.map((c) => (
                   <button
-                    key={p.id}
-                    onClick={() => setPostId(p.id)}
+                    key={c.id}
+                    onClick={() => setChannelId(c.id)}
                     className={`block w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-                      postId === p.id ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"
+                      channelId === c.id ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"
                     }`}
                   >
-                    <span className="block truncate font-medium">{p.title}</span>
-                    <span className="block text-xs text-ink/40">{p.authorName}</span>
+                    {c.name}
                   </button>
                 ))
               ) : (
-                <p className="text-sm text-ink/40">No posts yet.</p>
+                <p className="text-sm text-ink/40">No channels joined yet.</p>
               )}
             </div>
           </div>
