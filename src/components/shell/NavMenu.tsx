@@ -165,12 +165,12 @@ export function NavMenu({
             )}
 
             <p className="px-5 pt-4 text-xs text-ink/45">Star a tab to pin it to the header.</p>
-            <nav aria-label="All tabs" className="flex-1 overflow-y-auto p-2">
+            <nav aria-label="All tabs" data-tour="nav-menu-list" className="flex-1 overflow-y-auto p-2">
               {items.map((item) => {
                 const Icon = item.icon;
                 const isStarred = starred.includes(item.href);
                 return (
-                  <div key={item.href} className="flex items-center gap-1">
+                  <div key={item.href} data-tour={`nav-item-${item.href}`} className="flex items-center gap-1">
                     <Link
                       href={item.href}
                       className="focus-ring flex flex-1 items-center gap-3 rounded-xl px-3 py-3 text-sm text-ink/80 transition-colors hover:bg-paper-dim"

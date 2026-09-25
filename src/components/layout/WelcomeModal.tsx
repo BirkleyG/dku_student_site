@@ -1,60 +1,16 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { Welcome } from "@/app/Welcome";
-import { LoginModal, useModalClose } from "./LoginModal";
-
-const DISMISSED_KEY = "dku-life:welcome-dismissed";
-
-function readDismissed() {
-  try {
-    return window.localStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function rememberDismissed() {
-  try {
-    window.localStorage.setItem(DISMISSED_KEY, "1");
-  } catch {
-    // Private mode / blocked storage: the chat just shows again next visit.
-  }
-}
+import { useOnboardingState } from "@/lib/onboardingTour";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 
 /**
- * The onboarding chat, shown as a dismissible pop-up over the site for
- * logged-out visitors instead of a full page they're locked into. Once closed
- * (or finished) it stays closed on this device.
+ * The onboarding greeting + guided tour, shown to logged-out visitors on
+ * `/home` until they dismiss it, finish it, or replay it from the "?" menu.
  */
 export function WelcomeModal() {
-  const dismissedBefore = useSyncExternalStore(
-    () => () => {},
-    readDismissed,
-    () => true,
-  );
-  const [closed, setClosed] = useState(false);
+  const { status, dismiss, complete } = useOnboardingState();
 
-  if (dismissedBefore || closed) return null;
+  if (status !== "unseen") return null;
 
-  return (
-    <LoginModal
-      labelledBy="welcome-modal-title"
-      className="sm:max-w-xl"
-      onDismiss={() => {
-        rememberDismissed();
-        setClosed(true);
-      }}
-    >
-      <h2 id="welcome-modal-title" className="sr-only">
-        Welcome to DKU Life
-      </h2>
-      <WelcomeInModal />
-    </LoginModal>
-  );
-}
-
-function WelcomeInModal() {
-  const { requestClose } = useModalClose();
-  return <Welcome variant="modal" onFinish={() => requestClose()} />;
+  return <OnboardingFlow onClose={dismiss} onComplete={complete} />;
 }
