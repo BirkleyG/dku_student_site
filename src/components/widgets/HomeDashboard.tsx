@@ -23,6 +23,7 @@ import { WidgetGallery } from "./WidgetGallery";
 import { WidgetConfigEditor } from "./WidgetConfigEditor";
 import type { WidgetData } from "./AppWidgetContent";
 import type { WidgetInstance, WidgetKind } from "@/lib/widgets";
+import { dashboardEditTourBridge } from "@/lib/tourBridge";
 
 export function HomeDashboard({
   initialLayout,
@@ -35,7 +36,9 @@ export function HomeDashboard({
 }) {
   const router = useRouter();
   const [layout, setLayout] = useState<WidgetInstance[]>(initialLayout);
-  const [editing, setEditing] = useState(false);
+  const [localEditing, setLocalEditing] = useState(false);
+  const tourWantsEditing = dashboardEditTourBridge.useValue();
+  const editing = localEditing || tourWantsEditing;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [configuringId, setConfiguringId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -104,7 +107,10 @@ export function HomeDashboard({
     });
   };
 
-  const doneEditing = () => setEditing(false);
+  const doneEditing = () => {
+    setLocalEditing(false);
+    dashboardEditTourBridge.set(false);
+  };
   const activeInstance = activeId ? (layout.find((w) => w.id === activeId) ?? null) : null;
   const configuringInstance = configuringId ? (layout.find((w) => w.id === configuringId) ?? null) : null;
 
@@ -112,7 +118,8 @@ export function HomeDashboard({
     <div>
       <div className="flex items-center justify-between">
         <button
-          onClick={() => (editing ? doneEditing() : setEditing(true))}
+          data-tour="widget-edit-toggle"
+          onClick={() => (editing ? doneEditing() : setLocalEditing(true))}
           className="focus-ring flex items-center gap-1.5 text-sm font-medium text-ink/60 hover:text-ink"
         >
           {editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
@@ -143,11 +150,13 @@ export function HomeDashboard({
                 index={i}
                 onRemove={removeWidget}
                 onConfigure={setConfiguringId}
+                tourTarget={i === 0}
               />
             ))}
 
             {editing ? (
               <button
+                data-tour="widget-add-tile"
                 onClick={() => setGalleryOpen(true)}
                 className="focus-ring col-span-1 row-span-1 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-ink/20 text-ink/40 transition-colors hover:border-gold hover:text-gold"
               >
