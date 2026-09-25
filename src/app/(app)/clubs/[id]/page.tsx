@@ -8,10 +8,12 @@ import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
 import { LinkButton } from "@/components/ui/Button";
 import { clubCategoryLabels, groupTypeLabels, athleticKindLabels } from "@/lib/club-validation";
+import { getT } from "@/lib/i18n/server";
 import { MembersPanel } from "./MembersPanel";
 
 export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
   const { id } = await params;
+  const t = await getT("clubs");
   const [session, club] = await Promise.all([
     auth(),
     prisma.club.findUnique({
@@ -61,7 +63,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          {canManage ? <LinkButton href={`/clubs/${club.id}/edit`} variant="secondary">Edit</LinkButton> : null}
+          {canManage ? <LinkButton href={`/clubs/${club.id}/edit`} variant="secondary">{t("editButton")}</LinkButton> : null}
           {canDelete ? <DeleteButton endpoint={`/api/clubs/${club.id}`} redirectTo="/clubs" /> : null}
         </div>
       </Reveal>
@@ -72,7 +74,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
 
       {club.officers.length ? (
         <Reveal delay={0.15} className="mt-8">
-          <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">Leadership</h2>
+          <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">{t("leadershipHeading")}</h2>
           <ul className="mt-3 space-y-2">
             {club.officers.map((o) => (
               <li key={o.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm">
@@ -88,7 +90,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
       ) : null}
 
       <Reveal delay={0.2} className="mt-8">
-        <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">Get in touch</h2>
+        <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">{t("getInTouchHeading")}</h2>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-ink/70">
           {club.contactMethod === "EMAIL" && club.contactValue ? (
             <a href={`mailto:${club.contactValue}`} className="focus-ring flex items-center gap-1.5 hover:text-ink">
@@ -108,15 +110,15 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
               rel="noreferrer"
               className="focus-ring flex items-center gap-1.5 hover:text-ink"
             >
-              <Globe className="h-4 w-4" /> Website
+              <Globe className="h-4 w-4" /> {t("websiteLinkText")}
             </a>
           ) : null}
         </div>
         {club.contactMethod === "WECHAT" && club.contactQrUrl ? (
           <div className="mt-3">
-            <p className="text-xs text-ink/50">Scan on WeChat</p>
+            <p className="text-xs text-ink/50">{t("scanOnWechat")}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={club.contactQrUrl} alt="WeChat QR code" className="mt-2 h-40 w-40 rounded-xl border border-ink/15 object-contain" />
+            <img src={club.contactQrUrl} alt={t("wechatQrAlt")} className="mt-2 h-40 w-40 rounded-xl border border-ink/15 object-contain" />
           </div>
         ) : null}
       </Reveal>
@@ -140,7 +142,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
 
       <Reveal delay={0.3} className="mt-8">
         <Link href="/clubs" className="focus-ring text-xs text-ink/50 hover:text-ink">
-          ← Back to all clubs
+          {t("backToAllClubs")}
         </Link>
       </Reveal>
     </div>

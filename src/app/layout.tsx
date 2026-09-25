@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { getServerLocale } from "@/lib/i18n/server";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
@@ -42,14 +43,15 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children, modal }: LayoutProps<"/">) {
+export default async function RootLayout({ children, modal }: LayoutProps<"/">) {
+  const locale = await getServerLocale();
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${instrumentSerif.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink">
-        <Providers>
+        <Providers locale={locale}>
           {children}
           {modal}
         </Providers>

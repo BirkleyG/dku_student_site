@@ -17,24 +17,26 @@ import {
 export type NavItem = {
   href: string;
   label: string;
+  /** Key into the "nav" i18n dictionary; falls back to `label` when absent. */
+  labelKey: string;
   icon: LucideIcon;
 };
 
 export const navItems: NavItem[] = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/eats", label: "DKU Eats", icon: UtensilsCrossed },
-  { href: "/social", label: "Board", icon: MessagesSquare },
-  { href: "/news", label: "News", icon: Newspaper },
-  { href: "/wisdom", label: "Wisdom", icon: Compass },
-  { href: "/clubs", label: "Clubs", icon: Users2 },
-  { href: "/courses", label: "Courses", icon: BookOpen },
-  { href: "/professors", label: "Professors", icon: GraduationCap },
-  { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
-  { href: "/slb", label: "SLB", icon: Landmark },
+  { href: "/home", label: "Home", labelKey: "home", icon: Home },
+  { href: "/events", label: "Events", labelKey: "events", icon: CalendarDays },
+  { href: "/eats", label: "DKU Eats", labelKey: "eats", icon: UtensilsCrossed },
+  { href: "/social", label: "Board", labelKey: "board", icon: MessagesSquare },
+  { href: "/news", label: "News", labelKey: "news", icon: Newspaper },
+  { href: "/wisdom", label: "Wisdom", labelKey: "wisdom", icon: Compass },
+  { href: "/clubs", label: "Clubs", labelKey: "clubs", icon: Users2 },
+  { href: "/courses", label: "Courses", labelKey: "courses", icon: BookOpen },
+  { href: "/professors", label: "Professors", labelKey: "professors", icon: GraduationCap },
+  { href: "/marketplace", label: "Marketplace", labelKey: "marketplace", icon: ShoppingBag },
+  { href: "/slb", label: "SLB", labelKey: "slb", icon: Landmark },
 ];
 
-export const adminNavItem: NavItem = { href: "/admin", label: "Admin", icon: ShieldCheck };
+export const adminNavItem: NavItem = { href: "/admin", label: "Admin", labelKey: "admin", icon: ShieldCheck };
 
 /** Starred tabs shown in the header when a user (or guest) has never saved a preference. */
 export const DEFAULT_STARRED_NAV: string[] = ["/home", "/events", "/eats"];

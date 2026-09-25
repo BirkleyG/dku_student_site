@@ -9,10 +9,13 @@ import { DeleteButton } from "@/components/shell/DeleteButton";
 import { TabsShell } from "./TabsShell";
 import { UsersPanel } from "./UsersPanel";
 import { InviteCodesPanel } from "./InviteCodesPanel";
+import { getT } from "@/lib/i18n/server";
 
 export default async function AdminPage() {
   const session = await auth();
   if (!session?.user?.email) redirect("/login");
+
+  const t = await getT("admin");
 
   const requester = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!requester || !isAnyAdmin(requester)) redirect("/home");
@@ -72,7 +75,7 @@ export default async function AdminPage() {
   if (isSuperAdmin) {
     tabs.push({
       key: "permissions",
-      label: "Permissions",
+      label: t("permissionsTab"),
       content: (
         <UsersPanel
           currentUserId={requester.id}
@@ -82,7 +85,7 @@ export default async function AdminPage() {
     });
     tabs.push({
       key: "invites",
-      label: "Invite codes",
+      label: t("invitesTab"),
       content: (
         <InviteCodesPanel
           initialCodes={inviteCodes.map((c) => ({
@@ -98,10 +101,10 @@ export default async function AdminPage() {
   if (events.length || hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")) {
     tabs.push({
       key: "events",
-      label: "Events",
+      label: t("eventsTab"),
       content: (
         <ModerationList
-          empty="No events yet."
+          empty={t("noEvents")}
           rows={events
             .filter((e) => canModerateEvent(requester, e.category))
             .map((e) => ({
@@ -118,10 +121,10 @@ export default async function AdminPage() {
   if (hasScope(requester, "CLUBS")) {
     tabs.push({
       key: "clubs",
-      label: "Clubs",
+      label: t("clubsTab"),
       content: (
         <ModerationList
-          empty="No clubs yet."
+          empty={t("noClubs")}
           rows={clubs.map((c) => ({ id: c.id, title: c.name, subtitle: c.category, endpoint: `/api/clubs/${c.id}` }))}
         />
       ),
@@ -131,14 +134,14 @@ export default async function AdminPage() {
   if (hasScope(requester, "WISDOM")) {
     tabs.push({
       key: "wisdom",
-      label: "Wisdom",
+      label: t("wisdomTab"),
       content: (
         <ModerationList
-          empty="No topics yet."
+          empty={t("noWisdom")}
           rows={wisdomTopics.map((w) => ({
             id: w.id,
             title: w.title,
-            subtitle: `${w.category} · ${w._count.recommendations} rec${w._count.recommendations === 1 ? "" : "s"}`,
+            subtitle: `${w.category} · ${t("recCount", { n: w._count.recommendations, s: w._count.recommendations === 1 ? "" : "s" })}`,
             endpoint: `/api/wisdom/${w.id}`,
           }))}
         />
@@ -149,10 +152,10 @@ export default async function AdminPage() {
   if (hasScope(requester, "BOARD")) {
     tabs.push({
       key: "board",
-      label: "Board",
+      label: t("boardTab"),
       content: (
         <ModerationList
-          empty="No posts yet."
+          empty={t("noBoard")}
           rows={boardPosts.map((b) => ({
             id: b.id,
             title: b.title,
@@ -168,7 +171,7 @@ export default async function AdminPage() {
     <div>
       <Reveal>
         <h1 className="font-display text-4xl">
-          {isSuperAdmin ? "Run the beta." : "Your moderation tools."}
+          {isSuperAdmin ? t("pageTitleSuperAdmin") : t("pageTitleModerator")}
         </h1>
       </Reveal>
 

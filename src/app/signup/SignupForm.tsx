@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
+import { useT } from "@/lib/i18n/client";
 
 type StepKey = "firstName" | "lastName" | "email" | "netId" | "inviteCode" | "password";
 
@@ -16,34 +17,37 @@ type Step = {
   optional?: boolean;
 };
 
-const steps: Step[] = [
-  { key: "firstName", prompt: "First, what's your first name?", placeholder: "Ada", type: "text" },
-  { key: "lastName", prompt: "And your last name?", placeholder: "Lovelace", type: "text" },
-  {
-    key: "email",
-    prompt: `What's your DKU email? (${studentEmailDomains.join(" or ")})`,
-    placeholder: `you@${studentEmailDomains[0]}`,
-    type: "email",
-  },
-  {
-    key: "netId",
-    prompt: "What's your NetID?",
-    placeholder: "jsmith123",
-    type: "text",
-  },
-  {
-    key: "inviteCode",
-    prompt: "We're in early beta, so it's invite-only for now. What's your invite code?",
-    placeholder: "e.g. K7M2Q9PX",
-    type: "text",
-  },
-  { key: "password", prompt: "Last thing: set a password.", placeholder: "At least 8 characters", type: "password" },
-];
-
 type Answers = Partial<Record<StepKey, string>>;
 
 export function SignupForm() {
+  const t = useT("auth");
   const router = useRouter();
+  const steps: Step[] = useMemo(
+    () => [
+      { key: "firstName", prompt: t("stepFirstName"), placeholder: "Ada", type: "text" },
+      { key: "lastName", prompt: t("stepLastName"), placeholder: "Lovelace", type: "text" },
+      {
+        key: "email",
+        prompt: t("stepEmail", { domains: studentEmailDomains.join(" / ") }),
+        placeholder: `you@${studentEmailDomains[0]}`,
+        type: "email",
+      },
+      {
+        key: "netId",
+        prompt: t("stepNetId"),
+        placeholder: "jsmith123",
+        type: "text",
+      },
+      {
+        key: "inviteCode",
+        prompt: t("stepInviteCode"),
+        placeholder: "e.g. K7M2Q9PX",
+        type: "text",
+      },
+      { key: "password", prompt: t("stepPassword"), placeholder: t("passwordPlaceholder"), type: "password" },
+    ],
+    [t],
+  );
   const [answers, setAnswers] = useState<Answers>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [value, setValue] = useState("");
@@ -68,7 +72,7 @@ export function SignupForm() {
     const fieldSchema = signupSchema.shape[step.key];
     const result = fieldSchema.safeParse(trimmed);
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "That doesn't look right.");
+      setError(result.error.issues[0]?.message ?? t("dontLookRight"));
       return;
     }
     commit(step.key, trimmed);
@@ -107,7 +111,7 @@ export function SignupForm() {
 
     if (!res.ok) {
       const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Something went wrong. Try again.");
+      setServerError(body.error ?? t("somethingWrong"));
       setStatus("chatting");
       // Send them back to whichever step actually failed (an invalid/used/
       // rate-limited invite code, or an email that doesn't match the netID)
@@ -147,7 +151,7 @@ export function SignupForm() {
 
   const displayValue = (key: StepKey) => (key === "password" ? "•".repeat(answers[key]?.length ?? 0) : answers[key]);
 
-  const transcript = useMemo(() => steps.slice(0, stepIndex), [stepIndex]);
+  const transcript = useMemo(() => steps.slice(0, stepIndex), [steps, stepIndex]);
 
   if (status === "done") {
     return (
@@ -156,8 +160,8 @@ export function SignupForm() {
         animate={{ opacity: 1, scale: 1 }}
         className="rounded-3xl border border-sprout-deep/30 bg-sprout/20 p-8 text-center"
       >
-        <p className="font-display text-2xl text-sprout-deep">Welcome, {answers.firstName}.</p>
-        <p className="mt-2 text-ink/70">Your DKU Life account is ready. Taking you home.</p>
+        <p className="font-display text-2xl text-sprout-deep">{t("accountReady", { name: answers.firstName ?? "" })}</p>
+        <p className="mt-2 text-ink/70">{t("accountReadySub")}</p>
       </motion.div>
     );
   }
@@ -201,7 +205,7 @@ export function SignupForm() {
                 disabled={status === "submitting"}
                 className="focus-ring shrink-0 rounded-2xl bg-gold px-5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
               >
-                {status === "submitting" ? "…" : currentStep.optional && !value ? "Skip" : "↵"}
+                {status === "submitting" ? t("submitting") : currentStep.optional && !value ? t("skip") : "↵"}
               </button>
             </div>
 

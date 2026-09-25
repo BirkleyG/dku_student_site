@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 type ApiReview = {
   id: string;
@@ -34,6 +35,7 @@ export function ReviewsPanel({
   canReview: boolean;
   initialReviews: ApiReview[];
 }) {
+  const t = useT("professors");
   const [reviews, setReviews] = useState(initialReviews);
   const [grading, setGrading] = useState(3);
   const [difficulty, setDifficulty] = useState(3);
@@ -74,7 +76,7 @@ export function ReviewsPanel({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't submit that rating.");
+      setError(body.error ?? t("couldntSubmitRating"));
       setSubmitting(false);
       return;
     }
@@ -85,23 +87,23 @@ export function ReviewsPanel({
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm("Remove this rating?")) return;
+    if (!window.confirm(t("confirmRemoveRating"))) return;
     const res = await fetch(`/api/professors/${professorId}/reviews/${id}`, { method: "DELETE" });
     if (res.ok) setReviews((prev) => prev.filter((r) => r.id !== id));
   };
 
   return (
     <div className="mt-10">
-      <h2 className="font-display text-xl">Ratings</h2>
+      <h2 className="font-display text-xl">{t("ratingsHeading")}</h2>
 
       {averages ? (
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <RatingStat label="Grading" value={averages.grading} />
-          <RatingStat label="Difficulty" value={averages.difficulty} />
-          <RatingStat label="Teaching" value={averages.teaching} />
+          <RatingStat label={t("gradingLabel")} value={averages.grading} />
+          <RatingStat label={t("difficultyLabel")} value={averages.difficulty} />
+          <RatingStat label={t("teachingLabel")} value={averages.teaching} />
         </div>
       ) : (
-        <p className="mt-4 text-sm text-ink/40">No ratings yet — be the first to rate.</p>
+        <p className="mt-4 text-sm text-ink/40">{t("noRatingsYetLong")}</p>
       )}
 
       <div className="mt-6 space-y-4">
@@ -109,16 +111,16 @@ export function ReviewsPanel({
           <div key={r.id} className="rounded-2xl bg-paper-dim p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3 text-xs text-ink/50">
-                <span>Grading {r.gradingRating}/5</span>
-                <span>Difficulty {r.difficultyRating}/5</span>
-                <span>Teaching {r.teachingRating}/5</span>
+                <span>{t("gradingScore", { n: r.gradingRating })}</span>
+                <span>{t("difficultyScore", { n: r.difficultyRating })}</span>
+                <span>{t("teachingScore", { n: r.teachingRating })}</span>
                 {r.course ? <span className="rounded-full bg-sprout/25 px-2 py-0.5 text-sprout-deep">{r.course.code}</span> : null}
               </div>
               {isAdmin || r.authorId === currentUserId ? (
                 <button
                   onClick={() => remove(r.id)}
                   className="focus-ring shrink-0 text-ink/30 transition-colors hover:text-danger"
-                  aria-label="Remove rating"
+                  aria-label={t("removeRatingAria")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -134,10 +136,10 @@ export function ReviewsPanel({
 
       {canReview ? (
         alreadyReviewed ? (
-          <p className="mt-6 text-sm text-ink/40">You&apos;ve already rated this professor for that course.</p>
+          <p className="mt-6 text-sm text-ink/40">{t("alreadyRated")}</p>
         ) : (
           <div className="mt-6 space-y-4 rounded-2xl border border-ink/10 bg-paper-dim/60 p-4">
-            <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Rate this professor</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{t("rateThisProfessor")}</p>
 
             {courses.length ? (
               <select
@@ -145,7 +147,7 @@ export function ReviewsPanel({
                 onChange={(e) => setCourseId(e.target.value)}
                 className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink focus:border-gold"
               >
-                <option value="">General (not course-specific)</option>
+                <option value="">{t("generalOption")}</option>
                 {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} — {c.title}
@@ -154,26 +156,26 @@ export function ReviewsPanel({
               </select>
             ) : null}
 
-            <StarPicker label="Grading (generous → harsh)" value={grading} onChange={setGrading} />
-            <StarPicker label="Difficulty (easy → hard)" value={difficulty} onChange={setDifficulty} />
-            <StarPicker label="Teaching quality" value={teaching} onChange={setTeaching} />
+            <StarPicker label={t("gradingPickerLabel")} value={grading} onChange={setGrading} />
+            <StarPicker label={t("difficultyPickerLabel")} value={difficulty} onChange={setDifficulty} />
+            <StarPicker label={t("teachingPickerLabel")} value={teaching} onChange={setTeaching} />
 
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="How they grade, how the class is run, tips for taking their course…"
+              placeholder={t("commentPlaceholder")}
               rows={3}
               className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
             />
 
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <Button onClick={submit} disabled={submitting} className="w-full">
-              {submitting ? "Submitting…" : "Submit rating"}
+              {submitting ? t("submitting") : t("submitRating")}
             </Button>
           </div>
         )
       ) : (
-        <p className="mt-6 text-sm text-ink/40">Log in to rate.</p>
+        <p className="mt-6 text-sm text-ink/40">{t("logInToRate")}</p>
       )}
     </div>
   );
@@ -189,6 +191,7 @@ function RatingStat({ label, value }: { label: string; value: number }) {
 }
 
 function StarPicker({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const t = useT("professors");
   return (
     <div>
       <span className="mb-1.5 block text-xs text-ink/60">{label}</span>
@@ -199,7 +202,7 @@ function StarPicker({ label, value, onChange }: { label: string; value: number; 
             type="button"
             onClick={() => onChange(n)}
             className="focus-ring p-0.5"
-            aria-label={`${n} out of 5`}
+            aria-label={t("outOf5Aria", { n })}
           >
             <Star className={`h-5 w-5 ${n <= value ? "fill-gold-bright text-gold-bright" : "text-ink/20"}`} />
           </button>

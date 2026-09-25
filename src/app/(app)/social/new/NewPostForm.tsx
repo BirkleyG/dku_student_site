@@ -7,9 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { boardPostSchema, type BoardPostInput } from "@/lib/board-validation";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 export function NewPostForm() {
   const router = useRouter();
+  const t = useT("social");
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -27,7 +29,7 @@ export function NewPostForm() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't post that.");
+      setServerError(body.error ?? t("couldntPost"));
       return;
     }
 
@@ -37,10 +39,10 @@ export function NewPostForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <Field label="Title" {...register("title")} error={errors.title?.message} />
+      <Field label={t("titleLabel")} {...register("title")} error={errors.title?.message} />
 
       <label className="block">
-        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">What&apos;s on your mind?</span>
+        <span className="mb-2 block text-xs uppercase tracking-[0.15em] text-ink/60">{t("whatsOnYourMind")}</span>
         <textarea
           rows={6}
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
@@ -52,7 +54,7 @@ export function NewPostForm() {
       {serverError ? <p className="text-sm text-danger">{serverError}</p> : null}
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Posting…" : "Post to the board"}
+        {isSubmitting ? t("posting") : t("postToBoard")}
       </Button>
     </form>
   );

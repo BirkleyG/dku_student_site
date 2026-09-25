@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 /** A checkmark that draws itself stroke-first (`pathLength`) when an RSVP
  * lands, rather than just popping in — transform/opacity-safe since only
@@ -44,6 +45,7 @@ export function RsvpButton({
   loggedIn: boolean;
 }) {
   const router = useRouter();
+  const t = useT("events");
   const [going, setGoing] = useState(initialGoing);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -51,7 +53,7 @@ export function RsvpButton({
   if (!loggedIn) {
     return (
       <Button variant="secondary" onClick={() => router.push("/login")}>
-        Log in to RSVP
+        {t("logInToRsvp")}
       </Button>
     );
   }
@@ -71,13 +73,13 @@ export function RsvpButton({
     <div className="flex items-center gap-3">
       <Button variant={going ? "secondary" : "primary"} onClick={onClick} disabled={loading}>
         <span className="inline-flex items-center gap-1.5">
-          {going ? "You're going" : "RSVP"}
+          {going ? t("youAreGoing") : t("rsvp")}
           <AnimatePresence mode="wait" initial={false}>
             {going && <CheckDraw key="check" />}
           </AnimatePresence>
         </span>
       </Button>
-      <span className="text-sm text-ink/50">{count} going</span>
+      <span className="text-sm text-ink/50">{t("goingCount", { count })}</span>
     </div>
   );
 }

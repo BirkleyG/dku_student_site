@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageCircle } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
+import { useT } from "@/lib/i18n/client";
 
 type ApiPost = {
   id: string;
@@ -17,6 +18,7 @@ type ApiPost = {
 };
 
 export function BoardFeed() {
+  const t = useT("social");
   const [posts, setPosts] = useState<ApiPost[] | null>(null);
 
   useEffect(() => {
@@ -32,11 +34,11 @@ export function BoardFeed() {
   }, []);
 
   if (posts === null) {
-    return <p className="mt-10 text-sm text-ink/40">Loading the board…</p>;
+    return <p className="mt-10 text-sm text-ink/40">{t("loadingBoard")}</p>;
   }
 
   if (posts.length === 0) {
-    return <p className="mt-10 text-ink/50">Nothing posted yet. Say the first thing.</p>;
+    return <p className="mt-10 text-ink/50">{t("nothingPostedYet")}</p>;
   }
 
   return (

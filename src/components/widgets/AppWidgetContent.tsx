@@ -5,6 +5,7 @@ import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { WidgetInstance } from "@/lib/widgets";
 import type { EatsWidgetData } from "@/lib/eats-live";
 import type { LilypadCategory, LilypadPost } from "@/lib/lilypad";
+import { useT } from "@/lib/i18n/client";
 
 export type WidgetData = {
   now: string;
@@ -27,6 +28,7 @@ function eventsTallyConfig(config: Record<string, unknown>) {
 }
 
 export function AppWidgetContent({ instance, data }: { instance: WidgetInstance; data: WidgetData }) {
+  const t = useT("widgets");
   const now = new Date(data.now);
 
   switch (instance.kind) {
@@ -38,12 +40,16 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
       });
       const matching = categories.length ? inRange.filter((e) => categories.includes(e.category)) : inRange;
       const filterLabel =
-        categories.length === 0 ? "All events" : categories.length === 1 ? EVENT_CATEGORY_MAP[categories[0]].label : `${categories.length} types`;
+        categories.length === 0
+          ? t("allEvents")
+          : categories.length === 1
+            ? EVENT_CATEGORY_MAP[categories[0]].label
+            : t("types", { n: categories.length });
       return (
         <div>
           <p className="font-display text-3xl leading-none text-ink">{matching.length}</p>
           <p className="mt-1.5 text-xs text-ink/50">
-            {timeframe === "today" ? "Today" : "This week"} · {filterLabel}
+            {timeframe === "today" ? t("today") : t("thisWeek")} · {filterLabel}
           </p>
         </div>
       );
@@ -70,9 +76,9 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-ink/40">Nothing left on today&apos;s calendar.</p>
+            <p className="mt-2 text-sm text-ink/40">{t("nothingLeftToday")}</p>
           )}
-          {remaining > 0 ? <p className="mt-auto pt-1 text-xs text-ink/40">+{remaining} more today</p> : null}
+          {remaining > 0 ? <p className="mt-auto pt-1 text-xs text-ink/40">{t("moreToday", { n: remaining })}</p> : null}
         </div>
       );
     }
@@ -84,22 +90,22 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
             {data.eats.openCount}
             <span className="text-base text-ink/40"> / {data.eats.totalCount}</span>
           </p>
-          <p className="mt-1.5 text-xs text-ink/50">Kitchens open right now</p>
+          <p className="mt-1.5 text-xs text-ink/50">{t("kitchensOpenNow")}</p>
         </div>
       );
 
     case "EATS_FAVORITE": {
       const name = typeof instance.config.restaurantName === "string" ? instance.config.restaurantName : null;
-      if (!name) return <Empty label="Pick your go-to kitchen." />;
+      if (!name) return <Empty label={t("pickGoToKitchen")} />;
       const vendor = data.eats.vendors.find((v) => v.name === name);
       return (
         <div>
-          <p className="text-xs text-ink/40">Your favorite</p>
+          <p className="text-xs text-ink/40">{t("yourFavorite")}</p>
           <p className="mt-0.5 truncate text-sm font-medium text-ink">{name}</p>
           {vendor ? (
             <p className={`mt-1 flex items-center gap-1.5 text-xs ${vendor.open ? "text-sprout-deep" : "text-ink/40"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${vendor.open ? "bg-sprout-deep" : "bg-ink/25"}`} />
-              {vendor.open ? "Open now" : "Closed"}
+              {vendor.open ? t("openNow") : t("closed")}
             </p>
           ) : null}
         </div>
@@ -114,7 +120,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
           {data.eats.order.detail ? <p className="text-xs text-ink/50">{data.eats.order.detail}</p> : null}
         </div>
       ) : (
-        <Empty label="No active order." />
+        <Empty label={t("noActiveOrder")} />
       );
 
     case "EATS_ACTIVITY":
@@ -129,12 +135,12 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
           </ul>
         </div>
       ) : (
-        <Empty label="No orders yet today." />
+        <Empty label={t("noOrdersToday")} />
       );
 
     case "BOARD_LATEST": {
       const item = data.boardPosts[0];
-      if (!item) return <Empty label="No posts yet. Start the conversation." />;
+      if (!item) return <Empty label={t("noPostsStartConversation")} />;
       return (
         <div>
           <p className="text-xs text-ink/40">{item.authorName}</p>
@@ -145,7 +151,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "BOARD_RECENT": {
       const items = data.boardPosts.slice(0, 4);
-      if (!items.length) return <Empty label="No posts yet. Start the conversation." />;
+      if (!items.length) return <Empty label={t("noPostsStartConversation")} />;
       return (
         <ul className="space-y-1.5 text-sm">
           {items.map((p) => (
@@ -159,12 +165,14 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "BOARD_TRACKED_POST": {
       const tracked = data.trackedPosts[instance.id];
-      if (!tracked) return <Empty label="Pick a post to track." />;
+      if (!tracked) return <Empty label={t("pickPostToTrack")} />;
       return (
         <div>
           <p className="line-clamp-2 text-sm font-medium text-ink">{tracked.title}</p>
           <p className="mt-1.5 text-xs text-ink/50">
-            {tracked.unreadCount > 0 ? `${tracked.unreadCount} new comment${tracked.unreadCount === 1 ? "" : "s"}` : "No new comments"}
+            {tracked.unreadCount > 0
+              ? t(tracked.unreadCount === 1 ? "newComment" : "newComments", { n: tracked.unreadCount })
+              : t("noNewComments")}
           </p>
         </div>
       );
@@ -172,7 +180,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "LILYPAD_LATEST": {
       const items = data.lilypadByWidget[instance.id] ?? [];
-      if (!items.length) return <Empty label="No articles yet." />;
+      if (!items.length) return <Empty label={t("noArticlesYet")} />;
       return (
         <ul className="space-y-1.5 text-sm">
           {items.slice(0, 4).map((p) => (

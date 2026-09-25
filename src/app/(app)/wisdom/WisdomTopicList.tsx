@@ -6,6 +6,7 @@ import { MapPin, MessageSquareText, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { wisdomCategories, wisdomCategoryLabels } from "@/lib/wisdom-validation";
+import { useT } from "@/lib/i18n/client";
 
 type ApiTopic = {
   id: string;
@@ -19,6 +20,7 @@ type ApiTopic = {
 };
 
 export function WisdomTopicList({ currentUserId, isAdmin = false }: { currentUserId: string | null; isAdmin?: boolean }) {
+  const t = useT("wisdom");
   const [topics, setTopics] = useState<ApiTopic[] | null>(null);
   const [category, setCategory] = useState<(typeof wisdomCategories)[number] | "ALL">("ALL");
 
@@ -39,7 +41,7 @@ export function WisdomTopicList({ currentUserId, isAdmin = false }: { currentUse
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <FilterChip active={category === "ALL"} onClick={() => setCategory("ALL")}>
-          All
+          {t("all")}
         </FilterChip>
         {wisdomCategories.map((c) => (
           <FilterChip key={c} active={category === c} onClick={() => setCategory(c)}>
@@ -49,9 +51,9 @@ export function WisdomTopicList({ currentUserId, isAdmin = false }: { currentUse
       </div>
 
       {topics === null ? (
-        <p className="mt-10 text-sm text-ink/40">Loading topics…</p>
+        <p className="mt-10 text-sm text-ink/40">{t("loadingTopics")}</p>
       ) : topics.length === 0 ? (
-        <p className="mt-10 text-ink/50">Nothing here yet. Start the first topic.</p>
+        <p className="mt-10 text-ink/50">{t("nothingHereStartTopic")}</p>
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {topics.map((topic) => (
@@ -59,7 +61,7 @@ export function WisdomTopicList({ currentUserId, isAdmin = false }: { currentUse
               <TopicCard
                 topic={topic}
                 canDelete={isAdmin || topic.createdById === currentUserId}
-                onDeleted={() => setTopics((prev) => (prev ? prev.filter((t) => t.id !== topic.id) : prev))}
+                onDeleted={() => setTopics((prev) => (prev ? prev.filter((tp) => tp.id !== topic.id) : prev))}
               />
             </StaggerItem>
           ))}
@@ -78,10 +80,11 @@ function TopicCard({
   canDelete: boolean;
   onDeleted: () => void;
 }) {
+  const t = useT("wisdom");
   const [deleting, setDeleting] = useState(false);
 
   const remove = async () => {
-    if (!window.confirm("Remove this topic and every recommendation in it?")) return;
+    if (!window.confirm(t("confirmRemoveTopic"))) return;
     setDeleting(true);
     const res = await fetch(`/api/wisdom/${topic.id}`, { method: "DELETE" });
     if (res.ok) onDeleted();
@@ -96,7 +99,7 @@ function TopicCard({
         </span>
         {topic.requireLocation ? (
           <span className="flex items-center gap-1 text-xs text-ink/45">
-            <MapPin className="h-3 w-3" /> Location required
+            <MapPin className="h-3 w-3" /> {t("locationRequired")}
           </span>
         ) : null}
       </div>
@@ -109,7 +112,9 @@ function TopicCard({
       <div className="mt-4 flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-xs text-ink/40">
           <MessageSquareText className="h-3.5 w-3.5" />
-          {topic._count.recommendations} recommendation{topic._count.recommendations === 1 ? "" : "s"}
+          {topic._count.recommendations === 1
+            ? t("recommendationCountOne", { count: topic._count.recommendations })
+            : t("recommendationCountOther", { count: topic._count.recommendations })}
         </p>
         {canDelete ? (
           <button
@@ -118,12 +123,12 @@ function TopicCard({
             className="focus-ring inline-flex items-center gap-1 text-xs text-ink/35 transition-colors hover:text-danger disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            {deleting ? "Removing…" : "Remove"}
+            {deleting ? t("removing") : t("remove")}
           </button>
         ) : null}
       </div>
       <p className="mt-2 text-xs text-ink/35">
-        Started by {topic.createdBy.firstName} {topic.createdBy.lastName}
+        {t("startedBy", { name: `${topic.createdBy.firstName} ${topic.createdBy.lastName}` })}
       </p>
     </Card>
   );

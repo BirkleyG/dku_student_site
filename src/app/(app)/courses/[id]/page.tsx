@@ -6,11 +6,13 @@ import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
 import { DescriptionEditor } from "./DescriptionEditor";
 import { OfferingsPanel } from "./OfferingsPanel";
+import { getT } from "@/lib/i18n/server";
 import { ResourcesPanel } from "./ResourcesPanel";
 import { CommentsPanel } from "./CommentsPanel";
 
 export default async function CoursePage({ params }: PageProps<"/courses/[id]">) {
   const { id } = await params;
+  const t = await getT("courses");
   const [session, course] = await Promise.all([
     auth(),
     prisma.course.findUnique({
@@ -46,7 +48,7 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
             {course.department}
-            {course.credits ? ` · ${course.credits} credits` : ""}
+            {course.credits ? ` · ${t("creditsSuffix", { n: course.credits })}` : ""}
           </p>
           <h1 className="mt-2 font-display text-4xl">
             {course.code} · {course.title}

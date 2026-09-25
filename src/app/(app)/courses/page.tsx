@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { LinkButton } from "@/components/ui/Button";
+import { getT } from "@/lib/i18n/server";
 import { CoursesDirectory } from "./CoursesDirectory";
 
 export default async function CoursesPage() {
   const session = await auth();
+  const t = await getT("courses");
   const currentUser = session?.user?.email
     ? await prisma.user.findUnique({
         where: { email: session.user.email },
@@ -18,10 +20,10 @@ export default async function CoursesPage() {
     <div>
       <Reveal className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">DKU Courses</p>
-          <h1 className="mt-2 font-display text-4xl">Syllabuses, notes, exams — passed down.</h1>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{t("pageEyebrow")}</p>
+          <h1 className="mt-2 font-display text-4xl">{t("pageHeading")}</h1>
         </div>
-        <LinkButton href={session ? "/courses/new" : "/login"}>Add a course</LinkButton>
+        <LinkButton href={session ? "/courses/new" : "/login"}>{t("addCourseButton")}</LinkButton>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">

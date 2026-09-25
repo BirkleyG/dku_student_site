@@ -3,10 +3,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
+import { getT } from "@/lib/i18n/server";
 import { ClubForm } from "../../ClubForm";
 
 export default async function EditClubPage({ params }: PageProps<"/clubs/[id]/edit">) {
   const { id } = await params;
+  const t = await getT("clubs");
   const session = await auth();
   if (!session?.user?.email) redirect(`/login?callbackUrl=/clubs/${id}/edit`);
 
@@ -29,7 +31,7 @@ export default async function EditClubPage({ params }: PageProps<"/clubs/[id]/ed
   return (
     <div className="mx-auto max-w-xl">
       <Reveal>
-        <h1 className="font-display text-4xl">Edit {club.name}</h1>
+        <h1 className="font-display text-4xl">{t("editClubHeading", { name: club.name })}</h1>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-8">

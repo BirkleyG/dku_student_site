@@ -5,6 +5,7 @@ import type { NotificationCategory } from "@prisma/client";
 import { Card } from "@/components/ui/Card";
 import { Switch } from "@/components/ui/Switch";
 import { NOTIFICATION_CATEGORIES } from "@/lib/notification-categories";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   initialPreferences: Record<NotificationCategory, boolean>;
@@ -12,7 +13,21 @@ type Props = {
 
 type SaveState = "idle" | "saving" | "error";
 
+const CATEGORY_LABEL_KEYS: Record<NotificationCategory, string> = {
+  EVENTS: "catEventsLabel",
+  POSTS: "catPostsLabel",
+  RECOMMENDATIONS: "catRecommendationsLabel",
+  ORDERS: "catOrdersLabel",
+};
+const CATEGORY_DESCRIPTION_KEYS: Record<NotificationCategory, string> = {
+  EVENTS: "catEventsDescription",
+  POSTS: "catPostsDescription",
+  RECOMMENDATIONS: "catRecommendationsDescription",
+  ORDERS: "catOrdersDescription",
+};
+
 export function NotificationPreferencesForm({ initialPreferences }: Props) {
+  const t = useT("settings");
   const [preferences, setPreferences] = useState(initialPreferences);
   const [saveStates, setSaveStates] = useState<Partial<Record<NotificationCategory, SaveState>>>({});
 
@@ -45,13 +60,13 @@ export function NotificationPreferencesForm({ initialPreferences }: Props) {
           return (
             <div key={cat.key} className="flex items-start justify-between gap-4 border-b border-ink/10 pb-5 last:border-0 last:pb-0">
               <div>
-                <p className="text-sm font-medium text-ink/85">{cat.label}</p>
-                <p className="mt-0.5 text-xs text-ink/50">{cat.description}</p>
+                <p className="text-sm font-medium text-ink/85">{t(CATEGORY_LABEL_KEYS[cat.key])}</p>
+                <p className="mt-0.5 text-xs text-ink/50">{t(CATEGORY_DESCRIPTION_KEYS[cat.key])}</p>
                 {saveState === "error" && (
-                  <p className="mt-1 text-xs text-danger">Couldn&apos;t save — try again.</p>
+                  <p className="mt-1 text-xs text-danger">{t("couldntSave")}</p>
                 )}
               </div>
-              <Switch checked={enabled} onChange={(next) => handleToggle(cat.key, next)} label={cat.label} />
+              <Switch checked={enabled} onChange={(next) => handleToggle(cat.key, next)} label={t(CATEGORY_LABEL_KEYS[cat.key])} />
             </div>
           );
         })}

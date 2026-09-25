@@ -1,0 +1,36 @@
+import type { Locale } from "../locale";
+
+export const profile: Record<Locale, Record<string, string>> = {
+  en: {
+    yourProfile: "Your profile",
+    communityScore: "DKU Life community score",
+    rankOnCampus: "#{rank} on campus",
+    howYouEarnedIt: "How you've earned it",
+    recentActivity: "Recent activity",
+    noActivityYet: "Post a rec, reply on the Board, rate a professor, or share course resources to start earning points.",
+    language: "Language",
+    WISDOM_POST: "Shared a Wisdom rec",
+    BOARD_POST: "Posted on the Board",
+    BOARD_COMMENT: "Replied on the Board",
+    PROFESSOR_REVIEW: "Rated a professor",
+    COURSE_RESOURCE: "Uploaded a course resource",
+    COURSE_ADDED: "Added a course",
+    PROFESSOR_ADDED: "Added a professor",
+  },
+  zh: {
+    yourProfile: "我的主页",
+    communityScore: "DKU Life 社区积分",
+    rankOnCampus: "全校排名 #{rank}",
+    howYouEarnedIt: "积分获取方式",
+    recentActivity: "最近动态",
+    noActivityYet: "发布推荐、在留言板回复、给教授评分或分享课程资源，即可开始获得积分。",
+    language: "语言",
+    WISDOM_POST: "分享了一条智慧锦囊",
+    BOARD_POST: "在留言板发帖",
+    BOARD_COMMENT: "在留言板回复",
+    PROFESSOR_REVIEW: "评价了一位教授",
+    COURSE_RESOURCE: "上传了课程资源",
+    COURSE_ADDED: "添加了一门课程",
+    PROFESSOR_ADDED: "添加了一位教授",
+  },
+};

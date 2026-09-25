@@ -7,6 +7,7 @@ import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import { Menu } from "lucide-react";
 import { navItems, adminNavItem } from "@/lib/nav";
 import { useStarredNav } from "@/lib/useStarredNav";
+import { useT } from "@/lib/i18n/client";
 import { NavMenu } from "./NavMenu";
 
 const SCROLL_THRESHOLD = 24;
@@ -25,6 +26,7 @@ type Props = {
 };
 
 export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: Props) {
+  const t = useT("nav");
   const pathname = usePathname();
   const isLoggedIn = userLabel !== null;
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
@@ -132,13 +134,13 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
               <Link
                 key={item.href}
                 href={item.href}
-                title={item.label}
+                title={t(item.labelKey)}
                 className={`link-sweep focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors sm:px-0 sm:py-0 ${
                   active ? "active text-ink" : "text-ink/55 hover:text-ink"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0 sm:hidden" strokeWidth={2} />
-                <span className="hidden sm:inline">{item.label}</span>
+                <span className="hidden sm:inline">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -150,7 +152,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
               href="/login"
               className="focus-ring rounded-full bg-ink px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 hover:bg-ink/85 sm:px-5"
             >
-              Log in
+              {t("logIn")}
             </Link>
           )}
           <button
@@ -158,7 +160,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
             type="button"
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
-            aria-label="Open menu"
+            aria-label={t("openMenu")}
             onClick={() => setMenuOpen(true)}
             className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
           >

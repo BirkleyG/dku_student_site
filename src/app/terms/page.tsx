@@ -1,42 +1,33 @@
 import { Reveal } from "@/components/motion/Reveal";
 import { BackHome } from "@/components/shell/BackHome";
+import { getT } from "@/lib/i18n/server";
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const t = await getT("auth");
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <Reveal>
         <BackHome className="mb-8" />
-        <h1 className="font-display text-4xl">Community guidelines.</h1>
-        <p className="mt-3 text-ink/60">
-          Short version: this is a place for DKU students. Be someone your classmates would want to run into.
-        </p>
+        <h1 className="font-display text-4xl">{t("termsTitle")}</h1>
+        <p className="mt-3 text-ink/60">{t("termsIntro")}</p>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10 space-y-8 text-ink/80">
-        <Section title="Who this is for">
-          DKU Life is built for Duke Kunshan students, using a real @dukekunshan.edu.cn or @duke.edu email.
-          Don&apos;t share your login, and don&apos;t create accounts that aren&apos;t yours.
-        </Section>
+        <Section title={t("termsWhoTitle")}>{t("termsWhoBody")}</Section>
 
-        <Section title="What's not okay">
+        <Section title={t("termsNotOkayTitle")}>
           <ul className="mt-2 list-disc space-y-1.5 pl-5">
-            <li>Harassment, hate speech, or targeting someone by name</li>
-            <li>Explicit, violent, or otherwise not-safe-for-campus content</li>
-            <li>Spam, scams, or posting to sell something unrelated to campus life</li>
-            <li>Doxxing: sharing anyone&apos;s private info without consent</li>
-            <li>Impersonating another student, staff member, or organization</li>
+            <li>{t("termsNotOkay1")}</li>
+            <li>{t("termsNotOkay2")}</li>
+            <li>{t("termsNotOkay3")}</li>
+            <li>{t("termsNotOkay4")}</li>
+            <li>{t("termsNotOkay5")}</li>
           </ul>
         </Section>
 
-        <Section title="Events, posts, and clubs">
-          Anything you post (an event, a board post, a rec, a club listing) should be something you&apos;d be fine
-          putting your name on, because it already has your name on it. Admins can remove content that breaks these
-          guidelines, and repeat issues can mean losing access to post.
-        </Section>
+        <Section title={t("termsPostingTitle")}>{t("termsPostingBody")}</Section>
 
-        <Section title="Reporting a problem">
-          There&apos;s no report button yet. For now, reach out to a site admin directly if something needs a look.
-        </Section>
+        <Section title={t("termsReportTitle")}>{t("termsReportBody")}</Section>
       </Reveal>
     </main>
   );

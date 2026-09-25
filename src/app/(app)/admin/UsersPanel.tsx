@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AdminScope, Role } from "@prisma/client";
 import { ADMIN_SCOPES } from "@/lib/permissions";
+import { useT } from "@/lib/i18n/client";
 
 type AdminUser = {
   id: string;
@@ -16,6 +17,7 @@ type AdminUser = {
 };
 
 export function UsersPanel({ initialUsers, currentUserId }: { initialUsers: AdminUser[]; currentUserId: string }) {
+  const t = useT("admin");
   const [users, setUsers] = useState(initialUsers);
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -42,9 +44,9 @@ export function UsersPanel({ initialUsers, currentUserId }: { initialUsers: Admi
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-ink/10 text-left text-xs uppercase tracking-wide text-ink/45">
-            <th className="py-2 pr-4">Name</th>
-            <th className="py-2 pr-4">NetID</th>
-            <th className="py-2 pr-4">Super admin</th>
+            <th className="py-2 pr-4">{t("tableName")}</th>
+            <th className="py-2 pr-4">{t("tableNetId")}</th>
+            <th className="py-2 pr-4">{t("tableSuperAdmin")}</th>
             {ADMIN_SCOPES.map((s) => (
               <th key={s.key} className="py-2 pr-3 text-center" title={s.description}>
                 {s.label}
@@ -89,9 +91,7 @@ export function UsersPanel({ initialUsers, currentUserId }: { initialUsers: Admi
           })}
         </tbody>
       </table>
-      <p className="mt-3 text-xs text-ink/40">
-        Super admin grants every scope automatically. You can&apos;t change your own permissions here.
-      </p>
+      <p className="mt-3 text-xs text-ink/40">{t("superAdminNote")}</p>
     </div>
   );
 }

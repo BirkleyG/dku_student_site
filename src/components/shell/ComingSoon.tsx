@@ -1,4 +1,7 @@
+"use client";
+
 import { Reveal } from "@/components/motion/Reveal";
+import { useT } from "@/lib/i18n/client";
 
 export function ComingSoon({
   eyebrow,
@@ -11,6 +14,7 @@ export function ComingSoon({
   description: string;
   children?: React.ReactNode;
 }) {
+  const t = useT("shell");
   return (
     <div className="mx-auto max-w-2xl py-12 text-center">
       <Reveal>
@@ -24,7 +28,7 @@ export function ComingSoon({
         </Reveal>
       ) : null}
       <Reveal delay={0.15} className="mt-10 inline-block rounded-full border border-ink/15 px-4 py-1.5 text-xs text-ink/40">
-        Building this next ✦
+        {t("buildingThisNext")}
       </Reveal>
     </div>
   );

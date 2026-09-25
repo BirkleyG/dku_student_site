@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 type ApiComment = {
   id: string;
@@ -22,6 +23,7 @@ export function CommentThread({
   canComment: boolean;
 }) {
   const router = useRouter();
+  const t = useT("social");
   const [comments, setComments] = useState(initialComments);
   const [value, setValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +40,7 @@ export function CommentThread({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't post that comment.");
+      setError(body.error ?? t("couldntPostComment"));
       setSubmitting(false);
       return;
     }
@@ -52,7 +54,7 @@ export function CommentThread({
   return (
     <div className="mt-10">
       <h2 className="font-display text-xl">
-        {comments.length} {comments.length === 1 ? "reply" : "replies"}
+        {comments.length === 1 ? t("replyCountOne", { count: comments.length }) : t("replyCountOther", { count: comments.length })}
       </h2>
 
       <div className="mt-4 space-y-4">
@@ -72,16 +74,16 @@ export function CommentThread({
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Add a reply…"
+            placeholder={t("addReplyPlaceholder")}
             rows={2}
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
           <Button onClick={submit} disabled={submitting} className="shrink-0">
-            {submitting ? "…" : "Reply"}
+            {submitting ? "…" : t("replyButton")}
           </Button>
         </div>
       ) : (
-        <p className="mt-5 text-sm text-ink/40">Log in with your DKU Life account to reply.</p>
+        <p className="mt-5 text-sm text-ink/40">{t("logInToReply")}</p>
       )}
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
     </div>

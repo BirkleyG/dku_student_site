@@ -5,6 +5,7 @@ import { ChevronUp, ChevronDown, MapPin, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/lib/i18n/client";
 
 type ApiRecommendation = {
   id: string;
@@ -39,17 +40,20 @@ export function RecommendationList({
   canAdd: boolean;
   initialRecommendations: ApiRecommendation[];
 }) {
+  const t = useT("wisdom");
   const [recommendations, setRecommendations] = useState(initialRecommendations);
   const sorted = useMemo(() => [...recommendations].sort((a, b) => score(b) - score(a)), [recommendations]);
 
   return (
     <div className="mt-8">
       <h2 className="font-display text-xl">
-        {recommendations.length} recommendation{recommendations.length === 1 ? "" : "s"}
+        {recommendations.length === 1
+          ? t("recommendationCountOne", { count: recommendations.length })
+          : t("recommendationCountOther", { count: recommendations.length })}
       </h2>
 
       {sorted.length === 0 ? (
-        <p className="mt-4 text-sm text-ink/40">Nothing here yet. Add the first recommendation.</p>
+        <p className="mt-4 text-sm text-ink/40">{t("nothingHereAddFirst")}</p>
       ) : (
         <StaggerGroup className="mt-4 space-y-4">
           {sorted.map((rec) => (
@@ -73,7 +77,7 @@ export function RecommendationList({
           onAdded={(rec) => setRecommendations((prev) => [...prev, rec])}
         />
       ) : (
-        <p className="mt-6 text-sm text-ink/40">Log in with your DKU Life account to add a recommendation.</p>
+        <p className="mt-6 text-sm text-ink/40">{t("logInToAddRecommendation")}</p>
       )}
     </div>
   );
@@ -92,6 +96,7 @@ function RecommendationCard({
   canDelete: boolean;
   onDeleted: () => void;
 }) {
+  const t = useT("wisdom");
   const [votes, setVotes] = useState(rec.votes);
   const [deleting, setDeleting] = useState(false);
   const currentScore = votes.reduce((sum, v) => sum + v.value, 0);
@@ -113,7 +118,7 @@ function RecommendationCard({
   };
 
   const remove = async () => {
-    if (!window.confirm("Remove this recommendation?")) return;
+    if (!window.confirm(t("confirmRemoveRecommendation"))) return;
     setDeleting(true);
     const res = await fetch(`/api/wisdom/${topicId}/recommendations/${rec.id}`, { method: "DELETE" });
     if (res.ok) onDeleted();
@@ -129,7 +134,7 @@ function RecommendationCard({
           className={`focus-ring rounded-full p-1 transition-colors disabled:opacity-30 ${
             myVote === 1 ? "text-gold-bright" : "text-ink/40 hover:text-ink"
           }`}
-          aria-label="Upvote"
+          aria-label={t("upvote")}
         >
           <ChevronUp className="h-5 w-5" />
         </button>
@@ -140,7 +145,7 @@ function RecommendationCard({
           className={`focus-ring rounded-full p-1 transition-colors disabled:opacity-30 ${
             myVote === -1 ? "text-danger" : "text-ink/40 hover:text-ink"
           }`}
-          aria-label="Downvote"
+          aria-label={t("downvote")}
         >
           <ChevronDown className="h-5 w-5" />
         </button>
@@ -153,7 +158,7 @@ function RecommendationCard({
             <MapPin className="h-3 w-3 shrink-0" />
             {isLink(rec.location) ? (
               <a href={rec.location} target="_blank" rel="noopener noreferrer" className="underline decoration-ink/30 underline-offset-2 hover:text-ink">
-                Open in AMap ↗
+                {t("openInAMap")}
               </a>
             ) : (
               <span className="truncate">{rec.location}</span>
@@ -172,7 +177,7 @@ function RecommendationCard({
               className="focus-ring inline-flex items-center gap-1 text-xs text-ink/35 transition-colors hover:text-danger disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              {deleting ? "Removing…" : "Remove"}
+              {deleting ? t("removing") : t("remove")}
             </button>
           ) : null}
         </div>
@@ -190,6 +195,7 @@ function AddRecommendationForm({
   requireLocation: boolean;
   onAdded: (rec: ApiRecommendation) => void;
 }) {
+  const t = useT("wisdom");
   const [placeName, setPlaceName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
@@ -199,11 +205,11 @@ function AddRecommendationForm({
   const submit = async () => {
     setError(null);
     if (!placeName.trim() || !description.trim()) {
-      setError("Give it a name and a quick reason why.");
+      setError(t("giveNameAndReason"));
       return;
     }
     if (requireLocation && !location.trim()) {
-      setError("This topic requires a location or AMap link.");
+      setError(t("locationRequiredError"));
       return;
     }
     setSubmitting(true);
@@ -214,7 +220,7 @@ function AddRecommendationForm({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't add that.");
+      setError(body.error ?? t("couldntAdd"));
       setSubmitting(false);
       return;
     }
@@ -228,31 +234,31 @@ function AddRecommendationForm({
 
   return (
     <div className="mt-8 rounded-2xl border border-ink/10 bg-paper-dim p-5">
-      <h3 className="font-display text-xl">Add a recommendation</h3>
+      <h3 className="font-display text-xl">{t("addRecommendationTitle")}</h3>
       <div className="mt-4 space-y-3">
         <input
           value={placeName}
           onChange={(e) => setPlaceName(e.target.value)}
-          placeholder="Name of the place"
+          placeholder={t("placeNamePlaceholder")}
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
         />
         <input
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          placeholder={requireLocation ? "Address or AMap link (required)" : "Address or AMap link (optional)"}
+          placeholder={requireLocation ? t("locationPlaceholderRequired") : t("locationPlaceholderOptional")}
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          placeholder="Why it's the best"
+          placeholder={t("whyBestPlaceholder")}
           className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
         />
       </div>
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
       <Button onClick={submit} disabled={submitting} className="mt-4">
-        {submitting ? "Adding…" : "Add recommendation"}
+        {submitting ? t("adding") : t("addRecommendation")}
       </Button>
     </div>
   );

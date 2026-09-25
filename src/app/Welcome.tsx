@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { studentEmailDomains } from "@/lib/validation";
 import { InstallGuide } from "@/components/install/InstallGuide";
+import { useLocale } from "@/lib/i18n/client";
 
 type Lang = "en" | "zh";
 
@@ -106,9 +107,10 @@ function guessLastInitial(netId: string, lang: Lang) {
 
 export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "modal"; onFinish?: () => void } = {}) {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("en");
+  const { locale } = useLocale();
+  const [lang, setLang] = useState<Lang>(locale);
   const [step, setStep] = useState<Step>("language");
-  const [messages, setMessages] = useState<Message[]>([{ from: "dku", text: copy.en.greeting }]);
+  const [messages, setMessages] = useState<Message[]>([{ from: "dku", text: copy[locale].greeting }]);
   const [firstName, setFirstName] = useState("");
   const [netId, setNetId] = useState("");
   const [lastName, setLastName] = useState("");

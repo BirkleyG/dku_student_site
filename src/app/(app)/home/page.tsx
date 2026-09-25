@@ -13,6 +13,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
 import { WelcomeModal } from "@/components/layout/WelcomeModal";
 import type { EatsWidgetData } from "@/lib/eats-live";
+import { getT } from "@/lib/i18n/server";
 
 // fetchEatsWidgetData already catches its own errors and returns null on
 // failure, but this dashboard has been taken down by an unhandled query
@@ -28,6 +29,7 @@ async function fetchEatsWidgetDataSafely(user: { id: string; netId: string | nul
 }
 
 export default async function HomePage() {
+  const t = await getT("home");
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0];
 
@@ -156,9 +158,9 @@ export default async function HomePage() {
         />
         <Reveal className="relative">
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
-            {firstName ? `Welcome back, ${firstName}` : "Welcome"}
+            {firstName ? t("welcomeBack", { name: firstName }) : t("welcome")}
           </p>
-          <h1 className="mt-2 font-display text-4xl">Events, food, and everyone&apos;s dorm gossip.</h1>
+          <h1 className="mt-2 font-display text-4xl">{t("heroHeading")}</h1>
         </Reveal>
       </div>
 

@@ -6,10 +6,12 @@ import { wisdomCategoryLabels } from "@/lib/wisdom-validation";
 import { Reveal } from "@/components/motion/Reveal";
 import { MapPin } from "lucide-react";
 import { DeleteButton } from "@/components/shell/DeleteButton";
+import { getT } from "@/lib/i18n/server";
 import { RecommendationList } from "./RecommendationList";
 
 export default async function WisdomTopicPage({ params }: PageProps<"/wisdom/[id]">) {
   const { id } = await params;
+  const t = await getT("wisdom");
   const [session, topic] = await Promise.all([
     auth(),
     prisma.wisdomTopic.findUnique({
@@ -45,17 +47,17 @@ export default async function WisdomTopicPage({ params }: PageProps<"/wisdom/[id
             </span>
             {topic.requireLocation ? (
               <span className="flex items-center gap-1 text-xs text-ink/45">
-                <MapPin className="h-3 w-3" /> Location required
+                <MapPin className="h-3 w-3" /> {t("locationRequired")}
               </span>
             ) : null}
           </div>
           <h1 className="mt-2 font-display text-4xl">{topic.title}</h1>
           <p className="mt-2 text-sm text-ink/50">
-            Started by {topic.createdBy.firstName} {topic.createdBy.lastName}
+            {t("startedBy", { name: `${topic.createdBy.firstName} ${topic.createdBy.lastName}` })}
           </p>
         </div>
         {canDeleteTopic ? (
-          <DeleteButton endpoint={`/api/wisdom/${topic.id}`} redirectTo="/wisdom" confirmText="Remove this topic and every recommendation in it?" />
+          <DeleteButton endpoint={`/api/wisdom/${topic.id}`} redirectTo="/wisdom" confirmText={t("confirmRemoveTopic")} />
         ) : null}
       </Reveal>
 

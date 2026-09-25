@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Reveal } from "@/components/motion/Reveal";
 import { InstallGuide } from "@/components/install/InstallGuide";
+import { useLocale } from "@/lib/i18n/client";
 
 type Lang = "en" | "zh";
 
@@ -18,7 +19,8 @@ const sub = {
 };
 
 export default function InstallPage() {
-  const [lang, setLang] = useState<Lang>("en");
+  const { locale } = useLocale();
+  const [lang, setLang] = useState<Lang>(locale);
   const t = copy[lang];
 
   return (

@@ -5,15 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/app/login/LoginForm";
 import { useModalClose } from "@/components/layout/LoginModal";
+import { useT } from "@/lib/i18n/client";
 
 export function LoginModalContent() {
+  const t = useT("auth");
   const { requestClose } = useModalClose();
   const router = useRouter();
 
   return (
     <>
       <h2 id="login-modal-title" className="font-display text-3xl">
-        Welcome back.
+        {t("welcomeBack")}
       </h2>
 
       <div className="mt-8">
@@ -30,9 +32,9 @@ export function LoginModalContent() {
       </div>
 
       <p className="mt-6 text-center text-sm text-ink/50">
-        New here?{" "}
+        {t("newHere")}{" "}
         <Link href="/signup" className="text-gold hover:text-gold-bright">
-          Create an account
+          {t("createAccount")}
         </Link>
       </p>
     </>
