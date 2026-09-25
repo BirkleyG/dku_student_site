@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Link as LinkIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DocumentUpload } from "@/components/ui/DocumentUpload";
+import { SemesterPicker } from "@/components/ui/SemesterPicker";
 import { courseResourceTypes, courseResourceTypeLabels, type CourseResourceInput } from "@/lib/course-validation";
 
 type ApiResource = {
@@ -150,12 +151,7 @@ export function ResourcesPanel({
             placeholder="Title — e.g. Midterm 1 review notes"
             className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
           />
-          <input
-            value={form.semester ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-            placeholder="Semester — e.g. Fall 2025 (optional)"
-            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-          />
+          <SemesterPicker value={form.semester ?? ""} onChange={(semester) => setForm((f) => ({ ...f, semester }))} />
           <textarea
             value={form.body ?? ""}
             onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}

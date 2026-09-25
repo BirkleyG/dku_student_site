@@ -492,7 +492,7 @@ model ProfessorReview {
   authorId         String
   author           User      @relation("ProfessorReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   gradingRating    Int
-  difficultyRating Int
+  funRating        Int
   teachingRating   Int
   comment          String?
   createdAt        DateTime  @default(now())

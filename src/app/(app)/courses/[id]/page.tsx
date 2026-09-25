@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
+import { BackLink } from "@/components/shell/BackLink";
 import { DescriptionEditor } from "./DescriptionEditor";
 import { OfferingsPanel } from "./OfferingsPanel";
 import { ResourcesPanel } from "./ResourcesPanel";
@@ -42,7 +43,11 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Reveal className="flex items-start justify-between gap-4">
+      <Reveal>
+        <BackLink href="/courses" label="Back to Courses" />
+      </Reveal>
+
+      <Reveal delay={0.02} className="mt-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">
             {course.department}

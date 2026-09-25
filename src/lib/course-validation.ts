@@ -32,6 +32,7 @@ export const courseOfferingSchema = z.object({
   newProfessorFirstName: z.string().trim().max(80).optional().or(z.literal("")),
   newProfessorLastName: z.string().trim().max(80).optional().or(z.literal("")),
   newProfessorDepartment: z.enum(DKU_DEPARTMENTS).optional(),
+  newProfessorEmail: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
   semester: z.string().trim().max(40).optional().or(z.literal("")),
 });
 

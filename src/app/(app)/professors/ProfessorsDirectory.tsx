@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Star, ShieldCheck, Trash2 } from "lucide-react";
+import { CircleAlert, ShieldCheck, Smile, Star, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { DKU_DEPARTMENTS } from "@/lib/departments";
@@ -14,13 +14,19 @@ type ApiProfessor = {
   department: string;
   verified: boolean;
   addedById: string;
-  reviews: { gradingRating: number; difficultyRating: number; teachingRating: number }[];
+  reviews: { gradingRating: number; funRating: number; teachingRating: number }[];
 };
 
-function overallScore(p: ApiProfessor) {
+// No blended average — grading/teaching/fun are different questions, and
+// mashing them into one number hides which one is actually driving it.
+function averages(p: ApiProfessor) {
   if (!p.reviews.length) return null;
-  const avg = p.reviews.reduce((sum, r) => sum + r.gradingRating + r.difficultyRating + r.teachingRating, 0) / (p.reviews.length * 3);
-  return avg;
+  const n = p.reviews.length;
+  return {
+    grading: p.reviews.reduce((s, r) => s + r.gradingRating, 0) / n,
+    teaching: p.reviews.reduce((s, r) => s + r.teachingRating, 0) / n,
+    fun: p.reviews.reduce((s, r) => s + r.funRating, 0) / n,
+  };
 }
 
 export function ProfessorsDirectory({
@@ -89,7 +95,7 @@ export function ProfessorsDirectory({
       ) : (
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {professors.map((p) => {
-            const score = overallScore(p);
+            const avg = averages(p);
             return (
               <StaggerItem key={p.id}>
                 <Card className="flex h-full flex-col">
@@ -114,9 +120,17 @@ export function ProfessorsDirectory({
                     </h3>
                   </Link>
                   <div className="mt-3 flex flex-1 items-end justify-between">
-                    {score !== null ? (
-                      <span className="flex items-center gap-1 text-sm text-ink/70">
-                        <Star className="h-4 w-4 fill-gold-bright text-gold-bright" /> {score.toFixed(1)} / 5
+                    {avg ? (
+                      <span className="flex items-center gap-2.5 text-xs text-ink/70">
+                        <span className="flex items-center gap-1">
+                          <CircleAlert className="h-3.5 w-3.5 text-danger" /> {avg.grading.toFixed(1)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 fill-gold-bright text-gold-bright" /> {avg.teaching.toFixed(1)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Smile className="h-3.5 w-3.5 text-sprout-deep" /> {avg.fun.toFixed(1)}
+                        </span>
                       </span>
                     ) : (
                       <span className="text-sm text-ink/40">No ratings yet</span>

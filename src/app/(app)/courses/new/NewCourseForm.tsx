@@ -9,7 +9,7 @@ import { DKU_DEPARTMENTS } from "@/lib/departments";
 import type { CatalogCourse } from "@/lib/course-catalog";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { CatalogPicker } from "./CatalogPicker";
+import { CatalogPicker } from "@/components/courses/CatalogPicker";
 
 export function NewCourseForm() {
   const router = useRouter();

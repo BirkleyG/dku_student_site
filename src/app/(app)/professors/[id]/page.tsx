@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { Reveal } from "@/components/motion/Reveal";
 import { DeleteButton } from "@/components/shell/DeleteButton";
+import { BackLink } from "@/components/shell/BackLink";
 import { ReviewsPanel } from "./ReviewsPanel";
 
 export default async function ProfessorPage({ params }: PageProps<"/professors/[id]">) {
@@ -40,7 +41,11 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Reveal className="flex items-start justify-between gap-4">
+      <Reveal>
+        <BackLink href="/professors" label="Back to Professors" />
+      </Reveal>
+
+      <Reveal delay={0.02} className="mt-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{professor.department}</p>
           <h1 className="mt-2 font-display text-4xl">
@@ -67,7 +72,6 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
       <Reveal delay={0.15}>
         <ReviewsPanel
           professorId={professor.id}
-          courses={courses.map((c) => ({ id: c.id, code: c.code, title: c.title }))}
           currentUserId={currentUser?.id ?? null}
           isAdmin={currentUser ? hasScope(currentUser, "PROFESSORS") : false}
           canReview={Boolean(session?.user)}
