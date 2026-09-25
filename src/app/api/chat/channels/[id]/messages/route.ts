@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isChannelMember } from "@/lib/chat";
+import { isChannelMember, notifyNewChatMessage } from "@/lib/chat";
 import { chatMessageSchema } from "@/lib/chat-validation";
 import { awardPoints } from "@/lib/community-score";
 
 type Params = { params: Promise<{ id: string }> };
 
 const authorSelect = { select: { id: true, firstName: true, lastName: true } } as const;
+const reactionsInclude = { reactions: true } as const;
 
 export async function GET(request: Request, { params }: Params) {
   const session = await auth();
@@ -28,14 +29,14 @@ export async function GET(request: Request, { params }: Params) {
   if (parentId) {
     const root = await prisma.chatMessage.findUnique({
       where: { id: parentId },
-      include: { author: authorSelect },
+      include: { author: authorSelect, ...reactionsInclude },
     });
     if (!root || root.channelId !== channelId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const replies = await prisma.chatMessage.findMany({
       where: { parentId },
       orderBy: { createdAt: "asc" },
-      include: { author: authorSelect },
+      include: { author: authorSelect, ...reactionsInclude },
     });
     return NextResponse.json({ root, replies });
   }
@@ -44,7 +45,7 @@ export async function GET(request: Request, { params }: Params) {
     where: { channelId, parentId: null },
     orderBy: { createdAt: "desc" },
     take: 100,
-    include: { author: authorSelect, _count: { select: { replies: true } } },
+    include: { author: authorSelect, _count: { select: { replies: true } }, ...reactionsInclude },
   });
   return NextResponse.json({ messages: messages.reverse() });
 }
@@ -85,12 +86,22 @@ export async function POST(request: Request, { params }: Params) {
       body: parsed.data.body,
       parentId: parsed.data.parentId ?? null,
     },
-    include: { author: authorSelect },
+    include: { author: authorSelect, ...reactionsInclude },
   });
 
   if (channel.kind !== "DIRECT") {
     await awardPoints(user.id, parsed.data.parentId ? "CHAT_REPLY" : "CHAT_MESSAGE");
   }
+
+  // Notify recipients after the response goes out — a push failure or slow
+  // push service should never delay or break sending a message.
+  after(async () => {
+    await notifyNewChatMessage({
+      channel: { id: channel.id, kind: channel.kind, name: channel.name },
+      message: { authorId: user.id, body: message.body, parentId: message.parentId },
+      authorName: `${user.firstName} ${user.lastName}`,
+    });
+  });
 
   return NextResponse.json({ message }, { status: 201 });
 }
