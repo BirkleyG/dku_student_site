@@ -112,7 +112,7 @@ export function LilypadFeed({
         <StaggerGroup className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
             <StaggerItem key={post.id}>
-              <LilypadCardView post={post} />
+              <LilypadCardView post={post} activeCategoryId={categoryId} />
             </StaggerItem>
           ))}
         </StaggerGroup>
@@ -129,7 +129,10 @@ export function LilypadFeed({
   );
 }
 
-function LilypadCardView({ post }: { post: LilypadPost }) {
+function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; activeCategoryId: number | "ALL" }) {
+  const displayCategory =
+    activeCategoryId !== "ALL" ? (post.categories.find((c) => c.id === activeCategoryId)?.name ?? null) : post.category;
+
   return (
     <a
       href={post.link}
@@ -150,7 +153,7 @@ function LilypadCardView({ post }: { post: LilypadPost }) {
         <div className="flex flex-1 flex-col p-5">
           <p className="text-xs uppercase tracking-wide text-ink/40">
             {format(new Date(post.date), "MMM d, yyyy")}
-            {post.category ? <span className="text-gold-bright"> · {post.category}</span> : null}
+            {displayCategory ? <span className="text-gold-bright"> · {displayCategory}</span> : null}
           </p>
           <h3 className="mt-1.5 font-display text-xl leading-snug">{post.title}</h3>
           <p className="mt-1.5 line-clamp-3 text-sm text-ink/60">{post.excerpt}</p>
