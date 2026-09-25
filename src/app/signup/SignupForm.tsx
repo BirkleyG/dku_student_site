@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
+import { ChatAutoScrollAnchor } from "@/components/chat/ChatThread";
 import { useRequestPushPrompt } from "@/components/notifications/PushPromptProvider";
 import { useT } from "@/lib/i18n/client";
 
@@ -223,6 +224,7 @@ export function SignupForm() {
       </AnimatePresence>
 
       {serverError ? <p className="mt-4 text-sm text-danger">{serverError}</p> : null}
+      <ChatAutoScrollAnchor trigger={`${stepIndex}-${status}`} />
     </div>
   );
 }

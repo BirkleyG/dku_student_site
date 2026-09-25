@@ -1,4 +1,6 @@
+import type { ChatChannelKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { broadcastPush, sendPushToUser, type PushPayload } from "@/lib/push";
 
 export const GENERAL_CHANNEL_ID = "general";
 
@@ -67,4 +69,64 @@ export function dmChannelName(
 ): string {
   const other = channel.members.find((m) => m.user.id !== viewerId)?.user;
   return other ? `${other.firstName} ${other.lastName}` : "Direct message";
+}
+
+const MESSAGE_PREVIEW_LENGTH = 120;
+
+function truncateBody(body: string): string {
+  const trimmed = body.trim();
+  return trimmed.length > MESSAGE_PREVIEW_LENGTH ? `${trimmed.slice(0, MESSAGE_PREVIEW_LENGTH).trimEnd()}…` : trimmed;
+}
+
+/** Every explicit member of a channel (GROUP or DIRECT), minus the sender. GENERAL has no membership rows — see `isChannelMember`. */
+async function otherChannelMemberIds(channelId: string, excludeUserId: string): Promise<string[]> {
+  const members = await prisma.chatChannelMember.findMany({
+    where: { channelId, userId: { not: excludeUserId } },
+    select: { userId: true },
+  });
+  return members.map((m) => m.userId);
+}
+
+/**
+ * Pushes a MESSAGES-category notification to the recipients of a newly
+ * posted chat message: every other member of a GROUP/DIRECT channel, or
+ * every other user of the site for GENERAL (everyone's implicitly in it —
+ * same scope `broadcastPush` already covers). The sender is always excluded.
+ * `sendPushToUser`/`broadcastPush` already skip anyone who has disabled the
+ * MESSAGES category, so there's no separate preference check needed here.
+ *
+ * Call this inside `after()` from the route handler — same reasoning as the
+ * events route: a slow or failing push must never delay the message-send
+ * response.
+ *
+ * Spam/debounce note: this sends one push per message, same as the events
+ * flow. A burst of several messages from one sender before anyone reads them
+ * currently produces one push each rather than being coalesced. Debouncing
+ * would need a delivery window (e.g. "wait N seconds, then send one push
+ * covering everything unread") backed by its own state, which is
+ * disproportionate for a v1 — left as a possible follow-up.
+ */
+export async function notifyNewChatMessage(params: {
+  channel: { id: string; kind: ChatChannelKind; name: string };
+  message: { authorId: string; body: string; parentId: string | null };
+  authorName: string;
+}) {
+  const { channel, message, authorName } = params;
+
+  const title = channel.kind === "DIRECT" ? authorName : `${authorName} in ${channel.name}`;
+  const url = `/chat?channel=${channel.id}${message.parentId ? `&thread=${message.parentId}` : ""}`;
+  const payload: PushPayload = {
+    category: "MESSAGES",
+    title,
+    body: truncateBody(message.body),
+    url,
+  };
+
+  if (channel.kind === "GENERAL") {
+    await broadcastPush(payload, { excludeUserId: message.authorId });
+    return;
+  }
+
+  const recipientIds = await otherChannelMemberIds(channel.id, message.authorId);
+  await Promise.all(recipientIds.map((userId) => sendPushToUser(userId, payload)));
 }

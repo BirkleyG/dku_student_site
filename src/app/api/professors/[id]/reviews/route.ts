@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: Params) {
   ]);
   if (!user || !professor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { gradingRating, difficultyRating, teachingRating, comment, courseId } = parsed.data;
+  const { gradingRating, funRating, teachingRating, comment, courseId } = parsed.data;
 
   const existing = await prisma.professorReview.findFirst({
     where: { professorId, authorId: user.id, courseId: courseId || null },
@@ -40,7 +40,7 @@ export async function POST(request: Request, { params }: Params) {
       authorId: user.id,
       courseId: courseId || null,
       gradingRating,
-      difficultyRating,
+      funRating,
       teachingRating,
       comment: comment || null,
     },

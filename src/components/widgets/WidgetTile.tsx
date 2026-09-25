@@ -16,6 +16,7 @@ export function WidgetTile({
   index,
   onRemove,
   onConfigure,
+  tourTarget = false,
 }: {
   instance: WidgetInstance;
   data: WidgetData;
@@ -23,6 +24,7 @@ export function WidgetTile({
   index: number;
   onRemove: (id: string) => void;
   onConfigure: (id: string) => void;
+  tourTarget?: boolean;
 }) {
   const t = useT("widgets");
   const meta = widgetCatalog[instance.kind];
@@ -46,6 +48,7 @@ export function WidgetTile({
         <div className="pointer-events-none absolute inset-0 z-30">
           <button
             type="button"
+            data-tour={tourTarget ? "widget-remove-tile" : undefined}
             onClick={(e) => {
               e.stopPropagation();
               onRemove(instance.id);

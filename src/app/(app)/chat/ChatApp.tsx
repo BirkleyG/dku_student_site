@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { Hash, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
 import { REACTION_EMOJI } from "@/lib/chat-reactions";
@@ -29,6 +29,18 @@ type ChatMessage = {
 
 type SelectedChannel = { id: string; name: string; description: string | null; kind: "GENERAL" | "GROUP" | "DIRECT" };
 
+/** Resolves a `?channel=` id from a push deep link against the loaded sidebar, falling back to General. */
+function resolveRequestedChannel(data: SidebarData, requestedChannelId: string | null): SelectedChannel {
+  if (requestedChannelId) {
+    if (data.general.id === requestedChannelId) return { ...data.general, kind: "GENERAL" };
+    const group = data.groups.find((g) => g.id === requestedChannelId);
+    if (group) return { ...group, kind: "GROUP" };
+    const dm = data.dms.find((d) => d.id === requestedChannelId);
+    if (dm) return { ...dm, description: null, kind: "DIRECT" };
+  }
+  return { ...data.general, kind: "GENERAL" };
+}
+
 async function jsonFetch(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
@@ -39,6 +51,11 @@ async function jsonFetch(url: string, init?: RequestInit) {
 export function ChatApp({ currentUserId, currentUserName }: { currentUserId: string; currentUserName: string }) {
   const t = useT("chat");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // A push notification's click target links here as /chat?channel=<id>[&thread=<id>] —
+  // read once on mount so a fresh load opens straight into the right chat.
+  const requestedChannelId = useRef(searchParams.get("channel")).current;
+  const requestedThreadId = useRef(searchParams.get("thread")).current;
   const [sidebar, setSidebar] = useState<SidebarData | null>(null);
   const [selected, setSelected] = useState<SelectedChannel | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -73,7 +90,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       .then((data: SidebarData) => {
         if (cancelled) return;
         setSidebar(data);
-        setSelected((prev) => prev ?? { ...data.general, kind: "GENERAL" });
+        setSelected((prev) => prev ?? resolveRequestedChannel(data, requestedChannelId));
+        if (requestedThreadId) setThreadRootId(requestedThreadId);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : t("loadError"));
@@ -81,6 +99,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     return () => {
       cancelled = true;
     };
+    // requestedChannelId/requestedThreadId come from a ref (read once on mount) and never change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
   const loadMessages = useCallback(async (channelId: string) => {

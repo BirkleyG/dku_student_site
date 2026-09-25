@@ -25,7 +25,8 @@ export async function POST(request: Request, { params }: Params) {
   ]);
   if (!user || !course) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { professorId, newProfessorFirstName, newProfessorLastName, newProfessorDepartment, semester } = parsed.data;
+  const { professorId, newProfessorFirstName, newProfessorLastName, newProfessorDepartment, newProfessorEmail, semester } =
+    parsed.data;
   if (!professorId && !(newProfessorFirstName && newProfessorLastName)) {
     return NextResponse.json({ error: "Pick a professor or add a new one" }, { status: 400 });
   }
@@ -39,6 +40,7 @@ export async function POST(request: Request, { params }: Params) {
         firstName: newProfessorFirstName,
         lastName: newProfessorLastName,
         department: newProfessorDepartment || course.department,
+        email: newProfessorEmail || null,
         addedById: user.id,
       },
     });
