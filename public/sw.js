@@ -1,5 +1,5 @@
 // Bump this name to purge every client's cache on the next visit.
-const CACHE = "dku-life-v3";
+const CACHE = "dku-life-v4";
 
 self.addEventListener("install", () => {
   self.skipWaiting();

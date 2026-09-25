@@ -17,6 +17,7 @@ export type LilypadPost = {
   image: string | null;
   category: string | null;
   categoryId: number | null;
+  categories: { id: number; name: string }[];
   author: string | null;
   date: string;
 };
@@ -73,7 +74,8 @@ function toLilypadPost(item: WpPost): LilypadPost {
   const featured = item._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
   const image = featured || firstImageFrom(item.content?.rendered ?? "") || null;
   const terms = (item._embedded?.["wp:term"] ?? []).flat();
-  const categoryTerm = terms.find((t) => t.taxonomy === "category" && t.slug !== "uncategorized");
+  const categoryTerms = terms.filter((t) => t.taxonomy === "category" && t.slug !== "uncategorized");
+  const categoryTerm = categoryTerms[0];
   const author = item._embedded?.author?.[0]?.name ?? null;
 
   return {
@@ -84,6 +86,7 @@ function toLilypadPost(item: WpPost): LilypadPost {
     image,
     category: categoryTerm ? decodeEntities(categoryTerm.name) : null,
     categoryId: categoryTerm ? categoryTerm.id : null,
+    categories: categoryTerms.map((t) => ({ id: t.id, name: decodeEntities(t.name) })),
     author,
     date: item.date,
   };
