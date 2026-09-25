@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { useRequestPushPrompt } from "@/components/notifications/PushPromptProvider";
 
 /** A checkmark that draws itself stroke-first (`pathLength`) when an RSVP
  * lands, rather than just popping in — transform/opacity-safe since only
@@ -44,6 +45,7 @@ export function RsvpButton({
   loggedIn: boolean;
 }) {
   const router = useRouter();
+  const requestPushPrompt = useRequestPushPrompt();
   const [going, setGoing] = useState(initialGoing);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -63,6 +65,9 @@ export function RsvpButton({
       const data = await res.json();
       setGoing(data.going);
       setCount((c) => c + (data.going ? 1 : -1));
+      // Only on the positive transition (just said "I'm going"), not on
+      // un-RSVPing — that's not a moment to ask anything of the user.
+      if (data.going) requestPushPrompt("rsvp");
     }
     setLoading(false);
   };
