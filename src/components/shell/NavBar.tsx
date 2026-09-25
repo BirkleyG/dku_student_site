@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Menu } from "lucide-react";
+import { Menu, HelpCircle } from "lucide-react";
 import { navItems, adminNavItem } from "@/lib/nav";
 import { useStarredNav } from "@/lib/useStarredNav";
 import { useT } from "@/lib/i18n/client";
+import { navMenuTourBridge } from "@/lib/tourBridge";
 import { NavMenu } from "./NavMenu";
+import { HelpMenu } from "@/components/onboarding/HelpMenu";
 
 const SCROLL_THRESHOLD = 24;
 // A swipe starting within this many px of the right screen edge, moving left
@@ -31,8 +33,16 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
   const isLoggedIn = userLabel !== null;
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
   const { starred, toggleStar, limitHit } = useStarredNav(initialStarred, isLoggedIn);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [localMenuOpen, setLocalMenuOpen] = useState(false);
+  const tourWantsMenuOpen = navMenuTourBridge.useValue();
+  const menuOpen = localMenuOpen || tourWantsMenuOpen;
+  const closeMenu = () => {
+    setLocalMenuOpen(false);
+    navMenuTourBridge.set(false);
+  };
+  const [helpOpen, setHelpOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const helpButtonRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   const starredItems = items.filter((item) => starred.includes(item.href));
@@ -86,7 +96,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
       if (deltaX <= -SWIPE_DISTANCE && Math.abs(deltaY) <= SWIPE_MAX_VERTICAL) {
-        setMenuOpen(true);
+        setLocalMenuOpen(true);
       }
     }
 
@@ -155,13 +165,29 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
               {t("logIn")}
             </Link>
           )}
+          <div className="relative">
+            <button
+              ref={helpButtonRef}
+              type="button"
+              data-tour="help-button"
+              aria-expanded={helpOpen}
+              aria-haspopup="menu"
+              aria-label="Help and tour options"
+              onClick={() => setHelpOpen((v) => !v)}
+              className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
+            >
+              <HelpCircle className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+            <HelpMenu open={helpOpen} onClose={() => setHelpOpen(false)} triggerRef={helpButtonRef} />
+          </div>
           <button
             ref={menuButtonRef}
             type="button"
+            data-tour="nav-hamburger"
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             aria-label={t("openMenu")}
-            onClick={() => setMenuOpen(true)}
+            onClick={() => setLocalMenuOpen(true)}
             className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
           >
             <Menu className="h-5 w-5" strokeWidth={1.75} />
@@ -171,7 +197,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
 
       <NavMenu
         open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        onClose={closeMenu}
         items={items}
         starred={starred}
         onToggleStar={toggleStar}

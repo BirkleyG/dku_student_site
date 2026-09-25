@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         : {}),
     },
     orderBy: { lastName: "asc" },
-    include: { reviews: { select: { gradingRating: true, difficultyRating: true, teachingRating: true } } },
+    include: { reviews: { select: { gradingRating: true, funRating: true, teachingRating: true } } },
   });
 
   return NextResponse.json({ professors });

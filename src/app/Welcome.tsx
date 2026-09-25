@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { studentEmailDomains } from "@/lib/validation";
 import { InstallGuide } from "@/components/install/InstallGuide";
 import { useLocale } from "@/lib/i18n/client";
+import { ChatBubbleList } from "@/components/chat/ChatThread";
 
 type Lang = "en" | "zh";
 
@@ -105,13 +106,19 @@ function guessLastInitial(netId: string, lang: Lang) {
   return letter || (lang === "zh" ? "?" : "?");
 }
 
-export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "modal"; onFinish?: () => void } = {}) {
+export function Welcome({
+  variant = "page",
+  onFinish,
+  initialFirstName,
+}: { variant?: "page" | "modal"; onFinish?: () => void; initialFirstName?: string } = {}) {
   const router = useRouter();
   const { locale } = useLocale();
   const [lang, setLang] = useState<Lang>(locale);
-  const [step, setStep] = useState<Step>("language");
-  const [messages, setMessages] = useState<Message[]>([{ from: "dku", text: copy[locale].greeting }]);
-  const [firstName, setFirstName] = useState("");
+  const [step, setStep] = useState<Step>(initialFirstName ? "isStudent" : "language");
+  const [messages, setMessages] = useState<Message[]>([
+    { from: "dku", text: initialFirstName ? copy[locale].intro : copy[locale].greeting },
+  ]);
+  const [firstName, setFirstName] = useState(initialFirstName ?? "");
   const [netId, setNetId] = useState("");
   const [lastName, setLastName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -142,8 +149,13 @@ export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "mo
   const answerIsStudent = (isStudent: boolean) => {
     if (isStudent) {
       echo(t.yes);
-      say(t.askFirstName);
-      setStep("firstName");
+      if (initialFirstName) {
+        say(t.niceToMeet(initialFirstName));
+        setStep("afterName");
+      } else {
+        say(t.askFirstName);
+        setStep("firstName");
+      }
     } else {
       echo(t.no);
       say(t.notStudent);
@@ -316,13 +328,7 @@ export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "mo
     >
       <div className="relative z-10 w-full max-w-xl">
         <div className="space-y-3">
-          <AnimatePresence initial={false}>
-            {messages.map((m, i) => (
-              <ChatBubble key={i} from={m.from}>
-                {m.text}
-              </ChatBubble>
-            ))}
-          </AnimatePresence>
+          <ChatBubbleList messages={messages} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -462,25 +468,6 @@ export function Welcome({ variant = "page", onFinish }: { variant?: "page" | "mo
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
       </div>
     </main>
-  );
-}
-
-function ChatBubble({ from, children }: { from: "dku" | "you"; children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className={`flex ${from === "you" ? "justify-end" : "justify-start"}`}
-    >
-      <div
-        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm sm:text-base ${
-          from === "you" ? "bg-ink text-white" : "bg-paper-dim text-ink/85"
-        }`}
-      >
-        {children}
-      </div>
-    </motion.div>
   );
 }
 

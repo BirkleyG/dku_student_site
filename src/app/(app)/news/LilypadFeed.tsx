@@ -132,9 +132,9 @@ export function LilypadFeed({
 }
 
 function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; activeCategoryId: number | "ALL" }) {
+  const t = useT("news");
   const displayCategory =
     activeCategoryId !== "ALL" ? (post.categories.find((c) => c.id === activeCategoryId)?.name ?? null) : post.category;
-  const t = useT("news");
 
   return (
     <a

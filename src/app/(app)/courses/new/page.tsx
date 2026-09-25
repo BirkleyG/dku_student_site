@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { Reveal } from "@/components/motion/Reveal";
 import { GuidelinesNote } from "@/components/shell/GuidelinesNote";
 import { getT } from "@/lib/i18n/server";
+import { BackLink } from "@/components/shell/BackLink";
 import { NewCourseForm } from "./NewCourseForm";
 
 export default async function NewCoursePage() {
@@ -13,6 +14,7 @@ export default async function NewCoursePage() {
   return (
     <div className="mx-auto max-w-xl">
       <Reveal>
+        <BackLink href="/courses" label={t("backToCourses")} className="mb-4" />
         <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{t("newCourseEyebrow")}</p>
         <h1 className="mt-2 font-display text-4xl">{t("newCourseHeading")}</h1>
       </Reveal>

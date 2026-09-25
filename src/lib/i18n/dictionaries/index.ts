@@ -17,6 +17,7 @@ import { eats } from "./eats";
 import { news } from "./news";
 import { slb } from "./slb";
 import { admin } from "./admin";
+import { chat } from "./chat";
 
 export const namespaces = {
   common,
@@ -37,6 +38,7 @@ export const namespaces = {
   news,
   slb,
   admin,
+  chat,
 } satisfies Record<string, Record<Locale, Record<string, string>>>;
 
 export type Namespace = keyof typeof namespaces;

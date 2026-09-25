@@ -33,6 +33,6 @@ export const profile: Record<Locale, Record<string, string>> = {
     COURSE_RESOURCE: "上传了课程资源",
     COURSE_ADDED: "添加了一门课程",
     PROFESSOR_ADDED: "添加了一位教授",
-    COURSE_COMMENT: "评论了一门课程",
+    COURSE_COMMENT: "在课程下发表了评论",
   },
 };

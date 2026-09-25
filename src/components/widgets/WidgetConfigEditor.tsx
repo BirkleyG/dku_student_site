@@ -155,7 +155,7 @@ export function WidgetConfigEditor({
                   </button>
                 ))
               ) : (
-                <p className="text-sm text-ink/40">{t("noChannelsYet")}</p>
+                <p className="text-sm text-ink/40">{t("noChannelsJoinedYet")}</p>
               )}
             </div>
           </div>

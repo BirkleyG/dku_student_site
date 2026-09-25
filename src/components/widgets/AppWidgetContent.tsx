@@ -141,7 +141,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "CHAT_LATEST": {
       const item = data.chatMessages[0];
-      if (!item) return <Empty label={t("noMessagesStartConversation")} />;
+      if (!item) return <Empty label={t("noMessagesYet")} />;
       return (
         <div>
           <p className="text-xs text-ink/40">
@@ -154,7 +154,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "CHAT_RECENT": {
       const items = data.chatMessages.slice(0, 4);
-      if (!items.length) return <Empty label={t("noMessagesStartConversation")} />;
+      if (!items.length) return <Empty label={t("noMessagesYet")} />;
       return (
         <ul className="space-y-1.5 text-sm">
           {items.map((m) => (

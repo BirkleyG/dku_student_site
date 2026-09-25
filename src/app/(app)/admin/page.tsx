@@ -153,7 +153,7 @@ export default async function AdminPage() {
   if (hasScope(requester, "CHAT")) {
     tabs.push({
       key: "chat",
-      label: t("chatTab"),
+      label: t("chatGroupsTab"),
       content: (
         <ChatGroupsPanel
           initialGroups={chatGroups.map((g) => ({

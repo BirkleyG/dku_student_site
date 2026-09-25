@@ -24,6 +24,7 @@ export const courses: Record<Locale, Record<string, string>> = {
     shareSomethingHeading: "Share something",
     titlePlaceholder: "Title — e.g. Midterm 1 review notes",
     semesterPlaceholder: "Semester — e.g. Fall 2025 (optional)",
+    noSpecificSemester: "No specific semester",
     notesPlaceholder: "Notes, tips, tricks…",
     fileLinkPlaceholder: "Link to a file (Drive, etc — optional)",
     fileLinkOrPastePlaceholder: "…or paste a link (Drive, etc — optional)",
@@ -67,6 +68,7 @@ export const courses: Record<Locale, Record<string, string>> = {
     addCourse: "Add course",
 
     // new/page.tsx
+    backToCourses: "Back to Courses",
     newCourseEyebrow: "New course",
     newCourseHeading: "Add it to the archive.",
 
@@ -98,6 +100,7 @@ export const courses: Record<Locale, Record<string, string>> = {
     shareSomethingHeading: "分享资料",
     titlePlaceholder: "标题 — 例如：期中考试复习笔记",
     semesterPlaceholder: "学期 — 例如：2025 秋季（选填）",
+    noSpecificSemester: "不限学期",
     notesPlaceholder: "笔记、心得、技巧…",
     fileLinkPlaceholder: "文件链接（如网盘链接，选填）",
     fileLinkOrPastePlaceholder: "…或粘贴链接（如网盘链接，选填）",
@@ -140,6 +143,7 @@ export const courses: Record<Locale, Record<string, string>> = {
     addCourse: "添加课程",
 
     // new/page.tsx
+    backToCourses: "返回课程",
     newCourseEyebrow: "新建课程",
     newCourseHeading: "将它收录进课程库。",
 
