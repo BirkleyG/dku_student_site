@@ -71,6 +71,7 @@ model User {
   chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
   chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
   chatMessages           ChatMessage[]        @relation("ChatMessageAuthor")
+  chatReactions          ChatMessageReaction[]
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
   wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
   wisdomVotes           WisdomVote[]
@@ -252,10 +253,26 @@ model ChatMessage {
   parentId  String?
   parent    ChatMessage?  @relation("ChatMessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   ChatMessage[] @relation("ChatMessageReplies")
+  reactions ChatMessageReaction[]
   createdAt DateTime      @default(now())
 
   @@index([channelId, parentId, createdAt])
   @@map("chat_messages")
+}
+
+// One row per (message, user, emoji) — a user can react to the same message
+// with several different emoji, but not stack the same one twice.
+model ChatMessageReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  @@unique([messageId, userId, emoji])
+  @@map("chat_message_reactions")
 }
 
 enum WisdomCategory {

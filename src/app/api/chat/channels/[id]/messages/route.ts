@@ -8,6 +8,7 @@ import { awardPoints } from "@/lib/community-score";
 type Params = { params: Promise<{ id: string }> };
 
 const authorSelect = { select: { id: true, firstName: true, lastName: true } } as const;
+const reactionsInclude = { reactions: true } as const;
 
 export async function GET(request: Request, { params }: Params) {
   const session = await auth();
@@ -28,14 +29,14 @@ export async function GET(request: Request, { params }: Params) {
   if (parentId) {
     const root = await prisma.chatMessage.findUnique({
       where: { id: parentId },
-      include: { author: authorSelect },
+      include: { author: authorSelect, ...reactionsInclude },
     });
     if (!root || root.channelId !== channelId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const replies = await prisma.chatMessage.findMany({
       where: { parentId },
       orderBy: { createdAt: "asc" },
-      include: { author: authorSelect },
+      include: { author: authorSelect, ...reactionsInclude },
     });
     return NextResponse.json({ root, replies });
   }
@@ -44,7 +45,7 @@ export async function GET(request: Request, { params }: Params) {
     where: { channelId, parentId: null },
     orderBy: { createdAt: "desc" },
     take: 100,
-    include: { author: authorSelect, _count: { select: { replies: true } } },
+    include: { author: authorSelect, _count: { select: { replies: true } }, ...reactionsInclude },
   });
   return NextResponse.json({ messages: messages.reverse() });
 }
@@ -85,7 +86,7 @@ export async function POST(request: Request, { params }: Params) {
       body: parsed.data.body,
       parentId: parsed.data.parentId ?? null,
     },
-    include: { author: authorSelect },
+    include: { author: authorSelect, ...reactionsInclude },
   });
 
   if (channel.kind !== "DIRECT") {
