@@ -63,7 +63,7 @@ export default async function ProfilePage() {
         <h2 className="font-display text-xl">Recent activity</h2>
         {user.scoreEvents.length === 0 ? (
           <p className="mt-4 text-sm text-ink/40">
-            Post a rec, reply on the Board, rate a professor, or share course resources to start earning points.
+            Post a rec, reply in Chat, rate a professor, or share course resources to start earning points.
           </p>
         ) : (
           <StaggerGroup className="mt-4 space-y-2">

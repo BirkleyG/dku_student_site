@@ -19,9 +19,9 @@ export const NOTIFICATION_CATEGORIES: CategoryMeta[] = [
     description: "RSVPs, reminders, and updates for events you're going to.",
   },
   {
-    key: "POSTS",
-    label: "Posts & community",
-    description: "Replies, mentions, and activity on the Board and other community posts.",
+    key: "MESSAGES",
+    label: "Chat",
+    description: "New messages and thread replies in Chat.",
   },
   {
     key: "RECOMMENDATIONS",

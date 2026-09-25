@@ -5,7 +5,7 @@ export const ADMIN_SCOPES: { key: AdminScope; label: string; description: string
   { key: "CLUBS", label: "Clubs", description: "Remove any club listing" },
   { key: "SPORTS", label: "Sports", description: "Remove Open Play / Tournament events" },
   { key: "WISDOM", label: "Wisdom", description: "Remove any wisdom post" },
-  { key: "BOARD", label: "Board", description: "Remove any board post or comment" },
+  { key: "CHAT", label: "Chat", description: "Remove any chat message, and create or remove chat groups" },
   { key: "EATS", label: "DKU Eats", description: "Reserved — no moderation surface yet" },
   { key: "SLB", label: "Student Leaders Board", description: "Add or remove SLB members and moderate SLB posts" },
   { key: "COURSES", label: "Courses", description: "Remove any course or course resource" },
