@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { Hash, MessageCircle, Plus, UserPlus, X } from "lucide-react";
+import { Hash, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
+import { REACTION_EMOJI } from "@/lib/chat-reactions";
 
 const POLL_MS = 4000;
 
@@ -15,11 +16,13 @@ type SidebarDm = { id: string; name: string; otherUserId: string | null };
 type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[] };
 
 type ChatUser = { id: string; firstName: string; lastName: string };
+type ChatReaction = { id: string; emoji: string; userId: string };
 type ChatMessage = {
   id: string;
   body: string;
   createdAt: string;
   author: ChatUser;
+  reactions?: ChatReaction[];
   _count?: { replies: number };
 };
 
@@ -32,7 +35,7 @@ async function jsonFetch(url: string, init?: RequestInit) {
   return data;
 }
 
-export function ChatApp({ currentUserName }: { currentUserName: string }) {
+export function ChatApp({ currentUserId, currentUserName }: { currentUserId: string; currentUserName: string }) {
   const router = useRouter();
   const [sidebar, setSidebar] = useState<SidebarData | null>(null);
   const [selected, setSelected] = useState<SelectedChannel | null>(null);
@@ -179,6 +182,22 @@ export function ChatApp({ currentUserName }: { currentUserName: string }) {
     }
   };
 
+  const react = async (messageId: string, emoji: string) => {
+    try {
+      const data = await jsonFetch(`/api/chat/messages/${messageId}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+      });
+      const reactions = (data.reactions ?? []) as ChatReaction[];
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+      setThreadRoot((prev) => (prev && prev.id === messageId ? { ...prev, reactions } : prev));
+      setThreadReplies((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't react to that message");
+    }
+  };
+
   const joinAndSelect = async (channel: SidebarChannel) => {
     setShowJoin(false);
     await loadSidebar();
@@ -285,9 +304,16 @@ export function ChatApp({ currentUserName }: { currentUserName: string }) {
           {messages.length === 0 ? (
             <p className="mt-10 text-center text-sm text-ink/40">Nothing here yet. Say the first thing.</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {messages.map((m) => (
-                <MessageRow key={m.id} message={m} onOpenThread={() => openThread(m)} />
+                <MessageRow
+                  key={m.id}
+                  message={m}
+                  isMine={m.author.id === currentUserId}
+                  currentUserId={currentUserId}
+                  onOpenThread={() => openThread(m)}
+                  onReact={(emoji) => void react(m.id, emoji)}
+                />
               ))}
             </div>
           )}
@@ -317,6 +343,8 @@ export function ChatApp({ currentUserName }: { currentUserName: string }) {
             onSend={() => void send(threadRootId)}
             onClose={closeThread}
             sending={sending}
+            currentUserId={currentUserId}
+            onReact={(id, emoji) => void react(id, emoji)}
           />
         ) : null}
       </AnimatePresence>
@@ -375,33 +403,135 @@ function SidebarRow({
   );
 }
 
+const AVATAR_COLORS = ["bg-gold/25 text-ink", "bg-sprout/25 text-ink", "bg-ink/15 text-ink", "bg-danger/15 text-ink"];
+
+function avatarColorFor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
+function groupReactions(reactions: ChatReaction[] | undefined, currentUserId: string) {
+  const groups = new Map<string, { emoji: string; count: number; mine: boolean }>();
+  for (const r of reactions ?? []) {
+    const g = groups.get(r.emoji) ?? { emoji: r.emoji, count: 0, mine: false };
+    g.count += 1;
+    if (r.userId === currentUserId) g.mine = true;
+    groups.set(r.emoji, g);
+  }
+  return [...groups.values()];
+}
+
+function Avatar({ user }: { user: ChatUser }) {
+  const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
+  return (
+    <div
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarColorFor(user.id)}`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 function MessageRow({
   message,
+  isMine,
+  currentUserId,
   onOpenThread,
+  onReact,
 }: {
   message: ChatMessage;
+  isMine: boolean;
+  currentUserId: string;
   onOpenThread?: () => void;
+  onReact: (emoji: string) => void;
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const replyCount = message._count?.replies ?? 0;
+  const reactionGroups = groupReactions(message.reactions, currentUserId);
+
   return (
-    <div className="group">
-      <div className="flex items-baseline gap-2">
-        <span className="text-sm font-medium text-ink">
-          {message.author.firstName} {message.author.lastName}
-        </span>
-        <span className="text-xs text-ink/35">{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</span>
-      </div>
-      <p className="mt-0.5 whitespace-pre-wrap text-sm text-ink/80">{message.body}</p>
-      {onOpenThread ? (
-        <button
-          onClick={onOpenThread}
-          className={`focus-ring mt-1 text-xs transition-colors ${
-            replyCount > 0 ? "font-medium text-gold-bright hover:underline" : "text-ink/0 group-hover:text-ink/40 hover:!text-ink"
+    <div className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
+      <Avatar user={message.author} />
+      <div className={`flex max-w-[75%] flex-col ${isMine ? "items-end" : "items-start"}`}>
+        <div className={`flex items-baseline gap-2 px-1 ${isMine ? "flex-row-reverse" : ""}`}>
+          <span className="text-xs font-medium text-ink/70">
+            {isMine ? "You" : `${message.author.firstName} ${message.author.lastName}`}
+          </span>
+          <span className="text-[11px] text-ink/35">{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</span>
+        </div>
+
+        <div
+          className={`mt-0.5 whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+            isMine ? "rounded-br-sm bg-gold/20 text-ink" : "rounded-bl-sm bg-paper-dim text-ink/85"
           }`}
         >
-          {replyCount > 0 ? `${replyCount} repl${replyCount === 1 ? "y" : "ies"}` : "Reply in thread"}
-        </button>
-      ) : null}
+          {message.body}
+        </div>
+
+        {reactionGroups.length > 0 ? (
+          <div className={`mt-1 flex flex-wrap gap-1 ${isMine ? "justify-end" : "justify-start"}`}>
+            {reactionGroups.map((g) => (
+              <button
+                key={g.emoji}
+                onClick={() => onReact(g.emoji)}
+                className={`focus-ring flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                  g.mine ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/60 hover:border-ink/30"
+                }`}
+              >
+                <span>{g.emoji}</span>
+                <span>{g.count}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className={`relative mt-1 flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+          {onOpenThread ? (
+            <button
+              onClick={onOpenThread}
+              className={`focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors ${
+                replyCount > 0 ? "bg-gold/10 font-medium text-gold-bright" : "text-ink/40 hover:bg-paper-dim hover:text-ink"
+              }`}
+            >
+              <MessageSquare className="h-3 w-3" />
+              {replyCount > 0 ? `${replyCount} repl${replyCount === 1 ? "y" : "ies"}` : "Reply in thread"}
+            </button>
+          ) : null}
+
+          <button
+            onClick={() => setPickerOpen((v) => !v)}
+            className="focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-ink/40 transition-colors hover:bg-paper-dim hover:text-ink"
+            aria-label="Add reaction"
+          >
+            <SmilePlus className="h-3.5 w-3.5" />
+          </button>
+
+          {pickerOpen ? (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className={`absolute bottom-full z-10 mb-1 flex gap-0.5 rounded-full border border-ink/10 bg-paper p-1 shadow-lg ${
+                isMine ? "right-0" : "left-0"
+              }`}
+            >
+              {REACTION_EMOJI.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    onReact(emoji);
+                    setPickerOpen(false);
+                  }}
+                  className="focus-ring rounded-full p-1 text-base transition-transform hover:scale-125"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </motion.div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -453,6 +583,8 @@ function ThreadPanel({
   onSend,
   onClose,
   sending,
+  currentUserId,
+  onReact,
 }: {
   root: ChatMessage;
   replies: ChatMessage[];
@@ -461,6 +593,8 @@ function ThreadPanel({
   onSend: () => void;
   onClose: () => void;
   sending: boolean;
+  currentUserId: string;
+  onReact: (messageId: string, emoji: string) => void;
 }) {
   return (
     <div className="flex w-full max-w-sm shrink-0 flex-col border-l border-ink/10 bg-paper sm:w-96">
@@ -470,12 +604,23 @@ function ThreadPanel({
           <X className="h-4 w-4" />
         </button>
       </header>
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         <div className="border-b border-ink/10 pb-4">
-          <MessageRow message={root} />
+          <MessageRow
+            message={root}
+            isMine={root.author.id === currentUserId}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact(root.id, emoji)}
+          />
         </div>
         {replies.map((r) => (
-          <MessageRow key={r.id} message={r} />
+          <MessageRow
+            key={r.id}
+            message={r}
+            isMine={r.author.id === currentUserId}
+            currentUserId={currentUserId}
+            onReact={(emoji) => onReact(r.id, emoji)}
+          />
         ))}
       </div>
       <div className="shrink-0 border-t border-ink/10 p-3">
