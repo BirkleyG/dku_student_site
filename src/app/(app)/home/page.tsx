@@ -8,6 +8,7 @@ import type { WidgetData } from "@/components/widgets/AppWidgetContent";
 import { demoEatsWidgetData } from "@/lib/eats-demo";
 import { fetchEatsWidgetData } from "@/lib/eats-live";
 import { getLilypadCategories, getLilypadPosts } from "@/lib/lilypad";
+import { ensureGeneralChannel } from "@/lib/chat";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
@@ -63,51 +64,66 @@ export default async function HomePage() {
   const today = startOfDay(new Date());
   const weekAhead = addDays(today, 7);
 
-  const boardPostInclude = { author: true, _count: { select: { comments: true } } } satisfies Prisma.BoardPostInclude;
+  const chatMessageInclude = { author: true, channel: true } satisfies Prisma.ChatMessageInclude;
   let events: Prisma.EventGetPayload<object>[] = [];
-  let boardPosts: Prisma.BoardPostGetPayload<{ include: typeof boardPostInclude }>[] = [];
+  let chatMessages: Prisma.ChatMessageGetPayload<{ include: typeof chatMessageInclude }>[] = [];
   try {
-    [events, boardPosts] = await Promise.all([
+    await ensureGeneralChannel();
+    const chatChannelIds = userId
+      ? [
+          "general",
+          ...(
+            await prisma.chatChannelMember.findMany({ where: { userId }, select: { channelId: true } })
+          ).map((m) => m.channelId),
+        ]
+      : ["general"];
+
+    [events, chatMessages] = await Promise.all([
       prisma.event.findMany({
         where: { startsAt: { gte: today, lte: weekAhead }, approved: true },
         orderBy: { startsAt: "asc" },
       }),
-      prisma.boardPost.findMany({
+      prisma.chatMessage.findMany({
+        where: { channelId: { in: chatChannelIds }, parentId: null },
         orderBy: { createdAt: "desc" },
         take: 8,
-        include: boardPostInclude,
+        include: chatMessageInclude,
       }),
     ]);
   } catch (err) {
     // Same principle as the widget-layout read above: a widget's own data
     // source having a bad day shouldn't take the entire dashboard down.
-    console.error("Failed to load events/board data for the dashboard:", err);
+    console.error("Failed to load events/chat data for the dashboard:", err);
   }
 
-  const trackedWidgets = savedRows.filter((w) => w.kind === "BOARD_TRACKED_POST");
-  const trackedPosts: WidgetData["trackedPosts"] = {};
+  const joinedChannels = userId
+    ? await prisma.chatChannel.findMany({
+        where: { OR: [{ id: "general" }, { members: { some: { userId } } }] },
+        select: { id: true, name: true },
+      })
+    : [];
+
+  const trackedWidgets = savedRows.filter((w) => w.kind === "CHAT_TRACKED_CHANNEL");
+  const trackedChannels: WidgetData["trackedChannels"] = {};
   await Promise.all(
     trackedWidgets.map(async (w) => {
       const config = (w.config ?? {}) as Record<string, unknown>;
-      const postId = typeof config.postId === "string" ? config.postId : null;
-      if (!postId) {
-        trackedPosts[w.id] = null;
+      const channelId = typeof config.channelId === "string" ? config.channelId : null;
+      if (!channelId) {
+        trackedChannels[w.id] = null;
         return;
       }
       try {
-        const post = await prisma.boardPost.findUnique({
-          where: { id: postId },
-          include: {
-            author: true,
-            _count: { select: { comments: { where: { createdAt: { gt: w.createdAt } } } } },
-          },
+        const channel = await prisma.chatChannel.findUnique({
+          where: { id: channelId },
+          include: { _count: { select: { messages: { where: { createdAt: { gt: w.createdAt } } } } } },
         });
-        trackedPosts[w.id] = post
-          ? { postId: post.id, title: post.title, authorName: post.author.firstName, unreadCount: post._count.comments }
+        trackedChannels[w.id] = channel
+          ? { channelId: channel.id, channelName: channel.name, unreadCount: channel._count.messages }
           : null;
       } catch (err) {
-        console.error(`Failed to load tracked post for widget ${w.id}:`, err);
-        trackedPosts[w.id] = null;
+        console.error(`Failed to load tracked channel for widget ${w.id}:`, err);
+        trackedChannels[w.id] = null;
       }
     }),
   );
@@ -133,14 +149,15 @@ export default async function HomePage() {
       location: e.location,
       category: e.category,
     })),
-    boardPosts: boardPosts.map((p) => ({
-      id: p.id,
-      title: p.title,
-      authorName: p.author.firstName,
-      createdAt: p.createdAt.toISOString(),
-      commentCount: p._count.comments,
+    chatMessages: chatMessages.map((m) => ({
+      id: m.id,
+      channelName: m.channel.name,
+      body: m.body,
+      authorName: m.author.firstName,
+      createdAt: m.createdAt.toISOString(),
     })),
-    trackedPosts,
+    trackedChannels,
+    chatChannels: joinedChannels,
     eats: await fetchEatsWidgetDataSafely(eatsUser),
     lilypadCategories,
     lilypadByWidget,

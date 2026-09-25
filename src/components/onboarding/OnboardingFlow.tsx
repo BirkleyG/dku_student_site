@@ -13,7 +13,7 @@ const TAB_BLURB: Record<string, string> = {
   "/home": "Your dashboard — customizable widgets so everything you care about is at a glance.",
   "/events": "See what's happening on campus this week, or add your own once you're signed in.",
   "/eats": "DKU Eats — order student-cooked food right from here.",
-  "/social": "The Board — campus discussions and posts from other students.",
+  "/chat": "Chat — sitewide, group, and direct conversations with other students.",
   "/news": "Campus news, all in one feed.",
   "/wisdom": "DKU Wisdom — crowdsourced tips and advice from people who've been here.",
   "/clubs": "Browse and join student clubs.",

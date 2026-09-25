@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export const scorePoints: Record<ScoreReason, number> = {
   WISDOM_POST: 5,
-  BOARD_POST: 5,
-  BOARD_COMMENT: 2,
+  CHAT_MESSAGE: 5,
+  CHAT_REPLY: 2,
   PROFESSOR_REVIEW: 6,
   COURSE_RESOURCE: 8,
   COURSE_ADDED: 5,
@@ -14,8 +14,8 @@ export const scorePoints: Record<ScoreReason, number> = {
 
 export const scoreReasonLabels: Record<ScoreReason, string> = {
   WISDOM_POST: "Shared a Wisdom rec",
-  BOARD_POST: "Posted on the Board",
-  BOARD_COMMENT: "Replied on the Board",
+  CHAT_MESSAGE: "Started a chat thread",
+  CHAT_REPLY: "Replied in Chat",
   PROFESSOR_REVIEW: "Rated a professor",
   COURSE_RESOURCE: "Uploaded a course resource",
   COURSE_ADDED: "Added a course",

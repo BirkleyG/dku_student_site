@@ -10,11 +10,13 @@ import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { useRequestPushPrompt } from "@/components/notifications/PushPromptProvider";
 
 type EventFormValues = z.input<typeof eventSchema>;
 
 export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
+  const requestPushPrompt = useRequestPushPrompt();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -43,6 +45,10 @@ export function NewEventForm({ isAdmin }: { isAdmin: boolean }) {
     }
 
     const { event } = await res.json();
+    // Fires before the navigation below; the prompt lives at the app root
+    // (PushPromptProvider) so it stays on screen across the route change
+    // instead of unmounting with this form.
+    requestPushPrompt("event-created");
     router.push(`/events/${event.id}`);
   };
 

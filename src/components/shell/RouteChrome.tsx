@@ -14,11 +14,12 @@ type Props = {
   children: ReactNode;
 };
 
-// DKU Eats renders full-bleed under the header: no max-width container and
-// no footer. Every other route keeps the normal contained layout.
+// DKU Eats and Chat render full-bleed under the header: no max-width
+// container and no footer — Chat needs the full viewport height for its
+// sidebar/thread layout. Every other route keeps the normal contained layout.
 export function RouteChrome({ userLabel, isAdmin, initialStarred, communityScore, children }: Props) {
   const pathname = usePathname();
-  const isFullBleed = pathname === "/eats";
+  const isFullBleed = pathname === "/eats" || pathname === "/chat";
 
   return (
     <>

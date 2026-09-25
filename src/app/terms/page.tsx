@@ -29,7 +29,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="Events, posts, and clubs">
-          Anything you post (an event, a board post, a rec, a club listing) should be something you&apos;d be fine
+          Anything you post (an event, a chat message, a rec, a club listing) should be something you&apos;d be fine
           putting your name on, because it already has your name on it. Admins can remove content that breaks these
           guidelines, and repeat issues can mean losing access to post.
         </Section>
