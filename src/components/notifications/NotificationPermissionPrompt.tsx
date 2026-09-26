@@ -33,7 +33,7 @@ export function NotificationPermissionPrompt({
   onClose: () => void;
   copy: PushPromptCopy;
 }) {
-  const { subscribe, state } = usePushSubscription();
+  const { subscribe, state, error } = usePushSubscription();
   const [busy, setBusy] = useState(false);
 
   const handleDismiss = useCallback(() => {
@@ -45,8 +45,10 @@ export function NotificationPermissionPrompt({
     setBusy(true);
     await subscribe();
     setBusy(false);
-    onClose();
-  }, [subscribe, onClose]);
+    // Only close on confirmed success — the state effect below handles that.
+    // On failure, `error` (from the hook) is surfaced inline instead of
+    // silently dismissing the toast.
+  }, [subscribe]);
 
   // If subscribe() succeeds (or the user grants permission for some other
   // reason while this happens to be open) close instead of lingering.
@@ -94,6 +96,11 @@ export function NotificationPermissionPrompt({
                 {copy.title}
               </h2>
               <p className="mt-1 text-sm text-ink/60">{copy.description}</p>
+              {error && (
+                <p role="alert" className="mt-1 text-sm text-danger">
+                  {error}
+                </p>
+              )}
 
               <div className="mt-3 flex items-center gap-2">
                 <button
@@ -102,7 +109,7 @@ export function NotificationPermissionPrompt({
                   disabled={busy}
                   className="focus-ring rounded-full bg-gold px-4 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-gold-bright disabled:opacity-50"
                 >
-                  {busy ? "Enabling…" : "Enable"}
+                  {busy ? "Enabling…" : error ? "Try again" : "Enable"}
                 </button>
                 <button
                   type="button"

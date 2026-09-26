@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { LoginModal } from "@/components/layout/LoginModal";
 import { ChatBubbleList } from "@/components/chat/ChatThread";
 import { Welcome } from "@/app/Welcome";
@@ -9,36 +11,148 @@ import { navMenuTourBridge, dashboardEditTourBridge } from "@/lib/tourBridge";
 import { Spotlight } from "./Spotlight";
 import { InterestsPicker } from "./InterestsPicker";
 
-const TAB_BLURB: Record<string, string> = {
-  "/home": "Your dashboard — customizable widgets so everything you care about is at a glance.",
-  "/events": "See what's happening on campus this week, or add your own once you're signed in.",
-  "/eats": "DKU Eats — order student-cooked food right from here.",
-  "/chat": "Chat — sitewide, group, and direct conversations with other students.",
-  "/news": "Campus news, all in one feed.",
-  "/wisdom": "DKU Wisdom — crowdsourced tips and advice from people who've been here.",
-  "/clubs": "Browse and join student clubs.",
-  "/courses": "Course info and reviews from students who've taken them.",
-  "/professors": "Professor ratings and reviews.",
-  "/marketplace": "Buy, sell, and trade with other students.",
-  "/slb": "Student Life Board — updates from student government.",
+type DeepDiveStep = { target: string; title: string; body: string };
+
+type TabConfig = {
+  blurb: string;
+  /** When present, the tab step offers "Explain more" — a real, in-place walkthrough of the page. */
+  deepDive?: DeepDiveStep[];
+  /** Guests get redirected to /login on this route, so the deep dive is only offered when signed in. */
+  requiresAuth?: boolean;
 };
 
-type Stage =
-  | "greeting"
-  | "askName"
-  | "chatIntro"
-  | "spotlightHamburger"
-  | "spotlightMenu"
-  | "interests"
-  | "tabTour"
-  | "widgetEditToggle"
-  | "widgetAddTile"
-  | "widgetRemoveTile"
-  | "widgetSave"
-  | "accountOffer"
-  | "createAccount";
+const TAB_CONFIG: Record<string, TabConfig> = {
+  "/home": {
+    blurb: "Your dashboard — customizable widgets so everything you care about is at a glance.",
+    deepDive: [
+      {
+        target: "widget-edit-toggle",
+        title: "Edit your widgets",
+        body: "Click this to rearrange, add, or remove widgets from your dashboard.",
+      },
+      {
+        target: "widget-add-tile",
+        title: "Add a widget",
+        body: "This opens the widget gallery — pick anything you'd like to pin to your dashboard.",
+      },
+      {
+        target: "widget-remove-tile",
+        title: "Remove a widget",
+        body: "Tap the little X on any tile to take it off your dashboard.",
+      },
+      {
+        target: "widget-edit-toggle",
+        title: "Save your layout",
+        body: "Hit Done when you're happy — your layout saves automatically.",
+      },
+    ],
+  },
+  "/events": {
+    blurb: "See what's happening on campus this week, or add your own once you're signed in.",
+    deepDive: [
+      {
+        target: "events-calendar",
+        title: "Browse events",
+        body: "Switch between month, week, and day views, or jump to any day to see what's on.",
+      },
+      {
+        target: "events-host-btn",
+        title: "Host your own",
+        body: "Once you're signed in, tap here to publish an event of your own.",
+      },
+    ],
+  },
+  "/eats": {
+    blurb: "DKU Eats — order student-cooked food right from here.",
+    deepDive: [
+      {
+        target: "eats-embed",
+        title: "DKU Eats",
+        body: "Browse restaurants, click one to see the menu, and place an order — it all happens right here, embedded in the site.",
+      },
+    ],
+  },
+  "/chat": {
+    blurb: "Chat — sitewide, group, and direct conversations with other students.",
+    requiresAuth: true,
+    deepDive: [
+      {
+        target: "chat-channel-list",
+        title: "Channels & DMs",
+        body: "The General channel is open to everyone. Join a group with an invite code, or start a direct message with another student.",
+      },
+      {
+        target: "chat-composer",
+        title: "Say something",
+        body: "Type here to post in whichever channel or DM you've got open.",
+      },
+    ],
+  },
+  "/news": {
+    blurb: "Campus news, all in one feed.",
+    deepDive: [{ target: "news-feed", title: "News", body: "Filter by category and scroll through the latest campus stories." }],
+  },
+  "/wisdom": {
+    blurb: "DKU Wisdom — crowdsourced tips and advice from people who've been here.",
+    deepDive: [
+      { target: "wisdom-list", title: "Browse topics", body: "Real questions and advice from other students, organized by topic." },
+      {
+        target: "wisdom-start-btn",
+        title: "Ask your own",
+        body: "Once you're signed in, start a topic to ask the community something.",
+      },
+    ],
+  },
+  "/clubs": {
+    blurb: "Browse and join student clubs.",
+    deepDive: [
+      { target: "clubs-directory", title: "Find a club", body: "Every student club at DKU, searchable in one place." },
+      { target: "clubs-add-btn", title: "Add a club", body: "Once you're signed in, add a club that isn't listed yet." },
+    ],
+  },
+  "/courses": {
+    blurb: "Course info and reviews from students who've taken them.",
+    deepDive: [
+      { target: "courses-directory", title: "Find a course", body: "Search courses and read reviews from students who've taken them." },
+      { target: "courses-add-btn", title: "Add a course", body: "Once you're signed in, add a course that's missing." },
+    ],
+  },
+  "/professors": {
+    blurb: "Professor ratings and reviews.",
+    deepDive: [
+      { target: "professors-directory", title: "Find a professor", body: "Search professors and see what other students thought of their classes." },
+      { target: "professors-add-btn", title: "Add a professor", body: "Once you're signed in, add a professor who's missing." },
+    ],
+  },
+  "/marketplace": {
+    blurb: "Buy, sell, and trade with other students.",
+    deepDive: [
+      {
+        target: "marketplace-embed",
+        title: "DKU Marketplace",
+        body: "Browse listings, message a seller, and post your own — embedded right here too.",
+      },
+    ],
+  },
+  "/slb": {
+    blurb: "Student Life Board — updates from student government.",
+    deepDive: [
+      { target: "slb-about", title: "About SLB", body: "What the Student Life Board does, and how to reach them." },
+      {
+        target: "slb-initiatives",
+        title: "Initiatives on the floor",
+        body: "Proposals currently being considered — back the ones you care about.",
+      },
+    ],
+  },
+};
+
+type Stage = "greeting" | "askName" | "chatIntro" | "spotlightHamburger" | "spotlightMenu" | "interests" | "tabTour" | "deepDive" | "accountOffer" | "createAccount";
 
 export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; onComplete: (interests: string[]) => void }) {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const isLoggedIn = Boolean(session?.user);
   const [stage, setStage] = useState<Stage>("greeting");
   const [messages, setMessages] = useState<{ from: "dku" | "you"; text: string }[]>([
     { from: "dku", text: "Hello! Welcome to DKU Life." },
@@ -47,6 +161,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
   const [nameValue, setNameValue] = useState("");
   const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
   const [tabIndex, setTabIndex] = useState(0);
+  const [deepDiveIndex, setDeepDiveIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const say = (text: string) => setMessages((m) => [...m, { from: "dku", text }]);
@@ -96,11 +211,14 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
 
   const currentTabHref = selectedTabs[tabIndex];
   const currentTabItem = navItems.find((i) => i.href === currentTabHref);
+  const currentTabConfig = currentTabHref ? TAB_CONFIG[currentTabHref] : undefined;
 
   const advanceTab = () => {
     if (tabIndex + 1 >= selectedTabs.length) {
       navMenuTourBridge.set(false);
-      say(`If you want full access, I can go ahead and create an account for you, ${name}.`);
+      say(
+        `That's the tour! You can always rewatch it from the "?" next to the menu. If you want full access, I can go ahead and create an account for you, ${name}.`,
+      );
       setStage("accountOffer");
       return;
     }
@@ -108,16 +226,35 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
     setStage("tabTour");
   };
 
-  const startWidgetDemo = () => {
+  const startDeepDive = () => {
+    if (!currentTabHref || !currentTabConfig?.deepDive) return;
     navMenuTourBridge.set(false);
-    dashboardEditTourBridge.set(true);
-    setStage("widgetEditToggle");
+    // Navigate unconditionally (a no-op if we're already there) — the tour
+    // can be replayed from any page via the "?" menu, so we can't assume
+    // we're still sitting on whichever tab this step belongs to.
+    router.push(currentTabHref);
+    if (currentTabHref === "/home") {
+      dashboardEditTourBridge.set(true);
+    }
+    setDeepDiveIndex(0);
+    setStage("deepDive");
+  };
+
+  const finishDeepDive = () => {
+    if (currentTabHref === "/home") {
+      dashboardEditTourBridge.set(false);
+    }
+    setDeepDiveIndex(null);
+    navMenuTourBridge.set(true);
+    advanceTab();
   };
 
   const skipTour = () => {
     navMenuTourBridge.set(false);
     dashboardEditTourBridge.set(false);
-    say(`If you want full access, I can go ahead and create an account for you, ${name}.`);
+    say(
+      `That's the tour! You can always rewatch it from the "?" next to the menu. If you want full access, I can go ahead and create an account for you, ${name}.`,
+    );
     setStage("accountOffer");
   };
 
@@ -216,6 +353,12 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
 
   const showModal = ["greeting", "askName", "chatIntro", "accountOffer", "createAccount"].includes(stage);
 
+  const canDeepDive = Boolean(currentTabConfig?.deepDive) && (!currentTabConfig?.requiresAuth || isLoggedIn);
+  const isLastTab = tabIndex + 1 >= selectedTabs.length;
+  const deepDiveSteps = currentTabConfig?.deepDive ?? [];
+  const deepDiveStep = deepDiveIndex !== null ? deepDiveSteps[deepDiveIndex] : undefined;
+  const isLastDeepDiveStep = deepDiveIndex !== null && deepDiveIndex + 1 >= deepDiveSteps.length;
+
   return (
     <>
       {showModal ? (
@@ -245,7 +388,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
         <Spotlight
           target="nav-menu-list"
           title="Here's everything"
-          body="This is every tab in DKU Life. Let's pick out what you care about."
+          body="This is every tab in DKU Life. Tap the star next to a tab to pin it to your header for quick access — let's pick out what you care about."
           onNext={goToInterests}
           onSkip={skipTour}
         />
@@ -253,70 +396,39 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
 
       {stage === "interests" ? <InterestsPicker items={navItems} onContinue={beginTabTour} /> : null}
 
-      {stage === "tabTour" && currentTabItem ? (
-        currentTabHref === "/home" ? (
+      {stage === "tabTour" && currentTabItem && currentTabConfig ? (
+        canDeepDive ? (
           <Spotlight
             target={`nav-item-${currentTabHref}`}
             title={currentTabItem.label}
-            body={TAB_BLURB[currentTabHref] ?? currentTabItem.label}
+            body={currentTabConfig.blurb}
             onSkip={skipTour}
             actions={[
               { label: "Looks great!", onClick: advanceTab },
-              { label: "Show me how", onClick: startWidgetDemo, primary: true },
+              { label: currentTabHref === "/home" ? "Show me how" : "Explain more", onClick: startDeepDive, primary: true },
             ]}
           />
         ) : (
           <Spotlight
             target={`nav-item-${currentTabHref}`}
             title={currentTabItem.label}
-            body={TAB_BLURB[currentTabHref] ?? currentTabItem.label}
+            body={currentTabConfig.blurb}
             onNext={advanceTab}
             onSkip={skipTour}
-            nextLabel={tabIndex + 1 >= selectedTabs.length ? "Done" : "Next"}
+            nextLabel={isLastTab ? "Done" : "Next"}
           />
         )
       ) : null}
 
-      {stage === "widgetEditToggle" ? (
+      {stage === "deepDive" && deepDiveStep ? (
         <Spotlight
-          target="widget-edit-toggle"
-          title="Edit your widgets"
-          body="Click this to rearrange, add, or remove widgets from your dashboard."
-          onNext={() => setStage("widgetAddTile")}
-          onSkip={skipTour}
-        />
-      ) : null}
-
-      {stage === "widgetAddTile" ? (
-        <Spotlight
-          target="widget-add-tile"
-          title="Add a widget"
-          body="This opens the widget gallery — pick anything you'd like to pin to your dashboard."
-          onNext={() => setStage("widgetRemoveTile")}
-          onSkip={skipTour}
-        />
-      ) : null}
-
-      {stage === "widgetRemoveTile" ? (
-        <Spotlight
-          target="widget-remove-tile"
-          title="Remove a widget"
-          body="Tap the little X on any tile to take it off your dashboard."
-          onNext={() => setStage("widgetSave")}
-          onSkip={skipTour}
-        />
-      ) : null}
-
-      {stage === "widgetSave" ? (
-        <Spotlight
-          target="widget-edit-toggle"
-          title="Save your layout"
-          body="Hit Done when you're happy — your layout saves automatically."
-          nextLabel="Got it"
+          target={deepDiveStep.target}
+          title={deepDiveStep.title}
+          body={deepDiveStep.body}
+          nextLabel={isLastDeepDiveStep ? "Continue tour" : "Next"}
           onNext={() => {
-            dashboardEditTourBridge.set(false);
-            navMenuTourBridge.set(true);
-            advanceTab();
+            if (isLastDeepDiveStep) finishDeepDive();
+            else setDeepDiveIndex((i) => (i ?? 0) + 1);
           }}
           onSkip={skipTour}
         />

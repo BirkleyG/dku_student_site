@@ -42,7 +42,7 @@ export function EatsEmbed({ loggedIn }: { loggedIn: boolean }) {
   }, [loggedIn]);
 
   return (
-    <div className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
+    <div data-tour="eats-embed" className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
       {src ? (
         <iframe src={src} title={t("embedTitle")} className="h-full w-full" allow="clipboard-write; payment" />
       ) : (

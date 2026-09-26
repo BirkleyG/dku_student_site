@@ -196,7 +196,7 @@ export default async function SlbPage({ searchParams }: PageProps<"/slb">) {
       <div className="mt-8">
         {tab === "home" ? (
           <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-            <section>
+            <section data-tour="slb-about">
               <h2 className="font-display text-2xl">{t("aboutHeading")}</h2>
               <div className="mt-3">
                 <Paragraphs text={about?.body ?? DEFAULT_ABOUT} />
@@ -231,7 +231,7 @@ export default async function SlbPage({ searchParams }: PageProps<"/slb">) {
               </div>
 
               <h2 className="mt-10 font-display text-2xl">{t("initiativesOnFloor")}</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div data-tour="slb-initiatives" className="mt-4 grid gap-4 sm:grid-cols-2">
                 {initiativeCards.filter((i) => i.status === "PROPOSED" || i.status === "IN_PROGRESS").slice(0, 4).map(renderInitiative)}
               </div>
               {initiativeCards.length === 0 ? <p className="mt-2 text-sm text-ink/45">{t("noInitiativesYet")}</p> : null}

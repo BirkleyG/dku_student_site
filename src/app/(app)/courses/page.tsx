@@ -23,14 +23,18 @@ export default async function CoursesPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{t("pageEyebrow")}</p>
           <h1 className="mt-2 font-display text-4xl">{t("pageHeading")}</h1>
         </div>
-        <LinkButton href={session ? "/courses/new" : "/login"}>{t("addCourseButton")}</LinkButton>
+        <div data-tour="courses-add-btn">
+          <LinkButton href={session ? "/courses/new" : "/login"}>{t("addCourseButton")}</LinkButton>
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <CoursesDirectory
-          currentUserId={currentUser?.id ?? null}
-          isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
-        />
+        <div data-tour="courses-directory">
+          <CoursesDirectory
+            currentUserId={currentUser?.id ?? null}
+            isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
+          />
+        </div>
       </Reveal>
     </div>
   );

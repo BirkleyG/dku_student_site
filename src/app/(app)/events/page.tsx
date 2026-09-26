@@ -21,7 +21,9 @@ export default async function EventsPage() {
         <div>
           <h1 className="font-display text-4xl">{t("whatsHappening")}</h1>
         </div>
-        <LinkButton href={session ? "/events/new" : "/login"}>{t("hostAnEvent")}</LinkButton>
+        <div data-tour="events-host-btn">
+          <LinkButton href={session ? "/events/new" : "/login"}>{t("hostAnEvent")}</LinkButton>
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
