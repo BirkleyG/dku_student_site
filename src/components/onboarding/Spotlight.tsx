@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -11,6 +11,11 @@ const PAD = 8;
 function measure(selector: string): Rect | null {
   const el = document.querySelector<HTMLElement>(`[data-tour="${selector}"]`);
   if (!el) return null;
+  // offsetParent is null when the element (or an ancestor) is `display:
+  // none` — e.g. Chat's channel sidebar is `hidden sm:flex`, invisible below
+  // the sm breakpoint. Treat that the same as "not found" rather than
+  // spotlighting an empty 0×0 box on mobile.
+  if (el.offsetParent === null) return null;
   const r = el.getBoundingClientRect();
   return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 };
 }
@@ -77,6 +82,7 @@ export function Spotlight({
   onNext,
   onBack,
   onSkip,
+  onUnavailable,
   nextLabel = "Next",
   backLabel,
   skipLabel = "Skip tour",
@@ -88,6 +94,14 @@ export function Spotlight({
   onNext?: () => void;
   onBack?: () => void;
   onSkip: () => void;
+  /**
+   * Called once, instead of showing a broken empty spotlight, if `target`
+   * still isn't a visible element after the retry window — e.g. a step
+   * written for a desktop-only element (Chat's channel sidebar is hidden
+   * below the sm breakpoint) reached on a mobile viewport. Callers should
+   * treat this like the visitor pressed Next/skip past this step.
+   */
+  onUnavailable?: () => void;
   nextLabel?: string;
   backLabel?: string;
   skipLabel?: string;
@@ -101,6 +115,13 @@ export function Spotlight({
     () => false,
   );
 
+  // Kept in a ref so the retry effect below doesn't need onUnavailable in its
+  // dependency array — callers pass a fresh arrow function every render.
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable;
+  });
+
   useLayoutEffect(() => {
     // Clear the stale rect immediately when the target changes, so the old
     // highlight/tooltip never lingers pointing at the wrong element while
@@ -108,15 +129,23 @@ export function Spotlight({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRect(null);
     let frame = 0;
+    let found: Rect | null = null;
     const started = Date.now();
-    const update = () => setRect(measure(target));
+    const update = () => {
+      found = measure(target);
+      setRect(found);
+    };
     // The target may still be animating in (drawer slide, layout shift), or
     // — after a tour deep-dive navigation — the whole page may still be
     // fetching its data, so keep re-measuring for a few seconds rather than
     // a fixed number of frames.
     const tick = () => {
       update();
-      if (Date.now() - started < 4000) frame = requestAnimationFrame(tick);
+      if (Date.now() - started < 4000) {
+        frame = requestAnimationFrame(tick);
+      } else if (!found) {
+        onUnavailableRef.current?.();
+      }
     };
     frame = requestAnimationFrame(tick);
 

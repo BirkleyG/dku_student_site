@@ -20,6 +20,21 @@ const SCROLL_THRESHOLD = 24;
 const EDGE_ZONE = 32;
 const SWIPE_DISTANCE = 60;
 const SWIPE_MAX_VERTICAL = 60;
+// Matches Tailwind's `sm` breakpoint, which is what switches the header's
+// starred row / bottom tab bar between desktop and mobile layout.
+const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+
+function useIsMobileViewport(): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      const mql = window.matchMedia(MOBILE_MEDIA_QUERY);
+      mql.addEventListener("change", callback);
+      return () => mql.removeEventListener("change", callback);
+    },
+    () => window.matchMedia(MOBILE_MEDIA_QUERY).matches,
+    () => false,
+  );
+}
 
 type Props = {
   userLabel: string | null;
@@ -44,12 +59,16 @@ export function NavBar({ userLabel, isAdmin, initialStarred, initialStarredMobil
 
   // Tracks which list the drawer is editing: opened from the top hamburger
   // (desktop), the bottom tab bar's More button, or the right-edge swipe
-  // (both touch-only, so mobile) — vs. the onboarding tour, which has no
-  // device context and defaults to desktop.
+  // (both touch-only, so mobile) — vs. the onboarding tour, which opens the
+  // drawer itself with no button click to infer a device from, so it falls
+  // back to the real viewport width. Without this, starring a tab mid-tour
+  // on a phone silently wrote to the desktop list, which the phone never
+  // shows — the tour's star step looked like it did nothing.
   const [menuDevice, setMenuDevice] = useState<"desktop" | "mobile" | null>(null);
   const tourWantsMenuOpen = navMenuTourBridge.useValue();
   const menuOpen = menuDevice !== null || tourWantsMenuOpen;
-  const activeDevice = menuDevice ?? "desktop";
+  const isMobileViewport = useIsMobileViewport();
+  const activeDevice = menuDevice ?? (isMobileViewport ? "mobile" : "desktop");
   const activeNav = activeDevice === "mobile" ? mobileNav : desktopNav;
   const closeMenu = () => {
     setMenuDevice(null);

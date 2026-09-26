@@ -240,6 +240,11 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
     setStage("deepDive");
   };
 
+  const advanceDeepDive = () => {
+    if (isLastDeepDiveStep) finishDeepDive();
+    else setDeepDiveIndex((i) => (i ?? 0) + 1);
+  };
+
   const finishDeepDive = () => {
     if (currentTabHref === "/home") {
       dashboardEditTourBridge.set(false);
@@ -388,7 +393,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
         <Spotlight
           target="nav-menu-list"
           title="Here's everything"
-          body="This is every tab in DKU Life. Tap the star next to a tab to pin it to your header for quick access — let's pick out what you care about."
+          body="This is every tab in DKU Life. Tap the star next to a tab to pin it for quick access — let's pick out what you care about."
           onNext={goToInterests}
           onSkip={skipTour}
         />
@@ -426,10 +431,11 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
           title={deepDiveStep.title}
           body={deepDiveStep.body}
           nextLabel={isLastDeepDiveStep ? "Continue tour" : "Next"}
-          onNext={() => {
-            if (isLastDeepDiveStep) finishDeepDive();
-            else setDeepDiveIndex((i) => (i ?? 0) + 1);
-          }}
+          onNext={advanceDeepDive}
+          // Some deep-dive targets only exist on desktop (e.g. Chat's channel
+          // sidebar is hidden on mobile) — advance past the step instead of
+          // leaving a broken empty spotlight on screen.
+          onUnavailable={advanceDeepDive}
           onSkip={skipTour}
         />
       ) : null}
