@@ -15,11 +15,15 @@ export default async function ClubsPage() {
           <h1 className="font-display text-4xl">{t("pageHeading")}</h1>
           <p className="mt-1 text-sm text-ink/50">{t("pageSubheading")}</p>
         </div>
-        <LinkButton href={session ? "/clubs/new" : "/login"}>{t("addClubButton")}</LinkButton>
+        <div data-tour="clubs-add-btn">
+          <LinkButton href={session ? "/clubs/new" : "/login"}>{t("addClubButton")}</LinkButton>
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <ClubsDirectory />
+        <div data-tour="clubs-directory">
+          <ClubsDirectory />
+        </div>
       </Reveal>
     </div>
   );

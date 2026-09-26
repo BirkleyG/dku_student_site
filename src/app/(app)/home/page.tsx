@@ -12,7 +12,6 @@ import { ensureGeneralChannel } from "@/lib/chat";
 import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
-import { WelcomeModal } from "@/components/layout/WelcomeModal";
 import type { EatsWidgetData } from "@/lib/eats-live";
 import { getT } from "@/lib/i18n/server";
 
@@ -184,8 +183,6 @@ export default async function HomePage() {
       <Reveal delay={0.1} className="mt-8">
         <HomeDashboard initialLayout={layout} data={data} canSave={Boolean(userId)} />
       </Reveal>
-
-      {session?.user ? null : <WelcomeModal />}
     </div>
   );
 }

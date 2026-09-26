@@ -174,7 +174,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <div className="min-w-0 flex-1">
+      <div data-tour="events-calendar" className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button

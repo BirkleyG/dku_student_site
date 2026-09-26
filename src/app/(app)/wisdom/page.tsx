@@ -25,11 +25,15 @@ export default async function WisdomPage() {
             {t("pageDescription")}
           </p>
         </div>
-        <LinkButton href={session ? "/wisdom/new" : "/login"}>{t("startATopic")}</LinkButton>
+        <div data-tour="wisdom-start-btn">
+          <LinkButton href={session ? "/wisdom/new" : "/login"}>{t("startATopic")}</LinkButton>
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <WisdomTopicList currentUserId={currentUser?.id ?? null} isAdmin={currentUser ? hasScope(currentUser, "WISDOM") : false} />
+        <div data-tour="wisdom-list">
+          <WisdomTopicList currentUserId={currentUser?.id ?? null} isAdmin={currentUser ? hasScope(currentUser, "WISDOM") : false} />
+        </div>
       </Reveal>
     </div>
   );

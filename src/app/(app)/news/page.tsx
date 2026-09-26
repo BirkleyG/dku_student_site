@@ -18,7 +18,9 @@ export default async function NewsPage() {
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <LilypadFeed initialPosts={lilypad.posts} initialTotalPages={lilypad.totalPages} categories={categories} />
+        <div data-tour="news-feed">
+          <LilypadFeed initialPosts={lilypad.posts} initialTotalPages={lilypad.totalPages} categories={categories} />
+        </div>
       </Reveal>
     </div>
   );
