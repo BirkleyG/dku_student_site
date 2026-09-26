@@ -166,7 +166,12 @@ export function Spotlight({
   const tooltipPos = rect ? placeTooltip(rect, tooltipWidth, viewportW, viewportH) : null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[70]" aria-live="polite">
+    // pointer-events-none on the wrapper lets clicks fall through to the
+    // real page underneath — several tour steps (e.g. "tap the star next to
+    // a tab") depend on the visitor actually being able to click the
+    // highlighted element, not just the tooltip's own buttons. The tooltip
+    // opts back in with pointer-events-auto below.
+    <div className="pointer-events-none fixed inset-0 z-[70]" aria-live="polite">
       <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
         <defs>
           <mask id="spotlight-mask">

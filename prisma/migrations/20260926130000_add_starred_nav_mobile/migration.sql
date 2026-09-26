@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "starredNavMobile" TEXT[] DEFAULT ARRAY[]::TEXT[];
+ALTER TABLE "users" ADD COLUMN "starredNavMobile" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
