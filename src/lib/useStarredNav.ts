@@ -1,9 +1,19 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
-import { MAX_STARRED_NAV } from "@/lib/nav";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { MAX_STARRED_NAV_DESKTOP, MAX_STARRED_NAV_MOBILE } from "@/lib/nav";
 
-const STORAGE_KEY = "dku-life:starred-nav";
+export type NavDevice = "desktop" | "mobile";
+
+const STORAGE_KEY: Record<NavDevice, string> = {
+  desktop: "dku-life:starred-nav",
+  mobile: "dku-life:starred-nav-mobile",
+};
+
+const MAX_STARRED: Record<NavDevice, number> = {
+  desktop: MAX_STARRED_NAV_DESKTOP,
+  mobile: MAX_STARRED_NAV_MOBILE,
+};
 
 function parseStored(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -18,36 +28,42 @@ function parseStored(raw: string | null): string[] | null {
   return null;
 }
 
-function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
-function getSnapshot(): string | null {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
 function getServerSnapshot(): string | null {
   return null;
 }
 
-function writeLocalStorage(value: string[]) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // private browsing / storage disabled — starring still works for this session
-  }
-}
-
 /**
- * Tracks the header's starred nav tabs. Logged-in users persist to the
- * nav-preferences API; guests persist to localStorage. Updates are optimistic.
+ * Tracks one device's starred nav tabs — desktop (the header row) and mobile
+ * (the bottom tab bar) are pinned independently, since the mobile surface is
+ * much smaller and caps out at a lower MAX_STARRED_NAV_MOBILE. Logged-in
+ * users persist each list to its own column via the nav-preferences API;
+ * guests persist to its own localStorage key. Updates are optimistic.
  */
-export function useStarredNav(initialStarred: string[], isLoggedIn: boolean) {
+export function useStarredNav(initialStarred: string[], isLoggedIn: boolean, device: NavDevice = "desktop") {
+  const storageKey = STORAGE_KEY[device];
+  const max = MAX_STARRED[device];
+
+  const subscribe = useCallback((callback: () => void) => {
+    window.addEventListener("storage", callback);
+    return () => window.removeEventListener("storage", callback);
+  }, []);
+
+  const getSnapshot = useCallback((): string | null => {
+    try {
+      return window.localStorage.getItem(storageKey);
+    } catch {
+      return null;
+    }
+  }, [storageKey]);
+
+  function writeLocalStorage(value: string[]) {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(value));
+    } catch {
+      // private browsing / storage disabled — starring still works for this session
+    }
+  }
+
   // The server can't see localStorage, so guests are handed the same default
   // as everyone else on first paint; useSyncExternalStore (hydration-safe,
   // unlike reading localStorage in an effect) picks up their saved value as
@@ -82,7 +98,7 @@ export function useStarredNav(initialStarred: string[], isLoggedIn: boolean) {
         await fetch("/api/user/nav-preferences", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ starredNav: next }),
+          body: JSON.stringify({ device, starredNav: next }),
         });
       } catch {
         // best-effort; the header already reflects the optimistic update
@@ -93,7 +109,7 @@ export function useStarredNav(initialStarred: string[], isLoggedIn: boolean) {
 
   function toggleStar(href: string) {
     const isStarred = starred.includes(href);
-    if (!isStarred && starred.length >= MAX_STARRED_NAV) {
+    if (!isStarred && starred.length >= max) {
       setLimitHit(true);
       setTimeout(() => setLimitHit(false), 2200);
       return;
@@ -105,5 +121,5 @@ export function useStarredNav(initialStarred: string[], isLoggedIn: boolean) {
     else writeLocalStorage(next);
   }
 
-  return { starred, toggleStar, limitHit };
+  return { starred, toggleStar, limitHit, max };
 }

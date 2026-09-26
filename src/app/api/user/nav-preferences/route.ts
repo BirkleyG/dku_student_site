@@ -3,9 +3,10 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAnyAdmin } from "@/lib/permissions";
-import { MAX_STARRED_NAV, isValidNavHref } from "@/lib/nav";
+import { MAX_STARRED_NAV_DESKTOP, MAX_STARRED_NAV_MOBILE, isValidNavHref } from "@/lib/nav";
 
 const bodySchema = z.object({
+  device: z.enum(["desktop", "mobile"]).default("desktop"),
   starredNav: z.array(z.string()),
 });
 
@@ -17,11 +18,11 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    select: { starredNav: true },
+    select: { starredNav: true, starredNavMobile: true },
   });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ starredNav: user.starredNav });
+  return NextResponse.json({ starredNav: user.starredNav, starredNavMobile: user.starredNavMobile });
 }
 
 export async function PUT(request: Request) {
@@ -43,16 +44,18 @@ export async function PUT(request: Request) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = isAnyAdmin(user);
+  const { device } = parsed.data;
+  const max = device === "mobile" ? MAX_STARRED_NAV_MOBILE : MAX_STARRED_NAV_DESKTOP;
   const starredNav = [...new Set(parsed.data.starredNav)].filter((href) => isValidNavHref(href, isAdmin));
 
-  if (starredNav.length > MAX_STARRED_NAV) {
-    return NextResponse.json({ error: `You can star at most ${MAX_STARRED_NAV} tabs` }, { status: 400 });
+  if (starredNav.length > max) {
+    return NextResponse.json({ error: `You can star at most ${max} tabs` }, { status: 400 });
   }
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { starredNav },
+    data: device === "mobile" ? { starredNavMobile: starredNav } : { starredNav },
   });
 
-  return NextResponse.json({ ok: true, starredNav });
+  return NextResponse.json({ ok: true, device, starredNav });
 }

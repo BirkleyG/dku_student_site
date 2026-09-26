@@ -8,7 +8,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { signOut } from "next-auth/react";
 import { X, Star, Download, LogOut, Award, Bell } from "lucide-react";
 import type { NavItem } from "@/lib/nav";
-import { MAX_STARRED_NAV } from "@/lib/nav";
 import { APP_VERSION } from "@/lib/version";
 import { useT } from "@/lib/i18n/client";
 import { LanguageToggle } from "./LanguageToggle";
@@ -20,6 +19,7 @@ type Props = {
   starred: string[];
   onToggleStar: (href: string) => void;
   limitHit: boolean;
+  starLimit: number;
   userLabel: string | null;
   communityScore?: number | null;
   triggerRef: RefObject<HTMLButtonElement | null>;
@@ -38,6 +38,7 @@ export function NavMenu({
   starred,
   onToggleStar,
   limitHit,
+  starLimit,
   userLabel,
   communityScore,
   triggerRef,
@@ -231,7 +232,7 @@ export function NavMenu({
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden px-5 text-xs text-danger"
                 >
-                  {t("starLimit", { n: MAX_STARRED_NAV })}
+                  {t("starLimit", { n: starLimit })}
                 </motion.p>
               )}
             </AnimatePresence>

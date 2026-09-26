@@ -626,10 +626,18 @@ function ThreadPanel({
 }) {
   const t = useT("chat");
   return (
-    <div className="flex w-full max-w-sm shrink-0 flex-col border-l border-ink/10 bg-paper sm:w-96">
-      <header className="flex shrink-0 items-center justify-between border-b border-ink/10 px-4 py-3.5">
+    // Full-screen overlay on mobile — as a plain flex sibling of the message
+    // list it used to force w-full alongside the flex-1 main pane, squeezing
+    // both into a broken, illegibly narrow layout. sm+ keeps the original
+    // inline side panel.
+    <div className="fixed inset-0 z-50 flex w-full flex-col bg-paper sm:static sm:z-auto sm:w-96 sm:max-w-sm sm:shrink-0 sm:border-l sm:border-ink/10">
+      <header className="flex shrink-0 items-center justify-between border-b border-ink/10 px-4 py-3.5 pt-[calc(0.875rem+env(safe-area-inset-top))] sm:pt-3.5">
         <h2 className="font-display text-base text-ink">{t("threadHeading")}</h2>
-        <button onClick={onClose} className="focus-ring rounded-full p-1 text-ink/50 hover:text-ink" aria-label={t("closeThreadAria")}>
+        <button
+          onClick={onClose}
+          className="focus-ring grid h-9 w-9 place-items-center rounded-full text-ink/50 hover:text-ink"
+          aria-label={t("closeThreadAria")}
+        >
           <X className="h-4 w-4" />
         </button>
       </header>
@@ -652,7 +660,7 @@ function ThreadPanel({
           />
         ))}
       </div>
-      <div className="shrink-0 border-t border-ink/10 p-3">
+      <div className="shrink-0 border-t border-ink/10 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
         <Composer value={composer} onChange={onComposerChange} onSend={onSend} disabled={sending} placeholder={t("replyInThread")} />
       </div>
     </div>

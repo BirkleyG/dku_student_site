@@ -28,6 +28,7 @@ export const nav: Record<Locale, Record<string, string>> = {
     logIn: "Log in",
     logOut: "Log out",
     notificationSettings: "Notification settings",
+    more: "More",
   },
   zh: {
     home: "首页",
@@ -56,5 +57,6 @@ export const nav: Record<Locale, Record<string, string>> = {
     logIn: "登录",
     logOut: "退出登录",
     notificationSettings: "通知设置",
+    more: "更多",
   },
 };

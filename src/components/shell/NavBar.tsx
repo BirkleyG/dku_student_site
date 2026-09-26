@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
@@ -24,28 +25,53 @@ type Props = {
   userLabel: string | null;
   isAdmin?: boolean;
   initialStarred: string[];
+  initialStarredMobile: string[];
   communityScore?: number | null;
 };
 
-export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: Props) {
+export function NavBar({ userLabel, isAdmin, initialStarred, initialStarredMobile, communityScore }: Props) {
   const t = useT("nav");
   const pathname = usePathname();
   const isLoggedIn = userLabel !== null;
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
-  const { starred, toggleStar, limitHit } = useStarredNav(initialStarred, isLoggedIn);
-  const [localMenuOpen, setLocalMenuOpen] = useState(false);
+  // Desktop (header row) and mobile (bottom tab bar) keep independent starred
+  // lists — the mobile surface is much smaller, so it caps out lower.
+  const desktopNav = useStarredNav(initialStarred, isLoggedIn, "desktop");
+  const mobileNav = useStarredNav(initialStarredMobile, isLoggedIn, "mobile");
+  // Chat and Eats own their full-height layout below the header; a fixed
+  // bottom tab bar would sit on top of Chat's composer, so it's skipped there.
+  const isFullBleedRoute = pathname === "/eats" || pathname === "/chat";
+
+  // Tracks which list the drawer is editing: opened from the top hamburger
+  // (desktop), the bottom tab bar's More button, or the right-edge swipe
+  // (both touch-only, so mobile) — vs. the onboarding tour, which has no
+  // device context and defaults to desktop.
+  const [menuDevice, setMenuDevice] = useState<"desktop" | "mobile" | null>(null);
   const tourWantsMenuOpen = navMenuTourBridge.useValue();
-  const menuOpen = localMenuOpen || tourWantsMenuOpen;
+  const menuOpen = menuDevice !== null || tourWantsMenuOpen;
+  const activeDevice = menuDevice ?? "desktop";
+  const activeNav = activeDevice === "mobile" ? mobileNav : desktopNav;
   const closeMenu = () => {
-    setLocalMenuOpen(false);
+    setMenuDevice(null);
     navMenuTourBridge.set(false);
   };
   const [helpOpen, setHelpOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
   const helpButtonRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  // The header's backdrop-blur makes it a containing block for `position:
+  // fixed` descendants, which would pin the bottom tab bar to the header's
+  // own bottom edge instead of the viewport's — so it portals to <body>,
+  // same fix NavMenu's drawer already uses for the same reason.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  const starredItems = items.filter((item) => starred.includes(item.href));
+  const starredItems = items.filter((item) => desktopNav.starred.includes(item.href));
+  const mobileStarredItems = items.filter((item) => mobileNav.starred.includes(item.href));
 
   // Shrinks and frosts once the page has scrolled past a small threshold —
   // transform/opacity/backdrop-blur only, so it stays cheap. The ResizeObserver
@@ -96,7 +122,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
       if (deltaX <= -SWIPE_DISTANCE && Math.abs(deltaY) <= SWIPE_MAX_VERTICAL) {
-        setLocalMenuOpen(true);
+        setMenuDevice("mobile");
       }
     }
 
@@ -136,21 +162,22 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
           </span>
         </Link>
 
-        <nav aria-label="Starred tabs" className="flex flex-1 items-center justify-center gap-2 overflow-hidden sm:gap-6">
+        <nav
+          aria-label="Starred tabs"
+          className="hidden flex-1 items-center justify-center gap-6 overflow-hidden sm:flex"
+        >
           {starredItems.map((item) => {
-            const Icon = item.icon;
             const active = pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 title={t(item.labelKey)}
-                className={`link-sweep focus-ring flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 py-2.5 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors sm:px-0 sm:py-0 ${
+                className={`link-sweep focus-ring shrink-0 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] transition-colors ${
                   active ? "active text-ink" : "text-ink/55 hover:text-ink"
                 }`}
               >
-                <Icon className="h-5 w-5 shrink-0 sm:hidden" strokeWidth={2} />
-                <span className="hidden sm:inline">{t(item.labelKey)}</span>
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -187,7 +214,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             aria-label={t("openMenu")}
-            onClick={() => setLocalMenuOpen(true)}
+            onClick={() => setMenuDevice("desktop")}
             className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-ink/15 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
           >
             <Menu className="h-5 w-5" strokeWidth={1.75} />
@@ -195,16 +222,56 @@ export function NavBar({ userLabel, isAdmin, initialStarred, communityScore }: P
         </div>
       </motion.div>
 
+      {mounted &&
+        !isFullBleedRoute &&
+        createPortal(
+          <nav
+            aria-label={t("more")}
+            className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-ink/10 bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden"
+          >
+            {mobileStarredItems.map((item) => {
+              const Icon = item.icon;
+              const active = pathname?.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors ${
+                    active ? "text-ink" : "text-ink/50"
+                  }`}
+                >
+                  <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                  <span className="truncate">{t(item.labelKey)}</span>
+                </Link>
+              );
+            })}
+            <button
+              ref={moreButtonRef}
+              type="button"
+              aria-expanded={menuDevice === "mobile"}
+              aria-haspopup="dialog"
+              aria-label={t("openMenu")}
+              onClick={() => setMenuDevice("mobile")}
+              className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-medium text-ink/50 transition-colors"
+            >
+              <Menu className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+              <span>{t("more")}</span>
+            </button>
+          </nav>,
+          document.body,
+        )}
+
       <NavMenu
         open={menuOpen}
         onClose={closeMenu}
         items={items}
-        starred={starred}
-        onToggleStar={toggleStar}
-        limitHit={limitHit}
+        starred={activeNav.starred}
+        onToggleStar={activeNav.toggleStar}
+        limitHit={activeNav.limitHit}
+        starLimit={activeNav.max}
         userLabel={userLabel}
         communityScore={communityScore}
-        triggerRef={menuButtonRef}
+        triggerRef={activeDevice === "mobile" ? moreButtonRef : menuButtonRef}
       />
     </motion.header>
   );

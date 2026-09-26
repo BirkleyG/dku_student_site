@@ -41,8 +41,14 @@ export const adminNavItem: NavItem = { href: "/admin", label: "Admin", labelKey:
 /** Starred tabs shown in the header when a user (or guest) has never saved a preference. */
 export const DEFAULT_STARRED_NAV: string[] = ["/home", "/events", "/eats"];
 
-/** Header can't grow past this many starred tabs. */
-export const MAX_STARRED_NAV = 7;
+/**
+ * Desktop and mobile keep independent starred lists (separate columns, separate
+ * localStorage keys for guests) so pinning a tab on one device doesn't crowd
+ * the other's much smaller nav surface — the header row on desktop, the
+ * bottom tab bar on mobile.
+ */
+export const MAX_STARRED_NAV_DESKTOP = 7;
+export const MAX_STARRED_NAV_MOBILE = 4;
 
 /** Allowlist check used by the nav-preferences API — `/admin` is only valid for admins. */
 export function isValidNavHref(href: string, isAdmin: boolean): boolean {
