@@ -15,6 +15,53 @@ function measure(selector: string): Rect | null {
   return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 };
 }
 
+const TOOLTIP_MARGIN = 14;
+const TOOLTIP_EDGE_GAP = 16;
+// We don't know the tooltip's real height until it renders (text length
+// varies), so estimate generously — better to pick a side with room to
+// spare than to compute a "fits" answer that's wrong by a few pixels and
+// ends up overlapping the highlighted element anyway.
+const TOOLTIP_HEIGHT_ESTIMATE = 220;
+
+/**
+ * Picks a side (below/right/left/above) for the tooltip that has enough
+ * room and never overlaps the highlighted rect — critical for large targets
+ * (e.g. the whole nav drawer) where "always place below" can land the
+ * tooltip back inside the target itself.
+ */
+function placeTooltip(rect: Rect, tooltipWidth: number, viewportW: number, viewportH: number) {
+  const th = TOOLTIP_HEIGHT_ESTIMATE;
+  const clampTop = (top: number) => Math.min(Math.max(top, TOOLTIP_EDGE_GAP), Math.max(viewportH - th - TOOLTIP_EDGE_GAP, TOOLTIP_EDGE_GAP));
+  const clampLeft = (left: number) =>
+    Math.min(Math.max(left, TOOLTIP_EDGE_GAP), Math.max(viewportW - tooltipWidth - TOOLTIP_EDGE_GAP, TOOLTIP_EDGE_GAP));
+
+  const spaceBelow = viewportH - (rect.top + rect.height);
+  const spaceAbove = rect.top;
+  const spaceRight = viewportW - (rect.left + rect.width);
+  const spaceLeft = rect.left;
+
+  if (spaceBelow >= th + TOOLTIP_MARGIN) {
+    return { top: rect.top + rect.height + TOOLTIP_MARGIN, left: clampLeft(rect.left) };
+  }
+  if (spaceRight >= tooltipWidth + TOOLTIP_MARGIN) {
+    return { top: clampTop(rect.top), left: rect.left + rect.width + TOOLTIP_MARGIN };
+  }
+  if (spaceLeft >= tooltipWidth + TOOLTIP_MARGIN) {
+    return { top: clampTop(rect.top), left: rect.left - TOOLTIP_MARGIN - tooltipWidth };
+  }
+  if (spaceAbove >= th + TOOLTIP_MARGIN) {
+    return { top: rect.top - TOOLTIP_MARGIN - th, left: clampLeft(rect.left) };
+  }
+
+  // Nothing fits cleanly (tiny viewport, huge target) — fall back to
+  // whichever side has the most room, best-effort clamped.
+  const best = Math.max(spaceBelow, spaceRight, spaceLeft, spaceAbove);
+  if (best === spaceRight) return { top: clampTop(rect.top), left: viewportW - tooltipWidth - TOOLTIP_EDGE_GAP };
+  if (best === spaceLeft) return { top: clampTop(rect.top), left: TOOLTIP_EDGE_GAP };
+  if (best === spaceAbove) return { top: TOOLTIP_EDGE_GAP, left: clampLeft(rect.left) };
+  return { top: viewportH - th - TOOLTIP_EDGE_GAP, left: clampLeft(rect.left) };
+}
+
 /**
  * A dimmed backdrop with a cut-out around the DOM node tagged
  * `data-tour="<target>"`, plus a tooltip card describing it. Re-measures on
@@ -55,16 +102,21 @@ export function Spotlight({
   );
 
   useLayoutEffect(() => {
+    // Clear the stale rect immediately when the target changes, so the old
+    // highlight/tooltip never lingers pointing at the wrong element while
+    // the new one is (re-)measured.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRect(null);
     let frame = 0;
+    const started = Date.now();
     const update = () => setRect(measure(target));
-    update();
-    // The target may still be animating in (drawer slide, layout shift) —
-    // keep re-measuring for a bit rather than a single stale read.
-    let ticks = 0;
+    // The target may still be animating in (drawer slide, layout shift), or
+    // — after a tour deep-dive navigation — the whole page may still be
+    // fetching its data, so keep re-measuring for a few seconds rather than
+    // a fixed number of frames.
     const tick = () => {
       update();
-      ticks += 1;
-      if (ticks < 20) frame = requestAnimationFrame(tick);
+      if (Date.now() - started < 4000) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
 
@@ -81,7 +133,8 @@ export function Spotlight({
 
   const viewportW = typeof window !== "undefined" ? window.innerWidth : 0;
   const viewportH = typeof window !== "undefined" ? window.innerHeight : 0;
-  const tooltipBelow = rect ? rect.top + rect.height < viewportH * 0.6 : true;
+  const tooltipWidth = Math.min(360, viewportW - 32);
+  const tooltipPos = rect ? placeTooltip(rect, tooltipWidth, viewportW, viewportH) : null;
 
   return createPortal(
     <div className="fixed inset-0 z-[70]" aria-live="polite">
@@ -113,13 +166,11 @@ export function Spotlight({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="pointer-events-auto absolute w-[min(360px,calc(100vw-32px))] rounded-2xl bg-white p-5 shadow-2xl"
+          className="pointer-events-auto absolute rounded-2xl bg-white p-5 shadow-2xl"
           style={
-            rect
-              ? tooltipBelow
-                ? { top: Math.min(rect.top + rect.height + 14, viewportH - 220), left: Math.min(Math.max(rect.left, 16), viewportW - 376) }
-                : { top: Math.max(rect.top - 14, 16), left: Math.min(Math.max(rect.left, 16), viewportW - 376), transform: "translateY(-100%)" }
-              : { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }
+            tooltipPos
+              ? { top: tooltipPos.top, left: tooltipPos.left, width: tooltipWidth }
+              : { top: "50%", left: "50%", width: tooltipWidth, transform: "translate(-50%, -50%)" }
           }
         >
           <p className="font-display text-lg text-ink">{title}</p>

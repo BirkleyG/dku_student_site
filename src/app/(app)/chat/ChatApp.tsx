@@ -251,7 +251,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
 
   return (
     <div className="flex h-[calc(100svh-var(--header-h))] w-full">
-      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex">
+      <aside data-tour="chat-channel-list" className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex">
         <SidebarSection label={t("everyoneSection")}>
           <SidebarRow
             icon={<Hash className="h-4 w-4" />}
@@ -344,7 +344,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
 
         {error ? <p className="px-5 pb-1 text-xs text-danger">{error}</p> : null}
 
-        <div className="shrink-0 border-t border-ink/10 p-4">
+        <div data-tour="chat-composer" className="shrink-0 border-t border-ink/10 p-4">
           <Composer
             value={composer}
             onChange={setComposer}

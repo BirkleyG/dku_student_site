@@ -23,14 +23,18 @@ export default async function ProfessorsPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-gold-bright">{t("pageEyebrow")}</p>
           <h1 className="mt-2 font-display text-4xl">{t("pageHeading")}</h1>
         </div>
-        <LinkButton href={session ? "/professors/new" : "/login"}>{t("addProfessorButton")}</LinkButton>
+        <div data-tour="professors-add-btn">
+          <LinkButton href={session ? "/professors/new" : "/login"}>{t("addProfessorButton")}</LinkButton>
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">
-        <ProfessorsDirectory
-          currentUserId={currentUser?.id ?? null}
-          isAdmin={currentUser ? hasScope(currentUser, "PROFESSORS") : false}
-        />
+        <div data-tour="professors-directory">
+          <ProfessorsDirectory
+            currentUserId={currentUser?.id ?? null}
+            isAdmin={currentUser ? hasScope(currentUser, "PROFESSORS") : false}
+          />
+        </div>
       </Reveal>
     </div>
   );

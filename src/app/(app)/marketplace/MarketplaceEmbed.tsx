@@ -8,7 +8,7 @@ const MARKET_URL = process.env.NEXT_PUBLIC_MARKET_URL ?? "https://dku-market.kim
 export function MarketplaceEmbed() {
   const t = useT("marketplace");
   return (
-    <div className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
+    <div data-tour="marketplace-embed" className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
       <iframe src={MARKET_URL} title={t("embedTitle")} className="h-full w-full" allow="clipboard-write" />
     </div>
   );

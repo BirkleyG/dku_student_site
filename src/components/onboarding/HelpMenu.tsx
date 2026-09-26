@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, type RefObject } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { useOnboardingState } from "@/lib/onboardingTour";
+import { useOnboardingTour } from "./OnboardingProvider";
 import { FaqModal } from "./FaqModal";
 
 export function HelpMenu({
@@ -15,9 +14,7 @@ export function HelpMenu({
   onClose: () => void;
   triggerRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { reset } = useOnboardingState();
+  const { replay } = useOnboardingTour();
   const [faqOpen, setFaqOpen] = useState(false);
 
   useEffect(() => {
@@ -39,10 +36,8 @@ export function HelpMenu({
   }, [open, onClose, triggerRef]);
 
   const retakeTour = () => {
-    reset();
     onClose();
-    if (pathname === "/home") router.refresh();
-    else router.push("/home");
+    replay();
   };
 
   return (
