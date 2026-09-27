@@ -46,6 +46,38 @@ enum PushDeliveryStatus {
   PRUNED
 }
 
+enum PlanSemester {
+  FALL
+  SPRING
+}
+
+// DKU splits each semester into two 7-week sessions; Spring also has a
+// one-week mini-term between its two sessions. FULL means a course that
+// spans both sessions of its semester (common for lab/studio courses).
+enum PlanSession {
+  SESSION_1
+  SESSION_2
+  FULL
+  MINI_TERM
+}
+
+// Gen-ed slots the Bulletin doesn't expose per-course (no per-course
+// "attribute" data exists outside DKU's live registrar), so a placed course
+// is tagged manually in the UI rather than auto-detected. Major-requirement
+// and language-subject-code matches are auto-detected instead — see
+// src/lib/major-requirements.ts and src/lib/planner-language.ts.
+enum GenEdTag {
+  COMMON_CORE_Y1
+  COMMON_CORE_Y2
+  COMMON_CORE_Y3
+  DISTRIBUTION_NAS
+  DISTRIBUTION_SS
+  DISTRIBUTION_ARHU
+  QUANTITATIVE_REASONING
+  WRITING
+  DUKE_FACULTY
+}
+
 model User {
   id            String    @id @default(cuid())
   netId         String?   @unique
@@ -98,6 +130,7 @@ model User {
   slbBackings         SlbInitiativeBacker[]
   slbInitiativeVotes  SlbInitiativeVote[]
   notificationPreferences NotificationPreference[]
+  academicPlans           AcademicPlan[]
 
   @@map("users")
 }
@@ -737,4 +770,42 @@ model NotificationPreference {
 
   @@unique([userId, category])
   @@map("notification_preferences")
+}
+
+// A user's four-year plan. One plan per user is marked primary (shown by
+// default); additional plans are added via a "+" in the UI.
+model AcademicPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isPrimary Boolean  @default(false)
+  major     String?
+  track     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses PlannedCourse[]
+
+  @@index([userId])
+  @@map("academic_plans")
+}
+
+model PlannedCourse {
+  id        String       @id @default(cuid())
+  planId    String
+  plan      AcademicPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  year      Int
+  semester  PlanSemester
+  session   PlanSession
+  code      String
+  title     String?
+  credits   String?
+  isCrNc    Boolean      @default(false)
+  genEdTags GenEdTag[]   @default([])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([planId])
+  @@map("planned_courses")
 }
