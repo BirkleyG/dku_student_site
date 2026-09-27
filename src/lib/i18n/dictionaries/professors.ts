@@ -50,6 +50,7 @@ export const professors: Record<Locale, Record<string, string>> = {
     submitRating: "Submit rating",
     logInToRate: "Log in to rate.",
     outOf5Aria: "{n} out of 5",
+    anonymousStudent: "Anonymous student",
 
     // new/NewProfessorForm
     firstNameLabel: "First name",
@@ -122,6 +123,7 @@ export const professors: Record<Locale, Record<string, string>> = {
     submitRating: "提交评分",
     logInToRate: "登录后即可评分。",
     outOf5Aria: "{n} 分（满分 5 分）",
+    anonymousStudent: "匿名学生",
 
     // new/NewProfessorForm
     firstNameLabel: "名",
