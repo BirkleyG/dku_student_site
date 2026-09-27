@@ -12,13 +12,12 @@ import type { CatalogCourse } from "@/lib/course-catalog";
 
 type ApiReview = {
   id: string;
-  authorId: string;
+  isOwn: boolean;
   gradingRating: number;
   funRating: number;
   teachingRating: number;
   comment: string | null;
   createdAt: string;
-  author: { firstName: string; lastName: string };
   course: { id: string; code: string; title: string } | null;
 };
 
@@ -26,13 +25,11 @@ type CourseOption = { id: string; code: string; title: string };
 
 export function ReviewsPanel({
   professorId,
-  currentUserId,
   isAdmin,
   canReview,
   initialReviews,
 }: {
   professorId: string;
-  currentUserId: string | null;
   isAdmin: boolean;
   canReview: boolean;
   initialReviews: ApiReview[];
@@ -85,8 +82,8 @@ export function ReviewsPanel({
   }, [courseQuery, addingCourse]);
 
   const alreadyReviewed = useMemo(
-    () => reviews.some((r) => r.authorId === currentUserId && (r.course?.id ?? "") === (selectedCourse?.id ?? "")),
-    [reviews, currentUserId, selectedCourse],
+    () => reviews.some((r) => r.isOwn && (r.course?.id ?? "") === (selectedCourse?.id ?? "")),
+    [reviews, selectedCourse],
   );
 
   const resetCoursePicker = () => {
@@ -216,7 +213,7 @@ export function ReviewsPanel({
                 </span>
                 {r.course ? <span className="rounded-full bg-sprout/25 px-2 py-0.5 text-sprout-deep">{r.course.code}</span> : null}
               </div>
-              {isAdmin || r.authorId === currentUserId ? (
+              {isAdmin || r.isOwn ? (
                 <button
                   onClick={() => remove(r.id)}
                   className="focus-ring shrink-0 text-ink/30 transition-colors hover:text-danger"
@@ -228,7 +225,7 @@ export function ReviewsPanel({
             </div>
             {r.comment ? <p className="mt-2 text-sm text-ink/85">{r.comment}</p> : null}
             <p className="mt-2 text-xs text-ink/40">
-              {r.author.firstName} {r.author.lastName.charAt(0)}. · {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
+              {t("anonymousStudent")} · {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
             </p>
           </div>
         ))}

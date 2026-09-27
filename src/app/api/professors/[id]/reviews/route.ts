@@ -44,9 +44,19 @@ export async function POST(request: Request, { params }: Params) {
       teachingRating,
       comment: comment || null,
     },
-    include: { author: { select: { firstName: true, lastName: true } }, course: { select: { code: true, title: true } } },
+    select: {
+      id: true,
+      gradingRating: true,
+      funRating: true,
+      teachingRating: true,
+      comment: true,
+      createdAt: true,
+      course: { select: { id: true, code: true, title: true } },
+    },
   });
   await awardPoints(user.id, "PROFESSOR_REVIEW");
 
-  return NextResponse.json({ review }, { status: 201 });
+  // Ratings are anonymous — the author's identity never goes over the wire,
+  // only this "it's mine" flag so the submitter sees their own edit/delete controls.
+  return NextResponse.json({ review: { ...review, isOwn: true } }, { status: 201 });
 }
