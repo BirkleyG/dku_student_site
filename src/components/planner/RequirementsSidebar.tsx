@@ -1,7 +1,13 @@
 "use client";
 
 import { useT } from "@/lib/i18n/client";
-import { computeDegreeProgress, computeMajorProgress, GEN_ED_TAG_LABELS, type PlannedCourseLike } from "@/lib/planner-progress";
+import {
+  computeDegreeProgress,
+  computeMajorProgress,
+  resolveExclusiveGenEd,
+  GEN_ED_TAG_LABELS,
+  type PlannedCourseLike,
+} from "@/lib/planner-progress";
 import { CATEGORY_COLORS } from "./planner-types";
 
 export function RequirementsSidebar({
@@ -15,6 +21,7 @@ export function RequirementsSidebar({
 }) {
   const t = useT("planner");
   const majorProgress = computeMajorProgress(major, track, courses);
+  const distribution = resolveExclusiveGenEd(courses);
   const degree = computeDegreeProgress(courses);
 
   return (
@@ -82,7 +89,17 @@ export function RequirementsSidebar({
       {courses.some((c) => c.genEdTags.length > 0) ? (
         <div className="border-t border-ink/10 pt-5">
           <ul className="space-y-1 text-xs text-ink/55">
-            {Object.keys(GEN_ED_TAG_LABELS).map((tag) => {
+            {(["DISTRIBUTION_NAS", "DISTRIBUTION_SS", "DISTRIBUTION_ARHU", "QUANTITATIVE_REASONING"] as const).map((tag) => {
+              const courseId = distribution.slotAssignment[tag];
+              const course = courseId ? courses.find((c) => c.id === courseId) : null;
+              return (
+                <li key={tag} className="flex justify-between">
+                  <span>{GEN_ED_TAG_LABELS[tag]}</span>
+                  <span className={course ? "text-sprout-deep" : "text-ink/30"}>{course ? course.code : "—"}</span>
+                </li>
+              );
+            })}
+            {(["COMMON_CORE_Y1", "COMMON_CORE_Y2", "COMMON_CORE_Y3", "WRITING", "DUKE_FACULTY"] as const).map((tag) => {
               const count = courses.filter((c) => c.genEdTags.includes(tag)).length;
               if (count === 0) return null;
               return (

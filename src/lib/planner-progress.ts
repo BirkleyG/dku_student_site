@@ -85,6 +85,66 @@ export const GEN_ED_TAG_LABELS: Record<string, string> = {
   DUKE_FACULTY: "Duke Faculty-Taught",
 };
 
+// A course can be *eligible* for several Distribution/QR tags at once (e.g. a
+// stats course could plausibly count as either Quantitative Reasoning or
+// Natural Science), but DKU only lets it count toward exactly one — so these
+// four are mutually exclusive across the whole plan. We resolve which course
+// claims which slot with a small bipartite matching (each of the 4 slots
+// wants at most one course; each course fills at most one slot) that
+// maximizes how many of the 4 slots get filled, rather than resolving
+// course-by-course in placement order, so adding a course later can still
+// "free up" a slot for an earlier one.
+export const EXCLUSIVE_GEN_ED_TAGS = [
+  "DISTRIBUTION_NAS",
+  "DISTRIBUTION_SS",
+  "DISTRIBUTION_ARHU",
+  "QUANTITATIVE_REASONING",
+] as const;
+
+export type GenEdAssignment = {
+  // category -> the one planned-course id resolved to fill it, if any
+  slotAssignment: Record<string, string | null>;
+  // planned-course id -> the one category it was resolved to count for, if any
+  courseAssignment: Record<string, string>;
+};
+
+export function resolveExclusiveGenEd(courses: PlannedCourseLike[]): GenEdAssignment {
+  const slots = EXCLUSIVE_GEN_ED_TAGS;
+  const eligible = courses.filter((c) => c.genEdTags.some((t) => (slots as readonly string[]).includes(t)));
+
+  const slotAssignment: Record<string, string | null> = Object.fromEntries(slots.map((s) => [s, null]));
+  const courseAssignment: Record<string, string> = {};
+
+  // Standard augmenting-path bipartite matching (Kuhn's algorithm) — tiny
+  // inputs (4 slots), so no need for anything fancier.
+  function tryAssign(courseId: string, eligibleTags: string[], visited: Set<string>): boolean {
+    for (const slot of eligibleTags) {
+      if (visited.has(slot)) continue;
+      visited.add(slot);
+      const currentHolder = slotAssignment[slot];
+      if (currentHolder === null) {
+        slotAssignment[slot] = courseId;
+        courseAssignment[courseId] = slot;
+        return true;
+      }
+      const holderTags = courses.find((c) => c.id === currentHolder)?.genEdTags.filter((t) => slots.includes(t as (typeof slots)[number])) ?? [];
+      if (tryAssign(currentHolder, holderTags, visited)) {
+        slotAssignment[slot] = courseId;
+        courseAssignment[courseId] = slot;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (const course of eligible) {
+    const tags = course.genEdTags.filter((t) => (slots as readonly string[]).includes(t));
+    tryAssign(course.id, tags, new Set());
+  }
+
+  return { slotAssignment, courseAssignment };
+}
+
 const TOTAL_CREDITS_REQUIRED = 136;
 
 export function computeDegreeProgress(courses: PlannedCourseLike[]) {
