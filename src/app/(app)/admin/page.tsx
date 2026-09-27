@@ -23,7 +23,7 @@ export default async function AdminPage() {
 
   const isSuperAdmin = requester.role === "ADMIN";
 
-  const [events, clubs, wisdomTopics, chatGroups, users, inviteCodes] = await Promise.all([
+  const [events, clubs, wisdomTopics, dearDkuPosts, chatGroups, users, inviteCodes] = await Promise.all([
     hasScope(requester, "EVENTS") || hasScope(requester, "SPORTS")
       ? prisma.event.findMany({
           orderBy: { startsAt: "desc" },
@@ -39,6 +39,13 @@ export default async function AdminPage() {
           orderBy: { createdAt: "desc" },
           take: 20,
           include: { _count: { select: { recommendations: true } } },
+        })
+      : Promise.resolve([]),
+    hasScope(requester, "DEARDKU")
+      ? prisma.dearDkuPost.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: { _count: { select: { comments: true } } },
         })
       : Promise.resolve([]),
     hasScope(requester, "CHAT")
@@ -144,6 +151,24 @@ export default async function AdminPage() {
             title: w.title,
             subtitle: `${w.category} · ${t("recCount", { n: w._count.recommendations, s: w._count.recommendations === 1 ? "" : "s" })}`,
             endpoint: `/api/wisdom/${w.id}`,
+          }))}
+        />
+      ),
+    });
+  }
+
+  if (hasScope(requester, "DEARDKU")) {
+    tabs.push({
+      key: "dearDku",
+      label: t("dearDkuTab"),
+      content: (
+        <ModerationList
+          empty={t("noDearDku")}
+          rows={dearDkuPosts.map((p) => ({
+            id: p.id,
+            title: p.title,
+            subtitle: `${p.category} · ${t("feedbackCount", { n: p._count.comments, s: p._count.comments === 1 ? "" : "s" })}`,
+            endpoint: `/api/dear-dku/${p.id}`,
           }))}
         />
       ),

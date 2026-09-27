@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   BookOpen,
   GraduationCap,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ export const navItems: NavItem[] = [
   { href: "/chat", label: "Chat", labelKey: "chat", icon: MessagesSquare },
   { href: "/news", label: "News", labelKey: "news", icon: Newspaper },
   { href: "/wisdom", label: "Wisdom", labelKey: "wisdom", icon: Compass },
+  { href: "/dear-dku", label: "Dear DKU", labelKey: "dearDku", icon: Pencil },
   { href: "/clubs", label: "Clubs", labelKey: "clubs", icon: Users2 },
   { href: "/courses", label: "Courses", labelKey: "courses", icon: BookOpen },
   { href: "/professors", label: "Professors", labelKey: "professors", icon: GraduationCap },
