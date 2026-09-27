@@ -12,6 +12,7 @@ import { courses } from "./courses";
 import { professors } from "./professors";
 import { events } from "./events";
 import { wisdom } from "./wisdom";
+import { dearDku } from "./dear-dku";
 import { marketplace } from "./marketplace";
 import { eats } from "./eats";
 import { news } from "./news";
@@ -33,6 +34,7 @@ export const namespaces = {
   professors,
   events,
   wisdom,
+  dearDku,
   marketplace,
   eats,
   news,

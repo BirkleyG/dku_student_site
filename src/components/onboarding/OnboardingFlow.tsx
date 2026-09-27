@@ -103,6 +103,17 @@ const TAB_CONFIG: Record<string, TabConfig> = {
       },
     ],
   },
+  "/dear-dku": {
+    blurb: "Dear DKU — publish your thoughts, opinions, art, or musings for real feedback from real people.",
+    deepDive: [
+      { target: "dear-dku-list", title: "Browse posts", body: "Thoughts, opinions, art, and musings published by other students." },
+      {
+        target: "dear-dku-publish-btn",
+        title: "Publish your own",
+        body: "Once you're signed in, share a Google Doc or upload a file and get feedback from the school.",
+      },
+    ],
+  },
   "/clubs": {
     blurb: "Browse and join student clubs.",
     deepDive: [

@@ -27,6 +27,7 @@ enum AdminScope {
   SLB
   COURSES
   PROFESSORS
+  DEARDKU
 }
 
 // Coordinate this with the "[Notifications] Per-category notification
@@ -76,6 +77,8 @@ model User {
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
   wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
   wisdomVotes           WisdomVote[]
+  dearDkuPosts          DearDkuPost[]          @relation("DearDkuPostAuthor")
+  dearDkuComments       DearDkuComment[]       @relation("DearDkuCommentAuthor")
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
   clubMemberships    ClubMembership[]     @relation("ClubMember")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
@@ -328,6 +331,48 @@ model WisdomVote {
   @@map("wisdom_votes")
 }
 
+enum DearDkuCategory {
+  OPINION
+  ESSAY
+  CREATIVE_WRITING
+  ART
+  CAMPUS_LIFE
+  OTHER
+}
+
+enum DearDkuSubmissionType {
+  GOOGLE_DOC
+  FILE
+}
+
+/** A published thought/opinion/art piece, either linked as a comment-only Google Doc or uploaded as a file. */
+model DearDkuPost {
+  id             String                 @id @default(cuid())
+  title          String
+  summary        String
+  category       DearDkuCategory        @default(OTHER)
+  submissionType DearDkuSubmissionType  @default(GOOGLE_DOC)
+  docUrl         String?
+  fileUrl        String?
+  authorId       String
+  author         User                   @relation("DearDkuPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments       DearDkuComment[]
+  createdAt      DateTime               @default(now())
+
+  @@map("dear_dku_posts")
+}
+
+model DearDkuComment {
+  id        String      @id @default(cuid())
+  postId    String
+  post      DearDkuPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation("DearDkuCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@map("dear_dku_comments")
+}
 
 // CLUB is a student-run interest group; ORGANIZATION covers non-club bodies
 // (e.g. the Athletics department itself, hosting varsity teams and rec clubs).

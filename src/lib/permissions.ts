@@ -10,6 +10,7 @@ export const ADMIN_SCOPES: { key: AdminScope; label: string; description: string
   { key: "SLB", label: "Student Leaders Board", description: "Add or remove SLB members and moderate SLB posts" },
   { key: "COURSES", label: "Courses", description: "Remove any course or course resource" },
   { key: "PROFESSORS", label: "Professors", description: "Remove any professor or review, verify professors" },
+  { key: "DEARDKU", label: "Dear DKU", description: "Remove any Dear DKU post or comment" },
 ];
 
 type PermissionUser = { role: Role; adminScopes: AdminScope[] };
