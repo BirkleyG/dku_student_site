@@ -7,7 +7,8 @@ import { MAJOR_NAMES, tracksForMajor } from "@/lib/major-requirements";
 import { findRequirementCategoryForCode } from "@/lib/planner-progress";
 import { isLanguageCourse } from "@/lib/planner-language";
 import { RequirementsSidebar } from "@/components/planner/RequirementsSidebar";
-import { AddCourseModal, type NewCourseInput } from "@/components/planner/AddCourseModal";
+import { AddCourseModal, type NewCourseInput, type EditingCourse } from "@/components/planner/AddCourseModal";
+import { NewPlanModal } from "@/components/planner/NewPlanModal";
 import {
   CATEGORY_COLORS,
   DEFAULT_CHIP_COLOR,
@@ -43,6 +44,8 @@ export function PlannerBoard() {
   const [plans, setPlans] = useState<ApiPlan[] | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [modalSlot, setModalSlot] = useState<SlotKey | null>(null);
+  const [editingCourse, setEditingCourse] = useState<{ slot: SlotKey; course: EditingCourse } | null>(null);
+  const [showNewPlanModal, setShowNewPlanModal] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -60,18 +63,17 @@ export function PlannerBoard() {
     setPlans((prev) => (prev ? prev.map((p) => (p.id === plan.id ? plan : p)) : prev));
   };
 
-  const createPlan = async () => {
-    const name = window.prompt(t("planNamePlaceholder"));
-    if (!name?.trim()) return;
+  const createPlan = async (name: string) => {
     const res = await fetch("/api/planner/plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim() }),
+      body: JSON.stringify({ name }),
     });
     if (!res.ok) return;
     const { plan } = await res.json();
     setPlans((prev) => [...(prev ?? []), plan]);
     setSelectedPlanId(plan.id);
+    setShowNewPlanModal(false);
   };
 
   const patchPlan = async (data: Partial<Pick<ApiPlan, "major" | "track" | "isPrimary" | "name">>) => {
@@ -115,12 +117,28 @@ export function PlannerBoard() {
     setModalSlot(null);
   };
 
+  const saveEditedCourse = async (input: NewCourseInput) => {
+    if (!selectedPlan || !editingCourse) return;
+    const res = await fetch(`/api/planner/plans/${selectedPlan.id}/courses/${editingCourse.course.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return;
+    const { course } = await res.json();
+    updatePlanInState({
+      ...selectedPlan,
+      courses: selectedPlan.courses.map((c) => (c.id === course.id ? course : c)),
+    });
+    setEditingCourse(null);
+  };
+
   const removeCourse = async (courseId: string) => {
     if (!selectedPlan) return;
-    if (!window.confirm(t("confirmRemoveCourse"))) return;
     const res = await fetch(`/api/planner/plans/${selectedPlan.id}/courses/${courseId}`, { method: "DELETE" });
     if (!res.ok) return;
     updatePlanInState({ ...selectedPlan, courses: selectedPlan.courses.filter((c) => c.id !== courseId) });
+    setEditingCourse(null);
   };
 
   const exportPlan = async () => {
@@ -161,7 +179,7 @@ export function PlannerBoard() {
           </button>
         ))}
         <button
-          onClick={createPlan}
+          onClick={() => setShowNewPlanModal(true)}
           className="focus-ring flex items-center gap-1 rounded-full border border-dashed border-ink/25 px-4 py-2 text-sm text-ink/55 hover:border-ink/45"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -236,56 +254,68 @@ export function PlannerBoard() {
                 <div key={year}>
                   <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-ink/45">{t("year", { n: year })}</h3>
                   <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {SEMESTERS.map((semester) => (
-                      <div key={semester} className="rounded-lg border border-ink/10 p-3">
-                        <p className="text-sm font-medium text-ink/80">{t(semester === "FALL" ? "fall" : "spring")}</p>
-                        <div className="mt-2 space-y-2">
-                          {slotSessions(semester).map((session) => {
-                            const slotCourses = selectedPlan.courses.filter(
-                              (c) => c.year === year && c.semester === semester && c.session === session,
-                            );
-                            return (
-                              <div key={session}>
-                                <p className="text-[10px] uppercase tracking-[0.14em] text-ink/40">{t(sessionLabelKey(session))}</p>
-                                <div className="mt-1 flex flex-wrap gap-1.5">
-                                  {slotCourses.map((c) => {
-                                    const category = findRequirementCategoryForCode(selectedPlan.major, selectedPlan.track, c.code);
-                                    const color = category
-                                      ? CATEGORY_COLORS[category]
-                                      : isLanguageCourse(c.code)
-                                        ? LANGUAGE_CHIP_COLOR
-                                        : DEFAULT_CHIP_COLOR;
-                                    return (
-                                      <span
-                                        key={c.id}
-                                        title={c.title ?? undefined}
-                                        className={`group/chip flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium ${color}`}
-                                      >
-                                        {c.code}
+                    {SEMESTERS.map((semester) => {
+                      const semesterCourses = selectedPlan.courses.filter((c) => c.year === year && c.semester === semester);
+                      const semesterCredits = semesterCourses.reduce((sum, c) => sum + (Number(c.credits) || 0), 0);
+                      return (
+                        <div key={semester} className="rounded-lg border border-ink/10 p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-ink/80">{t(semester === "FALL" ? "fall" : "spring")}</p>
+                            <span className="text-xs text-ink/45">{t("semesterCredits", { n: semesterCredits })}</span>
+                          </div>
+                          <div className="mt-2 space-y-2">
+                            {slotSessions(semester).map((session) => {
+                              const slotCourses = semesterCourses.filter((c) => c.session === session);
+                              return (
+                                <div key={session}>
+                                  <p className="text-[10px] uppercase tracking-[0.14em] text-ink/40">{t(sessionLabelKey(session))}</p>
+                                  <div className="mt-1 flex flex-wrap gap-1.5">
+                                    {slotCourses.map((c) => {
+                                      const category = findRequirementCategoryForCode(selectedPlan.major, selectedPlan.track, c.code);
+                                      const color = category
+                                        ? CATEGORY_COLORS[category]
+                                        : isLanguageCourse(c.code)
+                                          ? LANGUAGE_CHIP_COLOR
+                                          : DEFAULT_CHIP_COLOR;
+                                      return (
                                         <button
-                                          onClick={() => removeCourse(c.id)}
-                                          className="opacity-0 transition-opacity group-hover/chip:opacity-100"
-                                          aria-label={t("removeCourse")}
+                                          key={c.id}
+                                          type="button"
+                                          title={c.title ?? undefined}
+                                          onClick={() =>
+                                            setEditingCourse({
+                                              slot: { year, semester, session },
+                                              course: {
+                                                id: c.id,
+                                                code: c.code,
+                                                title: c.title ?? "",
+                                                credits: c.credits ?? "",
+                                                isCrNc: c.isCrNc,
+                                                genEdTags: c.genEdTags,
+                                              },
+                                            })
+                                          }
+                                          className={`focus-ring rounded-full border px-2 py-1 text-[11px] font-medium transition-transform hover:-translate-y-0.5 ${color}`}
                                         >
-                                          ×
+                                          {c.code}
                                         </button>
-                                      </span>
-                                    );
-                                  })}
-                                  <button
-                                    onClick={() => setModalSlot({ year, semester, session })}
-                                    aria-label={t("addCourse")}
-                                    className="focus-ring flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-ink/25 text-ink/40 hover:border-ink/45"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                  </button>
+                                      );
+                                    })}
+                                    <button
+                                      onClick={() => setModalSlot({ year, semester, session })}
+                                      aria-label={t("addCourse")}
+                                      className="focus-ring flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-ink/25 text-ink/40 hover:border-ink/45"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -296,7 +326,29 @@ export function PlannerBoard() {
         </div>
       ) : null}
 
-      {modalSlot ? <AddCourseModal onClose={() => setModalSlot(null)} onSave={addCourse} /> : null}
+      {modalSlot && selectedPlan ? (
+        <AddCourseModal
+          major={selectedPlan.major}
+          track={selectedPlan.track}
+          placedCodes={selectedPlan.courses.map((c) => c.code)}
+          onClose={() => setModalSlot(null)}
+          onSave={addCourse}
+        />
+      ) : null}
+
+      {editingCourse && selectedPlan ? (
+        <AddCourseModal
+          major={selectedPlan.major}
+          track={selectedPlan.track}
+          placedCodes={selectedPlan.courses.map((c) => c.code)}
+          editing={editingCourse.course}
+          onClose={() => setEditingCourse(null)}
+          onSave={saveEditedCourse}
+          onDelete={() => removeCourse(editingCourse.course.id)}
+        />
+      ) : null}
+
+      {showNewPlanModal ? <NewPlanModal onClose={() => setShowNewPlanModal(false)} onCreate={createPlan} /> : null}
     </div>
   );
 }
