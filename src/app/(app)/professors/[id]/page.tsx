@@ -20,8 +20,14 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
         offerings: { include: { course: true } },
         reviews: {
           orderBy: { createdAt: "desc" },
-          include: {
-            author: { select: { firstName: true, lastName: true } },
+          select: {
+            id: true,
+            authorId: true,
+            gradingRating: true,
+            funRating: true,
+            teachingRating: true,
+            comment: true,
+            createdAt: true,
             course: { select: { id: true, code: true, title: true } },
           },
         },
@@ -74,10 +80,13 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
       <Reveal delay={0.15}>
         <ReviewsPanel
           professorId={professor.id}
-          currentUserId={currentUser?.id ?? null}
           isAdmin={currentUser ? hasScope(currentUser, "PROFESSORS") : false}
           canReview={Boolean(session?.user)}
-          initialReviews={professor.reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))}
+          initialReviews={professor.reviews.map(({ authorId, ...r }) => ({
+            ...r,
+            createdAt: r.createdAt.toISOString(),
+            isOwn: currentUser?.id === authorId,
+          }))}
         />
       </Reveal>
     </div>

@@ -27,6 +27,7 @@ enum AdminScope {
   SLB
   COURSES
   PROFESSORS
+  DEARDKU
 }
 
 // Coordinate this with the "[Notifications] Per-category notification
@@ -44,6 +45,38 @@ enum PushDeliveryStatus {
   SENT
   FAILED
   PRUNED
+}
+
+enum PlanSemester {
+  FALL
+  SPRING
+}
+
+// DKU splits each semester into two 7-week sessions; Spring also has a
+// one-week mini-term between its two sessions. FULL means a course that
+// spans both sessions of its semester (common for lab/studio courses).
+enum PlanSession {
+  SESSION_1
+  SESSION_2
+  FULL
+  MINI_TERM
+}
+
+// Gen-ed slots the Bulletin doesn't expose per-course (no per-course
+// "attribute" data exists outside DKU's live registrar), so a placed course
+// is tagged manually in the UI rather than auto-detected. Major-requirement
+// and language-subject-code matches are auto-detected instead — see
+// src/lib/major-requirements.ts and src/lib/planner-language.ts.
+enum GenEdTag {
+  COMMON_CORE_Y1
+  COMMON_CORE_Y2
+  COMMON_CORE_Y3
+  DISTRIBUTION_NAS
+  DISTRIBUTION_SS
+  DISTRIBUTION_ARHU
+  QUANTITATIVE_REASONING
+  WRITING
+  DUKE_FACULTY
 }
 
 model User {
@@ -76,6 +109,8 @@ model User {
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
   wisdomRecommendations WisdomRecommendation[] @relation("WisdomRecAuthor")
   wisdomVotes           WisdomVote[]
+  dearDkuPosts          DearDkuPost[]          @relation("DearDkuPostAuthor")
+  dearDkuComments       DearDkuComment[]       @relation("DearDkuCommentAuthor")
   clubsSubmitted     Club[]               @relation("ClubSubmitter")
   clubMemberships    ClubMembership[]     @relation("ClubMember")
   inviteCodesCreated InviteCode[]         @relation("InviteCodeCreator")
@@ -98,6 +133,7 @@ model User {
   slbBackings         SlbInitiativeBacker[]
   slbInitiativeVotes  SlbInitiativeVote[]
   notificationPreferences NotificationPreference[]
+  academicPlans           AcademicPlan[]
 
   @@map("users")
 }
@@ -328,6 +364,48 @@ model WisdomVote {
   @@map("wisdom_votes")
 }
 
+enum DearDkuCategory {
+  OPINION
+  ESSAY
+  CREATIVE_WRITING
+  ART
+  CAMPUS_LIFE
+  OTHER
+}
+
+enum DearDkuSubmissionType {
+  GOOGLE_DOC
+  FILE
+}
+
+/** A published thought/opinion/art piece, either linked as a comment-only Google Doc or uploaded as a file. */
+model DearDkuPost {
+  id             String                 @id @default(cuid())
+  title          String
+  summary        String
+  category       DearDkuCategory        @default(OTHER)
+  submissionType DearDkuSubmissionType  @default(GOOGLE_DOC)
+  docUrl         String?
+  fileUrl        String?
+  authorId       String
+  author         User                   @relation("DearDkuPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments       DearDkuComment[]
+  createdAt      DateTime               @default(now())
+
+  @@map("dear_dku_posts")
+}
+
+model DearDkuComment {
+  id        String      @id @default(cuid())
+  postId    String
+  post      DearDkuPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation("DearDkuCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@map("dear_dku_comments")
+}
 
 // CLUB is a student-run interest group; ORGANIZATION covers non-club bodies
 // (e.g. the Athletics department itself, hosting varsity teams and rec clubs).
@@ -737,4 +815,42 @@ model NotificationPreference {
 
   @@unique([userId, category])
   @@map("notification_preferences")
+}
+
+// A user's four-year plan. One plan per user is marked primary (shown by
+// default); additional plans are added via a "+" in the UI.
+model AcademicPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isPrimary Boolean  @default(false)
+  major     String?
+  track     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses PlannedCourse[]
+
+  @@index([userId])
+  @@map("academic_plans")
+}
+
+model PlannedCourse {
+  id        String       @id @default(cuid())
+  planId    String
+  plan      AcademicPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  year      Int
+  semester  PlanSemester
+  session   PlanSession
+  code      String
+  title     String?
+  credits   String?
+  isCrNc    Boolean      @default(false)
+  genEdTags GenEdTag[]   @default([])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([planId])
+  @@map("planned_courses")
 }

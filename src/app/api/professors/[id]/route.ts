@@ -7,19 +7,41 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   const { id } = await params;
+  const session = await auth();
+  const currentUser = session?.user?.email
+    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    : null;
+
   const professor = await prisma.professor.findUnique({
     where: { id },
     include: {
       offerings: { include: { course: true } },
       reviews: {
         orderBy: { createdAt: "desc" },
-        include: { author: { select: { firstName: true, lastName: true } }, course: { select: { code: true, title: true } } },
+        // Ratings are anonymous: never select the author's name, and never
+        // send authorId to the client — only whether this review is theirs.
+        select: {
+          id: true,
+          authorId: true,
+          gradingRating: true,
+          funRating: true,
+          teachingRating: true,
+          comment: true,
+          createdAt: true,
+          course: { select: { id: true, code: true, title: true } },
+        },
       },
     },
   });
 
   if (!professor) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ professor });
+  const { reviews, ...rest } = professor;
+  const anonymizedReviews = reviews.map(({ authorId, ...review }) => ({
+    ...review,
+    isOwn: currentUser?.id === authorId,
+  }));
+
+  return NextResponse.json({ professor: { ...rest, reviews: anonymizedReviews } });
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
