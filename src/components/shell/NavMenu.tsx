@@ -140,6 +140,7 @@ export function NavMenu({
             aria-modal="true"
             aria-label={t("navigationMenu")}
             className="fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-ink/10 bg-paper pt-[env(safe-area-inset-top)] shadow-xl sm:w-[360px]"
+            style={{ touchAction: "pan-y" }}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
