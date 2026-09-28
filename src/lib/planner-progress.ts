@@ -1,5 +1,6 @@
 import { getMajorRequirements, type RequirementUnit } from "@/lib/major-requirements";
 import { isLanguageCourse } from "@/lib/planner-language";
+import { commonCoreYearForCode } from "@/lib/common-core";
 
 export type PlannedCourseLike = {
   id: string;
@@ -31,6 +32,14 @@ function unitMatchesCode(unit: RequirementUnit, code: string): boolean {
   const normalized = code.trim().toUpperCase();
   if (unit.type === "single") return unit.codes.some((c) => c.toUpperCase() === normalized);
   return unit.options.some((opt) => opt.some((c) => c.toUpperCase() === normalized));
+}
+
+// A requirement is fulfilled once a *credited* (non-CR/NC) course fills it —
+// a Credit/No Credit course doesn't count toward it, so it should stay
+// visible/pickable in the add-course browser.
+export function isUnitSatisfiedByCredited(unit: RequirementUnit, courses: { code: string; isCrNc: boolean }[]): boolean {
+  const codes = unit.type === "single" ? unit.codes : unit.options.flat();
+  return codes.some((code) => courses.some((c) => !c.isCrNc && c.code.trim().toUpperCase() === code.toUpperCase()));
 }
 
 export function computeMajorProgress(major: string | null, track: string | null, courses: PlannedCourseLike[]): MajorProgress | null {
@@ -73,17 +82,25 @@ export function findRequirementCategoryForCode(major: string | null, track: stri
   return null;
 }
 
+// Common Core (COMMON_CORE_Y1/Y2/Y3) is intentionally absent here — it's
+// three fixed, policy-mandated courses (see src/lib/common-core.ts),
+// auto-detected by code rather than a tag the user picks.
 export const GEN_ED_TAG_LABELS: Record<string, string> = {
-  COMMON_CORE_Y1: "Common Core (Yr 1)",
-  COMMON_CORE_Y2: "Common Core (Yr 2)",
-  COMMON_CORE_Y3: "Common Core (Yr 3)",
-  DISTRIBUTION_NAS: "Distribution: Natural Science",
-  DISTRIBUTION_SS: "Distribution: Social Science",
-  DISTRIBUTION_ARHU: "Distribution: Arts & Humanities",
+  DISTRIBUTION_NAS: "Natural Science",
+  DISTRIBUTION_SS: "Social Science",
+  DISTRIBUTION_ARHU: "Arts & Humanities",
   QUANTITATIVE_REASONING: "Quantitative Reasoning",
   WRITING: "Writing",
   DUKE_FACULTY: "Duke Faculty-Taught",
 };
+
+// Grouped for the tag picker UI: the first four are mutually exclusive
+// Distribution/QR slots (see resolveExclusiveGenEd below) and read naturally
+// as one cluster; the rest are independent, cross-cutting flags.
+export const GEN_ED_TAG_GROUPS: { label: string; tags: string[] }[] = [
+  { label: "Distribution & QR", tags: ["DISTRIBUTION_NAS", "DISTRIBUTION_SS", "DISTRIBUTION_ARHU", "QUANTITATIVE_REASONING"] },
+  { label: "Other", tags: ["WRITING", "DUKE_FACULTY"] },
+];
 
 // A course can be *eligible* for several Distribution/QR tags at once (e.g. a
 // stats course could plausibly count as either Quantitative Reasoning or
@@ -143,6 +160,15 @@ export function resolveExclusiveGenEd(courses: PlannedCourseLike[]): GenEdAssign
   }
 
   return { slotAssignment, courseAssignment };
+}
+
+export function getCommonCoreStatus<T extends { code: string }>(courses: T[]): Record<1 | 2 | 3, T | null> {
+  const byYear: Record<1 | 2 | 3, T | null> = { 1: null, 2: null, 3: null };
+  for (const course of courses) {
+    const year = commonCoreYearForCode(course.code);
+    if (year) byYear[year] = course;
+  }
+  return byYear;
 }
 
 const TOTAL_CREDITS_REQUIRED = 136;

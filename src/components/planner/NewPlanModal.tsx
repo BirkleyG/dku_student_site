@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
+import { useLockBodyScroll } from "./useLockBodyScroll";
 
 export function NewPlanModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string) => void }) {
+  useLockBodyScroll();
   const t = useT("planner");
   const [name, setName] = useState("");
 

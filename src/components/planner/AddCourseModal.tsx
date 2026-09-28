@@ -6,8 +6,9 @@ import { useT } from "@/lib/i18n/client";
 import { CatalogPicker } from "@/components/courses/CatalogPicker";
 import type { CatalogCourse } from "@/lib/course-catalog";
 import { DKU_COURSE_CATALOG } from "@/lib/course-catalog";
-import { GEN_ED_TAG_LABELS } from "@/lib/planner-progress";
+import { GEN_ED_TAG_LABELS, GEN_ED_TAG_GROUPS, isUnitSatisfiedByCredited } from "@/lib/planner-progress";
 import { getMajorRequirements, type RequirementUnit } from "@/lib/major-requirements";
+import { useLockBodyScroll } from "./useLockBodyScroll";
 
 export type NewCourseInput = {
   code: string;
@@ -19,6 +20,8 @@ export type NewCourseInput = {
 
 export type EditingCourse = NewCourseInput & { id: string };
 
+export type PlacedCourse = { code: string; isCrNc: boolean };
+
 const REQUIREMENT_CATEGORIES = ["divisionalFoundation", "interdisciplinary", "disciplinary", "electives"] as const;
 
 function catalogLookup(code: string): CatalogCourse | undefined {
@@ -29,7 +32,7 @@ function catalogLookup(code: string): CatalogCourse | undefined {
 export function AddCourseModal({
   major,
   track,
-  placedCodes,
+  placedCourses,
   editing,
   onClose,
   onSave,
@@ -37,18 +40,25 @@ export function AddCourseModal({
 }: {
   major?: string | null;
   track?: string | null;
-  placedCodes?: string[];
+  placedCourses?: PlacedCourse[];
   editing?: EditingCourse;
   onClose: () => void;
   onSave: (input: NewCourseInput) => void;
   onDelete?: () => void;
 }) {
+  useLockBodyScroll();
   const t = useT("planner");
   const requirements = major ? getMajorRequirements(major, track ?? null) : undefined;
+  const placed = placedCourses ?? [];
+  const isCategoryComplete = (category: (typeof REQUIREMENT_CATEGORIES)[number]) => {
+    const units = requirements?.categories[category] ?? [];
+    return units.length > 0 && units.every((u) => isUnitSatisfiedByCredited(u, placed));
+  };
   const hasRequirements = requirements && Object.values(requirements.categories).some((units) => (units?.length ?? 0) > 0);
 
   const [tab, setTab] = useState<"requirements" | "catalog" | "manual">(editing ? "manual" : hasRequirements ? "requirements" : "catalog");
-  const [reqCategory, setReqCategory] = useState<(typeof REQUIREMENT_CATEGORIES)[number]>(REQUIREMENT_CATEGORIES[0]);
+  const firstOpenCategory = REQUIREMENT_CATEGORIES.find((c) => (requirements?.categories[c]?.length ?? 0) > 0) ?? REQUIREMENT_CATEGORIES[0];
+  const [reqCategory, setReqCategory] = useState<(typeof REQUIREMENT_CATEGORIES)[number]>(firstOpenCategory);
   const [code, setCode] = useState(editing?.code ?? "");
   const [title, setTitle] = useState(editing?.title ?? "");
   const [credits, setCredits] = useState(editing?.credits ?? "4");
@@ -79,13 +89,17 @@ export function AddCourseModal({
     onSave({ code: code.trim().toUpperCase(), title: title.trim(), credits: credits.trim(), isCrNc, genEdTags });
   };
 
-  const isPlaced = (unitCode: string) => (placedCodes ?? []).includes(unitCode.trim().toUpperCase());
+  const isPlaced = (unitCode: string) => placed.some((c) => c.code.trim().toUpperCase() === unitCode.trim().toUpperCase());
 
   const renderUnit = (unit: RequirementUnit, key: string) => {
+    // Already fulfilled by a credited (non-CR/NC) course — don't keep
+    // suggesting it.
+    if (isUnitSatisfiedByCredited(unit, placed)) return null;
+
     if (unit.type === "single") {
       const unitCode = unit.codes[0];
       const match = catalogLookup(unitCode);
-      const placed = unit.codes.some(isPlaced);
+      const placedHere = unit.codes.some(isPlaced);
       return (
         <button
           key={key}
@@ -95,7 +109,7 @@ export function AddCourseModal({
         >
           <span className="min-w-0">
             <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-              {placed ? <Check className="h-3.5 w-3.5 shrink-0 text-sprout-deep" /> : null}
+              {placedHere ? <Check className="h-3.5 w-3.5 shrink-0 text-sprout-deep" /> : null}
               {unit.codes.join(" / ")}
             </span>
             {match ? <span className="block truncate text-xs text-ink/50">{match.title}</span> : null}
@@ -110,7 +124,7 @@ export function AddCourseModal({
         <div className="mt-1 flex flex-wrap gap-1.5">
           {unit.options.map((option) => {
             const unitCode = option[0];
-            const placed = option.some(isPlaced);
+            const placedHere = option.some(isPlaced);
             return (
               <button
                 key={option.join("/")}
@@ -118,7 +132,7 @@ export function AddCourseModal({
                 onClick={() => fillFrom(unitCode)}
                 className="focus-ring flex items-center gap-1 rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/80 hover:border-gold hover:bg-gold/10"
               >
-                {placed ? <Check className="h-3 w-3 text-sprout-deep" /> : null}
+                {placedHere ? <Check className="h-3 w-3 text-sprout-deep" /> : null}
                 {option.join(" / ")}
               </button>
             );
@@ -170,23 +184,35 @@ export function AddCourseModal({
         ) : null}
 
         {tab === "requirements" && requirements ? (
-          <div className="mt-4 flex min-h-0 flex-1 flex-col">
+          <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="flex flex-wrap gap-1.5">
-              {REQUIREMENT_CATEGORIES.filter((c) => (requirements.categories[c]?.length ?? 0) > 0).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setReqCategory(c)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                    reqCategory === c ? "border-gold bg-gold/20 text-ink" : "border-ink/15 text-ink/55"
-                  }`}
-                >
-                  {t(`category_${c}`)}
-                </button>
-              ))}
+              {REQUIREMENT_CATEGORIES.filter((c) => (requirements.categories[c]?.length ?? 0) > 0).map((c) => {
+                const complete = isCategoryComplete(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setReqCategory(c)}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      reqCategory === c
+                        ? "border-gold bg-gold/20 text-ink"
+                        : complete
+                          ? "border-ink/10 text-ink/30"
+                          : "border-ink/15 text-ink/55"
+                    }`}
+                  >
+                    {t(`category_${c}`)}
+                    {complete ? " ✓" : ""}
+                  </button>
+                );
+              })}
             </div>
-            <div className="mt-3 space-y-1.5 overflow-y-auto pr-1">
-              {(requirements.categories[reqCategory] ?? []).map((unit, i) => renderUnit(unit, `${reqCategory}-${i}`))}
+            <div className="mt-3 flex-1 space-y-1.5 overflow-y-auto pr-1">
+              {isCategoryComplete(reqCategory) ? (
+                <p className="px-1 py-4 text-center text-xs text-ink/40">{t("allDone")}</p>
+              ) : (
+                (requirements.categories[reqCategory] ?? []).map((unit, i) => renderUnit(unit, `${reqCategory}-${i}`))
+              )}
             </div>
           </div>
         ) : null}
@@ -198,7 +224,7 @@ export function AddCourseModal({
         ) : null}
 
         {tab === "manual" ? (
-          <div className="mt-4 space-y-3 overflow-y-auto pr-1">
+          <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -225,18 +251,23 @@ export function AddCourseModal({
             <div>
               <p className="text-xs font-medium text-ink/55">{t("genEdTagsLabel")}</p>
               <p className="text-[11px] text-ink/40">{t("genEdTagsHint")}</p>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {Object.entries(GEN_ED_TAG_LABELS).map(([tag, label]) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => toggleTag(tag)}
-                    className={`rounded-full border px-2 py-1 text-[11px] ${
-                      genEdTags.includes(tag) ? "border-gold bg-gold/20 text-ink" : "border-ink/15 text-ink/55"
-                    }`}
-                  >
-                    {label}
-                  </button>
+              <div className="mt-1.5 space-y-1.5">
+                {GEN_ED_TAG_GROUPS.map((group) => (
+                  <div key={group.label} className="flex flex-wrap items-center gap-1.5 rounded-lg border border-ink/10 p-1.5">
+                    <span className="px-1 text-[10px] uppercase tracking-[0.1em] text-ink/35">{group.label}</span>
+                    {group.tags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        className={`rounded-full border px-2 py-1 text-[11px] ${
+                          genEdTags.includes(tag) ? "border-gold bg-gold/20 text-ink" : "border-ink/15 text-ink/55"
+                        }`}
+                      >
+                        {GEN_ED_TAG_LABELS[tag]}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
