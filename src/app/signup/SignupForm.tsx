@@ -31,7 +31,7 @@ export function SignupForm() {
       { key: "lastName", prompt: t("stepLastName"), placeholder: "Lovelace", type: "text" },
       {
         key: "email",
-        prompt: t("stepEmail", { domains: studentEmailDomains.join(" / ") }),
+        prompt: t("stepEmail"),
         placeholder: `you@${studentEmailDomains[0]}`,
         type: "email",
       },

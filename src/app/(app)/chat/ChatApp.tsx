@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { Hash, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X } from "lucide-react";
+import { Hash, Menu, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
 import { REACTION_EMOJI } from "@/lib/chat-reactions";
+import { useIsMobileViewport } from "@/lib/useIsMobileViewport";
 import { useT } from "@/lib/i18n/client";
 
 const POLL_MS = 4000;
@@ -68,6 +70,10 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
   const [threadComposer, setThreadComposer] = useState("");
   const [showJoin, setShowJoin] = useState(false);
   const [showDm, setShowDm] = useState(false);
+  // The channel/DM list is a desktop-only sidebar (`hidden sm:flex`) — on
+  // mobile there was no way at all to switch chats, so a header button opens
+  // the same list as a full-screen overlay instead.
+  const [showChannels, setShowChannels] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Reusable for handler-triggered reloads (join, DM, after sending). Not
@@ -175,6 +181,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     closeThread();
     setMessages([]);
     setSelected(channel);
+    setShowChannels(false);
   };
 
   const send = async (parentId?: string) => {
@@ -249,74 +256,91 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     );
   }
 
+  const channelList = (
+    <>
+      <SidebarSection label={t("everyoneSection")}>
+        <SidebarRow
+          icon={<Hash className="h-4 w-4" />}
+          label={sidebar.general.name}
+          active={selected.id === sidebar.general.id}
+          onClick={() => selectChannel({ ...sidebar.general, kind: "GENERAL" })}
+        />
+      </SidebarSection>
+
+      <SidebarSection
+        label={t("groupsSection")}
+        action={
+          <button onClick={() => setShowJoin(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("joinGroup")}>
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        }
+      >
+        {sidebar.groups.length === 0 ? (
+          <p className="px-2.5 py-1 text-xs text-ink/35">{t("noGroupsYet")}</p>
+        ) : (
+          sidebar.groups.map((g) => (
+            <SidebarRow
+              key={g.id}
+              icon={<Hash className="h-4 w-4" />}
+              label={g.name}
+              active={selected.id === g.id}
+              onClick={() => selectChannel({ ...g, kind: "GROUP" })}
+            />
+          ))
+        )}
+        <button
+          onClick={() => setShowJoin(true)}
+          className="focus-ring mt-1 block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
+        >
+          {t("joinWithInviteCode")}
+        </button>
+      </SidebarSection>
+
+      <SidebarSection
+        label={t("directMessagesSection")}
+        action={
+          <button onClick={() => setShowDm(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("newMessage")}>
+            <UserPlus className="h-3.5 w-3.5" />
+          </button>
+        }
+      >
+        {sidebar.dms.length === 0 ? (
+          <p className="px-2.5 py-1 text-xs text-ink/35">{t("noConversationsYet")}</p>
+        ) : (
+          sidebar.dms.map((d) => (
+            <SidebarRow
+              key={d.id}
+              icon={<MessageCircle className="h-4 w-4" />}
+              label={d.name}
+              active={selected.id === d.id}
+              onClick={() => selectChannel({ ...d, description: null, kind: "DIRECT" })}
+            />
+          ))
+        )}
+      </SidebarSection>
+    </>
+  );
+
   return (
     <div className="flex h-[calc(100svh-var(--header-h))] w-full">
-      <aside data-tour="chat-channel-list" className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex">
-        <SidebarSection label={t("everyoneSection")}>
-          <SidebarRow
-            icon={<Hash className="h-4 w-4" />}
-            label={sidebar.general.name}
-            active={selected.id === sidebar.general.id}
-            onClick={() => selectChannel({ ...sidebar.general, kind: "GENERAL" })}
-          />
-        </SidebarSection>
-
-        <SidebarSection
-          label={t("groupsSection")}
-          action={
-            <button onClick={() => setShowJoin(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("joinGroup")}>
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          }
-        >
-          {sidebar.groups.length === 0 ? (
-            <p className="px-2.5 py-1 text-xs text-ink/35">{t("noGroupsYet")}</p>
-          ) : (
-            sidebar.groups.map((g) => (
-              <SidebarRow
-                key={g.id}
-                icon={<Hash className="h-4 w-4" />}
-                label={g.name}
-                active={selected.id === g.id}
-                onClick={() => selectChannel({ ...g, kind: "GROUP" })}
-              />
-            ))
-          )}
-          <button
-            onClick={() => setShowJoin(true)}
-            className="focus-ring mt-1 block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
-          >
-            {t("joinWithInviteCode")}
-          </button>
-        </SidebarSection>
-
-        <SidebarSection
-          label={t("directMessagesSection")}
-          action={
-            <button onClick={() => setShowDm(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("newMessage")}>
-              <UserPlus className="h-3.5 w-3.5" />
-            </button>
-          }
-        >
-          {sidebar.dms.length === 0 ? (
-            <p className="px-2.5 py-1 text-xs text-ink/35">{t("noConversationsYet")}</p>
-          ) : (
-            sidebar.dms.map((d) => (
-              <SidebarRow
-                key={d.id}
-                icon={<MessageCircle className="h-4 w-4" />}
-                label={d.name}
-                active={selected.id === d.id}
-                onClick={() => selectChannel({ ...d, description: null, kind: "DIRECT" })}
-              />
-            ))
-          )}
-        </SidebarSection>
+      <aside
+        data-tour="chat-channel-list"
+        className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex"
+      >
+        {channelList}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between border-b border-ink/10 px-5 py-3.5">
-          <div className="min-w-0">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-ink/10 px-5 py-3.5">
+          <button
+            type="button"
+            onClick={() => setShowChannels(true)}
+            aria-label={t("switchChat")}
+            className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink/60 hover:text-ink sm:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
             <h1 className="truncate font-display text-lg text-ink">{selected.name}</h1>
             {selected.description ? <p className="truncate text-xs text-ink/45">{selected.description}</p> : null}
           </div>
@@ -354,6 +378,14 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           />
         </div>
       </div>
+
+      <AnimatePresence>
+        {showChannels ? (
+          <ChannelSwitcher title={t("switchChat")} closeLabel={t("closeAria")} onClose={() => setShowChannels(false)}>
+            {channelList}
+          </ChannelSwitcher>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {threadRootId && threadRoot ? (
@@ -590,7 +622,11 @@ function Composer({
         }}
         placeholder={placeholder}
         rows={1}
-        className="focus-ring w-full resize-none rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-sm text-ink placeholder:text-ink/30 focus:border-gold"
+        // iOS Safari (and the PWA's WKWebView) auto-zooms the page on focus
+        // for any input/textarea under 16px — text-sm here read as a jarring
+        // zoom-in every time you tapped the composer. text-base clears that
+        // threshold; sm:text-sm keeps the original size on desktop.
+        className="focus-ring w-full resize-none rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-base text-ink placeholder:text-ink/30 focus:border-gold sm:text-sm"
       />
       <button
         onClick={onSend}
@@ -600,6 +636,60 @@ function Composer({
         {t("send")}
       </button>
     </div>
+  );
+}
+
+// The page content under the sticky site header sits in its own stacking
+// context (a `position: relative` + `z-index` wrapper in RouteChrome), so a
+// `fixed` panel rendered inside it can never paint above that header no
+// matter its own z-index — the header (and its hamburger button) end up
+// covering the panel's own header/close button, leaving no visible way out.
+// Portaling to <body> escapes that stacking context entirely, the same fix
+// NavMenu's drawer already uses for the same reason.
+function useMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
+
+function ChannelSwitcher({
+  title,
+  closeLabel,
+  onClose,
+  children,
+}: {
+  title: string;
+  closeLabel: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const mounted = useMounted();
+  if (!mounted) return null;
+
+  return createPortal(
+    <motion.div
+      initial={{ x: "-100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "-100%" }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed inset-0 z-50 flex w-full flex-col overflow-y-auto bg-paper-dim px-3 py-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:hidden"
+    >
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h2 className="font-display text-lg text-ink">{title}</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={closeLabel}
+          className="focus-ring grid h-9 w-9 place-items-center rounded-full text-ink/50 hover:text-ink"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {children}
+    </motion.div>,
+    document.body,
   );
 }
 
@@ -625,7 +715,10 @@ function ThreadPanel({
   onReact: (messageId: string, emoji: string) => void;
 }) {
   const t = useT("chat");
-  return (
+  const mounted = useMounted();
+  const isMobile = useIsMobileViewport();
+
+  const panel = (
     // Full-screen overlay on mobile — as a plain flex sibling of the message
     // list it used to force w-full alongside the flex-1 main pane, squeezing
     // both into a broken, illegibly narrow layout. sm+ keeps the original
@@ -665,4 +758,10 @@ function ThreadPanel({
       </div>
     </div>
   );
+
+  // On mobile this is a fixed full-screen overlay — escape to <body> so it
+  // isn't trapped under the stacking context described above. On sm+ it's a
+  // normal inline flex sibling (see the `sm:static` classes), so it stays in
+  // place in the tree instead.
+  return isMobile && mounted ? createPortal(panel, document.body) : panel;
 }

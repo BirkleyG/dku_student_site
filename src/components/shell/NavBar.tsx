@@ -10,6 +10,7 @@ import { navItems, adminNavItem } from "@/lib/nav";
 import { useStarredNav } from "@/lib/useStarredNav";
 import { useT } from "@/lib/i18n/client";
 import { navMenuTourBridge } from "@/lib/tourBridge";
+import { useIsMobileViewport } from "@/lib/useIsMobileViewport";
 import { NavMenu } from "./NavMenu";
 import { HelpMenu } from "@/components/onboarding/HelpMenu";
 
@@ -20,21 +21,6 @@ const SCROLL_THRESHOLD = 24;
 const EDGE_ZONE = 32;
 const SWIPE_DISTANCE = 60;
 const SWIPE_MAX_VERTICAL = 60;
-// Matches Tailwind's `sm` breakpoint, which is what switches the header's
-// starred row / bottom tab bar between desktop and mobile layout.
-const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
-
-function useIsMobileViewport(): boolean {
-  return useSyncExternalStore(
-    (callback) => {
-      const mql = window.matchMedia(MOBILE_MEDIA_QUERY);
-      mql.addEventListener("change", callback);
-      return () => mql.removeEventListener("change", callback);
-    },
-    () => window.matchMedia(MOBILE_MEDIA_QUERY).matches,
-    () => false,
-  );
-}
 
 type Props = {
   userLabel: string | null;

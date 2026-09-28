@@ -3,7 +3,10 @@ import { z } from "zod";
 // Allowed domains aren't sensitive, so this is deliberately a single NEXT_PUBLIC_
 // var — keeping client and server validation reading the exact same value avoids
 // them silently drifting apart if only one of two separate vars gets set.
-export const studentEmailDomains = (process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAINS ?? "dukekunshan.edu.cn,duke.edu")
+// duke.edu comes first: it's the NetID-based address we tell students to sign
+// up with (see the signup copy), and it's also what Welcome.tsx's
+// conversational signup builds `${netId}@${studentEmailDomains[0]}` from.
+export const studentEmailDomains = (process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAINS ?? "duke.edu,dukekunshan.edu.cn")
   .split(",")
   .map((d) => d.trim().toLowerCase())
   .filter(Boolean);
@@ -18,7 +21,7 @@ export const signupSchema = z.object({
     .toLowerCase()
     .email("Enter a valid email")
     .refine((email) => studentEmailDomains.some((domain) => email.endsWith(`@${domain}`)), {
-      message: `Use your ${studentEmailDomains.join(" or ")} email to sign up`,
+      message: `Use your NetID@${studentEmailDomains[0]} email to sign up`,
     }),
   password: z
     .string()
