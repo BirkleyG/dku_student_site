@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Star, Trash2, Download } from "lucide-react";
+import { Plus, Star, Trash2, Download, GraduationCap } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { MAJOR_NAMES, tracksForMajor } from "@/lib/major-requirements";
 import { findRequirementCategoryForCode } from "@/lib/planner-progress";
@@ -295,8 +295,11 @@ export function PlannerBoard() {
                                               },
                                             })
                                           }
-                                          className={`focus-ring rounded-full border px-2 py-1 text-[11px] font-medium transition-transform hover:-translate-y-0.5 ${color}`}
+                                          className={`focus-ring flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition-transform hover:-translate-y-0.5 ${color}`}
                                         >
+                                          {c.genEdTags.includes("DUKE_FACULTY") ? (
+                                            <GraduationCap className="h-3 w-3 shrink-0" aria-label={t("dukeFacultyBadgeAria")} />
+                                          ) : null}
                                           {c.code}
                                         </button>
                                       );
@@ -330,7 +333,7 @@ export function PlannerBoard() {
         <AddCourseModal
           major={selectedPlan.major}
           track={selectedPlan.track}
-          placedCodes={selectedPlan.courses.map((c) => c.code)}
+          placedCourses={selectedPlan.courses.map((c) => ({ code: c.code, isCrNc: c.isCrNc }))}
           onClose={() => setModalSlot(null)}
           onSave={addCourse}
         />
@@ -340,7 +343,9 @@ export function PlannerBoard() {
         <AddCourseModal
           major={selectedPlan.major}
           track={selectedPlan.track}
-          placedCodes={selectedPlan.courses.map((c) => c.code)}
+          placedCourses={selectedPlan.courses
+            .filter((c) => c.id !== editingCourse.course.id)
+            .map((c) => ({ code: c.code, isCrNc: c.isCrNc }))}
           editing={editingCourse.course}
           onClose={() => setEditingCourse(null)}
           onSave={saveEditedCourse}
