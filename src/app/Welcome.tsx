@@ -193,7 +193,7 @@ export function Welcome({
     say(t.askNetId);
     setStep("netId");
   };
-
+  const submitNetId = () => {
     const id = value.trim().toLowerCase();
     const id = value.trim();
     if (!id) return;
