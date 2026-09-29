@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const wisdomCategories = ["FOOD", "NIGHTLIFE", "ACTIVITIES", "TRAVEL", "STUDY", "OTHER"] as const;
+export const wisdomCategories = ["FOOD", "NIGHTLIFE", "ACTIVITIES", "TRAVEL", "STUDY", "BEAUTY_NATURE", "OTHER"] as const;
 
 export const wisdomCategoryLabels: Record<(typeof wisdomCategories)[number], string> = {
   FOOD: "Food",
@@ -8,6 +8,7 @@ export const wisdomCategoryLabels: Record<(typeof wisdomCategories)[number], str
   ACTIVITIES: "Activities",
   TRAVEL: "Travel",
   STUDY: "Study spots",
+  BEAUTY_NATURE: "Beauty / Nature",
   OTHER: "Other",
 };
 

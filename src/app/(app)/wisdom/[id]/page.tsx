@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
-import { wisdomCategoryLabels } from "@/lib/wisdom-validation";
 import { Reveal } from "@/components/motion/Reveal";
 import { MapPin } from "lucide-react";
 import { DeleteButton } from "@/components/shell/DeleteButton";
@@ -43,7 +42,7 @@ export default async function WisdomTopicPage({ params }: PageProps<"/wisdom/[id
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
-              {wisdomCategoryLabels[topic.category]}
+              {t(`cat_${topic.category}`)}
             </span>
             {topic.requireLocation ? (
               <span className="flex items-center gap-1 text-xs text-ink/45">
