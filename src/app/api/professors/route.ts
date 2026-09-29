@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { professorSchema } from "@/lib/professor-validation";
 import { DKU_DEPARTMENTS } from "@/lib/departments";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const professor = await prisma.professor.create({
     data: { firstName, lastName, department: resolvedDepartment, email: email || null, addedById: user.id },
   });
-  await awardPoints(user.id, "PROFESSOR_ADDED");
+  await awardPoints(user.id, "PROF_ADD", professor.id);
 
   return NextResponse.json({ professor }, { status: 201 });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -24,5 +25,7 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   await prisma.rsvp.create({ data: { eventId, userId: user.id } });
+  // Keyed on (user, event): cancelling and re-RSVPing never pays twice.
+  await awardPoints(user.id, "EVENT_RSVP", eventId);
   return NextResponse.json({ going: true });
 }

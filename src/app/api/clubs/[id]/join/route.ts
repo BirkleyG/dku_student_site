@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordSignal } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,6 +24,7 @@ export async function POST(_request: Request, { params }: Params) {
     create: { clubId: id, userId: user.id },
     update: {},
   });
+  await recordSignal(user.id, "CLUB_JOIN", id);
 
   return NextResponse.json({ ok: true });
 }

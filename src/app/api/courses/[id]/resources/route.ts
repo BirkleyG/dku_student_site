@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { courseExamTypeLabels, courseResourceSchema } from "@/lib/course-validation";
 import { UPLOAD_URL_PREFIX } from "@/lib/uploads";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -78,7 +78,7 @@ export async function POST(request: Request, { params }: Params) {
       professor: { select: { id: true, firstName: true, lastName: true } },
     },
   });
-  await awardPoints(user.id, "COURSE_RESOURCE");
+  await awardPoints(user.id, "COURSE_MATERIAL", resource.id);
 
   return NextResponse.json({ resource }, { status: 201 });
 }

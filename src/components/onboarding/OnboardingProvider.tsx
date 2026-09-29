@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useOnboardingState } from "@/lib/onboardingTour";
@@ -40,6 +40,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(true);
   }, [sessionStatus, status, pathname]);
+
+  // Points: "Complete the tour" achievement. Guests finish the tour before they have an account, so this
+  // fires as soon as we are both signed in and marked completed. The server call is idempotent.
+  const tourReported = useRef(false);
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || status !== "completed" || tourReported.current) return;
+    tourReported.current = true;
+    fetch("/api/user/tour-complete", { method: "POST" }).catch(() => {});
+  }, [sessionStatus, status]);
 
   const replay = useCallback(() => {
     reset();

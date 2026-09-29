@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { wisdomTopicSchema, wisdomCategories } from "@/lib/wisdom-validation";
 
 export async function GET(request: Request) {
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
   const topic = await prisma.wisdomTopic.create({
     data: { title, category, description: description || null, requireLocation, createdById: user.id },
   });
+
+  await awardPoints(user.id, "WISDOM_TOPIC", topic.id);
 
   return NextResponse.json({ topic }, { status: 201 });
 }

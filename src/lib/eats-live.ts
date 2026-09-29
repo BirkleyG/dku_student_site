@@ -1,6 +1,7 @@
 import type { Firestore, Timestamp } from "firebase-admin/firestore";
 import { getEatsAdminApp, isEatsConfigured } from "@/lib/eats-sso";
 import { isOpenNow } from "@/lib/eats-hours";
+import { awardPoints } from "@/lib/points";
 
 // Reads DKU Eats' Firestore directly with the same service account DKU Life
 // already uses for SSO, so the home widgets show real kitchens and orders.
@@ -114,6 +115,45 @@ async function loadActivity(): Promise<EatsActivityItem[]> {
     text: `Someone ordered from ${String(doc.get("vendorName") ?? "a DKU Eats kitchen")}`,
     timeAgo: timeAgo(toMillis(doc.get("createdAt")), now),
   }));
+}
+
+/**
+ * Points sync: DKU Eats lives in its own Firestore, so orders are pulled in when the user opens their
+ * Profile. Awards EATS_ORDER per order id (idempotent) and EATS_RUN_RESTAURANT if a vendor doc lists the
+ * user as its owner. Best-effort with a timeout; never throws. (Vendor ownership field names are a guess
+ * — ownerUid / ownerId / uid — the external webhook /api/points/external is the fallback.)
+ */
+export async function syncEatsPoints(user: { id: string; netId: string | null }): Promise<void> {
+  if (!isEatsConfigured() || Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return;
+  const work = (async () => {
+    const firestore = await db();
+    const orders = firestore.collection("orders");
+    const [byUid, byNetId] = await Promise.all([
+      orders.where("customerUid", "==", user.id).select("status").limit(200).get(),
+      user.netId ? orders.where("customerNetId", "==", user.netId).select("status").limit(200).get() : null,
+    ]);
+    const seen = new Set<string>();
+    for (const doc of [...byUid.docs, ...(byNetId?.docs ?? [])]) {
+      if (seen.has(doc.id)) continue;
+      seen.add(doc.id);
+      const status = String(doc.get("status") ?? "");
+      if (status === "cancelled" || status === "canceled") continue;
+      await awardPoints(user.id, "EATS_ORDER", doc.id);
+    }
+    for (const field of ["ownerUid", "ownerId", "uid"]) {
+      const owned = await firestore.collection("vendors").where(field, "==", user.id).select("name").limit(1).get();
+      if (!owned.empty) {
+        await awardPoints(user.id, "EATS_RUN_RESTAURANT", owned.docs[0].id);
+        break;
+      }
+    }
+  })();
+  try {
+    await Promise.race([work, new Promise<void>((resolve) => setTimeout(resolve, TIMEOUT_MS))]);
+  } catch (err) {
+    lastFailureAt = Date.now();
+    console.error("DKU Eats points sync failed:", err);
+  }
 }
 
 /** Real DKU Eats data for the home widgets, or null if Eats isn't configured or doesn't answer in time. */

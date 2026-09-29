@@ -1,6 +1,7 @@
 import type { AdminScope, ChatChannelKind, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
+import { awardPoints } from "@/lib/points";
 import { broadcastPush, sendPushToUser, type PushPayload } from "@/lib/push";
 
 export const GENERAL_CHANNEL_ID = "general";
@@ -63,10 +64,9 @@ export async function createChatGroup(params: { creatorId: string; name: string;
   return channel;
 }
 
-/** Hook point for "Start a Group" (5 pts, to be wired by the points card). Intentionally a no-op for now; never throws. */
+/** "Start a Group" hook (5 pts). Keyed on the channel id, so it can't pay twice; never throws. */
 export async function onChatGroupCreated(event: { channelId: string; creatorId: string }): Promise<void> {
-  // TODO(points): awardPoints(event.creatorId, "START_GROUP") once that ScoreReason exists.
-  void event;
+  await awardPoints(event.creatorId, "CHAT_START_GROUP", event.channelId);
 }
 
 type PermissionUser = { id: string; role: Role; adminScopes: AdminScope[] };

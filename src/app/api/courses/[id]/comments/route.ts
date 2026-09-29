@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { courseCommentSchema } from "@/lib/course-validation";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: Params) {
     data: { courseId, authorId: user.id, body: parsed.data.body },
     include: { author: { select: { firstName: true, lastName: true } } },
   });
-  await awardPoints(user.id, "COURSE_COMMENT");
+  await awardPoints(user.id, "COURSE_NOTE", comment.id);
 
   return NextResponse.json({ comment }, { status: 201 });
 }

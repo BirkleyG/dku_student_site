@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
+import { revokePoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string; recId: string }> };
 
@@ -23,5 +24,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   await prisma.wisdomRecommendation.delete({ where: { id: recId } });
+  await revokePoints(recommendation.authorId, "WISDOM_REC", recId);
   return NextResponse.json({ ok: true });
 }

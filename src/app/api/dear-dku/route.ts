@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { dearDkuPostSchema, dearDkuCategories } from "@/lib/dear-dku-validation";
 
 export async function GET(request: Request) {
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
       authorId: user.id,
     },
   });
+
+  await awardPoints(user.id, "DEAR_POST", post.id);
 
   return NextResponse.json({ post }, { status: 201 });
 }

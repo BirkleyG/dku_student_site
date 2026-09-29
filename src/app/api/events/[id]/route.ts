@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canModerateEvent } from "@/lib/permissions";
+import { revokePoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -37,5 +38,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   await prisma.event.delete({ where: { id } });
+  await revokePoints(event.hostId, "EVENT_HOST", id);
   return NextResponse.json({ ok: true });
 }

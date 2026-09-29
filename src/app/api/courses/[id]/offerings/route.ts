@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { courseOfferingSchema } from "@/lib/course-validation";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   let resolvedProfessorId = professorId || null;
-  let awardedProfessorPoints = false;
+  let newProfessorId: string | null = null;
 
   if (!resolvedProfessorId && newProfessorFirstName && newProfessorLastName) {
     const professor = await prisma.professor.create({
@@ -45,7 +45,7 @@ export async function POST(request: Request, { params }: Params) {
       },
     });
     resolvedProfessorId = professor.id;
-    awardedProfessorPoints = true;
+    newProfessorId = professor.id;
   }
 
   const existing = await prisma.courseOffering.findUnique({
@@ -66,7 +66,7 @@ export async function POST(request: Request, { params }: Params) {
     include: { professor: true },
   });
 
-  if (awardedProfessorPoints) await awardPoints(user.id, "PROFESSOR_ADDED");
+  if (newProfessorId) await awardPoints(user.id, "PROF_ADD", newProfessorId);
 
   return NextResponse.json({ offering }, { status: 201 });
 }

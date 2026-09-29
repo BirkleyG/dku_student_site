@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string; recId: string }> };
 
@@ -34,6 +35,11 @@ export async function POST(request: Request, { params }: Params) {
   } else {
     await prisma.wisdomVote.create({ data: { recommendationId, userId: user.id, value: parsed.data.value } });
   }
+
+  // Points are keyed on (user, recommendation), so un-voting and re-voting can't pay twice.
+  // Voting on your own recommendation doesn't count.
+  const rec = await prisma.wisdomRecommendation.findUnique({ where: { id: recommendationId }, select: { authorId: true } });
+  if (rec && rec.authorId !== user.id) await awardPoints(user.id, "WISDOM_VOTE", recommendationId);
 
   const votes = await prisma.wisdomVote.findMany({ where: { recommendationId } });
   const score = votes.reduce((sum, v) => sum + v.value, 0);

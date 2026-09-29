@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { professorReviewSchema } from "@/lib/professor-validation";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -54,7 +54,8 @@ export async function POST(request: Request, { params }: Params) {
       course: { select: { id: true, code: true, title: true } },
     },
   });
-  await awardPoints(user.id, "PROFESSOR_REVIEW");
+  await awardPoints(user.id, "PROF_RATE", review.id);
+  if (comment) await awardPoints(user.id, "PROF_COMMENT", review.id);
 
   // Ratings are anonymous — the author's identity never goes over the wire,
   // only this "it's mine" flag so the submitter sees their own edit/delete controls.

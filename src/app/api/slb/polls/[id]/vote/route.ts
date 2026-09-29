@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { getSlbViewer, json } from "@/lib/slb";
 
 const bodySchema = z.object({ optionId: z.string().min(1) });
@@ -22,5 +23,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/slb/polls/[
     create: { pollId: id, userId: viewer.id, optionId: parsed.data.optionId },
     update: { optionId: parsed.data.optionId },
   });
+  // Keyed on (user, poll): switching your choice never pays twice.
+  await awardPoints(viewer.id, "SLB_POLL", id);
   return json({ ok: true });
 }
