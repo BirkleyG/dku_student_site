@@ -195,7 +195,6 @@ export function Welcome({
   };
   const submitNetId = () => {
     const id = value.trim().toLowerCase();
-    const id = value.trim();
     if (!id) return;
     setNetId(id);
     echo(id);
