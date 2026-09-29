@@ -7,6 +7,8 @@ import { getServerLocale, getT } from "@/lib/i18n/server";
 import { getAchievementProgress, getRecentPointEvents, getUserPointsSummary } from "@/lib/points";
 import { ACHIEVEMENT_BY_ID, isAchievementKey } from "@/lib/achievements";
 import { ACTIVITY_RULES, isActivityKey } from "@/lib/points-rules";
+import { getAchievementCompletion, getLeaderboard } from "@/lib/leaderboard";
+import { LeaderboardToggle } from "@/components/profile/LeaderboardToggle";
 
 /**
  * Profile "points" block: total + rank, per-source breakdown, achievement grid and recent activity.
@@ -17,11 +19,13 @@ export async function PointsSection({ userId }: { userId: string }) {
   const locale = await getServerLocale();
   const zh = locale === "zh";
 
-  const [me, summary, achievements, recent] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { communityScore: true } }),
+  const [me, summary, achievements, recent, leaderboard, completion] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { communityScore: true, showOnLeaderboard: true } }),
     getUserPointsSummary(userId),
     getAchievementProgress(userId),
     getRecentPointEvents(userId, 15),
+    getLeaderboard(5),
+    getAchievementCompletion(),
   ]);
   const score = me?.communityScore ?? summary.total;
   const rank = await prisma.user.count({ where: { communityScore: { gt: score } } });
@@ -49,6 +53,32 @@ export async function PointsSection({ userId }: { userId: string }) {
             <p className="mt-1 text-sm text-ink/50">{t("rankOnCampus", { rank: rank + 1 })}</p>
           </div>
         </Card>
+      </Reveal>
+
+      <Reveal delay={0.12} className="mt-8">
+        <h2 className="font-display text-xl">{t("leaderboard")}</h2>
+        {leaderboard.length === 0 ? (
+          <p className="mt-4 text-sm text-ink/40">{t("leaderboardEmpty")}</p>
+        ) : (
+          <ol className="mt-4 space-y-2">
+            {leaderboard.map((e) => (
+              <li
+                key={e.userId}
+                className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ${e.userId === userId ? "bg-gold/15" : "bg-paper-dim"}`}
+              >
+                <span className="flex items-center gap-3">
+                  <span className="w-5 font-display text-gold-bright">{e.rank}</span>
+                  <span className="text-ink/80">{e.name}</span>
+                </span>
+                <span className="flex items-center gap-3 text-ink/50">
+                  <span>{t("achievementsCount", { count: e.achievements })}</span>
+                  <span className="font-display text-base text-ink">{e.points}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <LeaderboardToggle initial={me?.showOnLeaderboard ?? true} />
       </Reveal>
 
       <Reveal delay={0.15} className="mt-8">
@@ -105,6 +135,7 @@ export async function PointsSection({ userId }: { userId: string }) {
                   <p className="mt-1 text-xs text-ink/45">
                     <span className="text-gold-bright">+{a.points}</span>
                     {a.unlockedAt ? ` · ${t("unlockedOn", { date: a.unlockedAt.toISOString().slice(0, 10) })}` : ` · ${t("locked")}`}
+                    {` · ${t("unlockedByPercent", { percent: completion[a.id] ?? 0 })}`}
                   </p>
                 </div>
               </div>
