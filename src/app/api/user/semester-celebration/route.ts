@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
-import { getSemesterToCelebrate } from "@/lib/academic-calendar";
+import { getCelebrationToShow } from "@/lib/academic-calendar";
 
 const bodySchema = z.object({ action: z.enum(["shown", "dismiss"]) });
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const semester = getSemesterToCelebrate();
+  const semester = getCelebrationToShow();
   if (!semester) return NextResponse.json({ ok: true, active: false });
 
   if (parsed.data.action === "dismiss") {
@@ -45,8 +45,11 @@ export async function POST(request: Request) {
     try {
       await sendPushToUser(user.id, {
         category: "ACADEMIC",
-        title: "Congratulations!",
-        body: "You made it through another session at DKU! Log your courses and rate your professors.",
+        title: semester.kind === "session" ? `Congrats on finishing ${semester.label}!` : "Congratulations!",
+        body:
+          semester.kind === "session"
+            ? "Take a moment to log your courses and rate your professors while it's fresh."
+            : "You made it through another session at DKU! Log your courses and rate your professors.",
         url: "/courses",
       });
     } catch (error) {

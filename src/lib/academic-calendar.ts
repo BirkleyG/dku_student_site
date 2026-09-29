@@ -174,3 +174,42 @@ export function getSemesterToCelebrate(
   const daysSince = daysBetween(new Date(last.end), new Date(toUtcDay(now)));
   return daysSince <= SEMESTER_CELEBRATION_WINDOW_DAYS ? last : null;
 }
+
+// ---------------------------------------------------------------------------
+// Session celebrations. Each 7-week session that is NOT the last of its
+// semester (that one is covered by the semester popup) gets its own
+// "Congrats on finishing <session>!" popup. The one-week mini-term is skipped.
+// ---------------------------------------------------------------------------
+/** How long after a session ends its celebration is still worth showing. */
+export const SESSION_CELEBRATION_WINDOW_DAYS = 21;
+
+export type CelebrationTarget =
+  | { kind: "semester"; key: string; label: string }
+  | { kind: "session"; key: string; label: string };
+
+/** The mid-semester session to celebrate right now (ended, inside the window), else null. */
+export function getSessionToCelebrate(
+  now: Date = new Date(),
+  calendar: AcademicYearCalendar = ACADEMIC_CALENDAR,
+): CalendarSession | null {
+  const today = toUtcDay(now);
+  const finals = new Set(getSemesters(calendar).map((s) => s.sessions[s.sessions.length - 1].key));
+  const ended = calendar.sessions
+    .filter((s) => s.weeks >= 2 && !finals.has(s.key) && today > s.end)
+    .sort((a, b) => a.end.localeCompare(b.end));
+  const last = ended[ended.length - 1];
+  if (!last) return null;
+  return daysBetween(new Date(last.end), new Date(today)) <= SESSION_CELEBRATION_WINDOW_DAYS ? last : null;
+}
+
+/** Semester celebration takes priority; otherwise a session celebration. Key is safe to persist per user. */
+export function getCelebrationToShow(
+  now: Date = new Date(),
+  calendar: AcademicYearCalendar = ACADEMIC_CALENDAR,
+): CelebrationTarget | null {
+  const semester = getSemesterToCelebrate(now, calendar);
+  if (semester) return { kind: "semester", key: semester.key, label: semester.label };
+  const session = getSessionToCelebrate(now, calendar);
+  if (session) return { kind: "session", key: `${session.key}-${calendar.label}`, label: session.label };
+  return null;
+}

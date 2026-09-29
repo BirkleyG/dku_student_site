@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAnyAdmin } from "@/lib/permissions";
 import { DEFAULT_STARRED_NAV } from "@/lib/nav";
-import { getSemesterToCelebrate } from "@/lib/academic-calendar";
+import { getCelebrationToShow } from "@/lib/academic-calendar";
 import { SemesterCelebration } from "@/components/notifications/SemesterCelebration";
 import { RouteChrome } from "@/components/shell/RouteChrome";
 
@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     : null;
   // End-of-semester popup: only for logged-in users, once per semester
   // (a dismissed row means never show again for that semester).
-  const celebrationSemester = currentUser ? getSemesterToCelebrate() : null;
+  const celebrationSemester = currentUser ? getCelebrationToShow() : null;
   const celebrationDismissed =
     currentUser && celebrationSemester
       ? await prisma.semesterCelebration.findUnique({
@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         {children}
       </RouteChrome>
-      {currentUser ? <SemesterCelebration active={showCelebration} isAdmin={isAdmin} semesterKey={celebrationSemester?.key ?? null} /> : null}
+      {currentUser ? <SemesterCelebration active={showCelebration} isAdmin={isAdmin} semesterKey={celebrationSemester?.kind === "semester" ? celebrationSemester.key : null} kind={celebrationSemester?.kind ?? "semester"} label={celebrationSemester?.label ?? null} /> : null}
     </div>
   );
 }
