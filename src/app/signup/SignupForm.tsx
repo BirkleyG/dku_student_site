@@ -4,12 +4,12 @@ import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { signupSchema, studentEmailDomains, type SignupInput } from "@/lib/validation";
+import { signupSchema, type SignupInput } from "@/lib/validation";
 import { ChatAutoScrollAnchor } from "@/components/chat/ChatThread";
 import { useRequestPushPrompt } from "@/components/notifications/PushPromptProvider";
 import { useT } from "@/lib/i18n/client";
 
-type StepKey = "firstName" | "lastName" | "email" | "netId" | "inviteCode" | "password";
+type StepKey = "firstName" | "lastName" | "netId" | "inviteCode" | "password";
 
 type Step = {
   key: StepKey;
@@ -29,12 +29,6 @@ export function SignupForm() {
     () => [
       { key: "firstName", prompt: t("stepFirstName"), placeholder: "Ada", type: "text" },
       { key: "lastName", prompt: t("stepLastName"), placeholder: "Lovelace", type: "text" },
-      {
-        key: "email",
-        prompt: t("stepEmail"),
-        placeholder: `you@${studentEmailDomains[0]}`,
-        type: "email",
-      },
       {
         key: "netId",
         prompt: t("stepNetId"),
@@ -101,7 +95,6 @@ export function SignupForm() {
       firstName: finalAnswers.firstName ?? "",
       lastName: finalAnswers.lastName ?? "",
       netId: finalAnswers.netId ?? "",
-      email: finalAnswers.email ?? "",
       password: finalAnswers.password ?? "",
       inviteCode: finalAnswers.inviteCode ?? "",
     };
@@ -113,20 +106,19 @@ export function SignupForm() {
     });
 
     if (!res.ok) {
-      const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
+      const body: { error?: string; field?: "inviteCode" } = await res.json().catch(() => ({}));
       setServerError(body.error ?? t("somethingWrong"));
       setStatus("chatting");
       // Send them back to whichever step actually failed (an invalid/used/
-      // rate-limited invite code, or an email that doesn't match the netID)
-      // rather than always the last step.
-      const targetKey: StepKey = body.field === "email" ? "email" : "inviteCode";
+      // rate-limited invite code, or a NetID that's already registered).
+      const targetKey: StepKey = body.field === "inviteCode" ? "inviteCode" : "netId";
       const targetIndex = steps.findIndex((s) => s.key === targetKey);
       setStepIndex(targetIndex >= 0 ? targetIndex : steps.length - 1);
       return;
     }
 
     const signInRes = await signIn("credentials", {
-      email: payload.email,
+      netId: payload.netId,
       password: payload.password,
       redirect: false,
     });

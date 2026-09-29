@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { emailFromNetId, normalizeNetId } from "@/lib/validation";
 
 // Auth.js reads AUTH_URL/NEXTAUTH_URL straight from process.env and does
 // `new URL(value)` on it — a bare domain (no protocol), which is an easy
@@ -32,15 +33,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        netId: { label: "NetID", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const email = credentials?.email as string | undefined;
+        const identifier = (credentials?.netId as string | undefined)?.trim();
         const password = credentials?.password as string | undefined;
-        if (!email || !password) return null;
+        if (!identifier || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        // Sign-in is by NetID. Existing accounts keep working: match the
+        // derived netid@duke.edu email, the stored netId, or (for anyone who
+        // still types a full address) the email exactly as stored.
+        const lowered = identifier.toLowerCase();
+        const netId = normalizeNetId(lowered.split("@")[0]);
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: lowered },
+              { email: emailFromNetId(netId) },
+              { netId: { equals: netId, mode: "insensitive" } },
+            ],
+          },
+        });
         if (!user) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { studentEmailDomains } from "@/lib/validation";
 import { InstallGuide } from "@/components/install/InstallGuide";
 import { useLocale } from "@/lib/i18n/client";
 import { ChatBubbleList } from "@/components/chat/ChatThread";
@@ -194,9 +193,8 @@ export function Welcome({
     say(t.askNetId);
     setStep("netId");
   };
-
   const submitNetId = () => {
-    const id = value.trim();
+    const id = value.trim().toLowerCase();
     if (!id) return;
     setNetId(id);
     echo(id);
@@ -253,18 +251,15 @@ export function Welcome({
     say(t.settingUp);
     setStep("submitting");
 
-    const domain = studentEmailDomains[0];
-    const email = `${netId}@${domain}`;
-
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, netId, email, password, inviteCode }),
+        body: JSON.stringify({ firstName, lastName, netId, password, inviteCode }),
       });
 
       if (!res.ok) {
-        const body: { error?: string; field?: "inviteCode" | "email" } = await res.json().catch(() => ({}));
+        const body: { error?: string; field?: "inviteCode" } = await res.json().catch(() => ({}));
         const message: string = body.error ?? t.somethingWrong;
         setError(message);
         // Send them back to whichever field actually failed, not just the last one.
@@ -275,7 +270,7 @@ export function Welcome({
         return;
       }
 
-      const signInRes = await signIn("credentials", { email, password, redirect: false });
+      const signInRes = await signIn("credentials", { netId, password, redirect: false });
       if (signInRes?.error) {
         // Account was created but the automatic sign-in failed — let them
         // continue the flow anyway; they can log in manually from /login.
