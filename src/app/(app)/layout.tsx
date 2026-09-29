@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAnyAdmin } from "@/lib/permissions";
 import { DEFAULT_STARRED_NAV } from "@/lib/nav";
+import { getSemesterToCelebrate } from "@/lib/academic-calendar";
+import { SemesterCelebration } from "@/components/notifications/SemesterCelebration";
 import { RouteChrome } from "@/components/shell/RouteChrome";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,9 +12,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const currentUser = session?.user?.email
     ? await prisma.user.findUnique({
         where: { email: session.user.email },
-        select: { role: true, adminScopes: true, starredNav: true, starredNavMobile: true, communityScore: true },
+        select: { id: true, role: true, adminScopes: true, starredNav: true, starredNavMobile: true, communityScore: true },
       })
     : null;
+  // End-of-semester popup: only for logged-in users, once per semester
+  // (a dismissed row means never show again for that semester).
+  const celebrationSemester = currentUser ? getSemesterToCelebrate() : null;
+  const celebrationDismissed =
+    currentUser && celebrationSemester
+      ? await prisma.semesterCelebration.findUnique({
+          where: { userId_semesterKey: { userId: currentUser.id, semesterKey: celebrationSemester.key } },
+          select: { dismissedAt: true },
+        })
+      : null;
+  const showCelebration = !!celebrationSemester && !celebrationDismissed?.dismissedAt;
   const isAdmin = currentUser ? isAnyAdmin(currentUser) : false;
   // Loaded here (rather than in NavBar) so the header renders with the right
   // stars on the first paint — no flash for logged-in users. Guests have no
@@ -34,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         {children}
       </RouteChrome>
+      {currentUser ? <SemesterCelebration active={showCelebration} isAdmin={isAdmin} /> : null}
     </div>
   );
 }

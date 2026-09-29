@@ -33,6 +33,11 @@ export const NOTIFICATION_CATEGORIES: CategoryMeta[] = [
     label: "Orders",
     description: "Status updates for your DKU Eats orders.",
   },
+  {
+    key: "ACADEMIC",
+    label: "Academic",
+    description: "End-of-semester reminders to log courses and rate professors.",
+  },
 ];
 
 export const NOTIFICATION_CATEGORY_KEYS: NotificationCategory[] = NOTIFICATION_CATEGORIES.map((c) => c.key);

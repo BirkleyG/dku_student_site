@@ -83,3 +83,87 @@ export function daysUntil(dateIso: string, now: Date = new Date()): number {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   return daysBetween(today, new Date(dateIso));
 }
+
+// ---------------------------------------------------------------------------
+// Semesters. The calendar is stored as 7-week sessions; a semester is the
+// group of sessions sharing a season prefix ("fall-*" / "spring-*"), and it
+// ends on the last day of its final session. Reused by the end-of-semester
+// popup and the upcoming "Semester in Review" feature.
+// ---------------------------------------------------------------------------
+export type CalendarSemester = {
+  /** Stable key, e.g. "fall-2026-2027". Safe to persist per user. */
+  key: string;
+  label: string; // e.g. "Fall 2026-2027"
+  start: string; // ISO date of first session start
+  end: string; // ISO date, inclusive (last day of finals)
+  sessions: CalendarSession[];
+};
+
+export function getSemesters(calendar: AcademicYearCalendar = ACADEMIC_CALENDAR): CalendarSemester[] {
+  const groups = new Map<string, CalendarSession[]>();
+  for (const s of calendar.sessions) {
+    const season = s.key.split("-")[0];
+    groups.set(season, [...(groups.get(season) ?? []), s]);
+  }
+  return Array.from(groups.entries())
+    .map(([season, sessions]) => {
+      const sorted = [...sessions].sort((a, b) => a.start.localeCompare(b.start));
+      const name = season.charAt(0).toUpperCase() + season.slice(1);
+      return {
+        key: `${season}-${calendar.label}`,
+        label: `${name} ${calendar.label}`,
+        start: sorted[0].start,
+        end: sorted[sorted.length - 1].end,
+        sessions: sorted,
+      };
+    })
+    .sort((a, b) => a.end.localeCompare(b.end));
+}
+
+function toUtcDay(now: Date): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().slice(0, 10);
+}
+
+/** True once the day after the semester's last day has arrived. */
+export function isSemesterEnded(semester: CalendarSemester, now: Date = new Date()): boolean {
+  return toUtcDay(now) > semester.end;
+}
+
+/** The most recently ended semester, or null if none has ended yet. */
+export function getLastEndedSemester(
+  now: Date = new Date(),
+  calendar: AcademicYearCalendar = ACADEMIC_CALENDAR,
+): CalendarSemester | null {
+  const ended = getSemesters(calendar).filter((s) => isSemesterEnded(s, now));
+  return ended[ended.length - 1] ?? null;
+}
+
+/** Key of the semester containing `now` (or the last one that ended), for per-semester persistence. */
+export function getSemesterKey(now: Date = new Date(), calendar: AcademicYearCalendar = ACADEMIC_CALENDAR): string | null {
+  const day = toUtcDay(now);
+  const current = getSemesters(calendar).find((s) => day >= s.start && day <= s.end);
+  return (current ?? getLastEndedSemester(now, calendar))?.key ?? null;
+}
+
+/** The end date (ISO) of the semester in progress, or the next upcoming one; null if the calendar has none left. */
+export function getCurrentSemesterEnd(
+  now: Date = new Date(),
+  calendar: AcademicYearCalendar = ACADEMIC_CALENDAR,
+): string | null {
+  const day = toUtcDay(now);
+  return getSemesters(calendar).find((s) => s.end >= day)?.end ?? null;
+}
+
+/** How long after a semester ends the celebration is still worth showing. */
+export const SEMESTER_CELEBRATION_WINDOW_DAYS = 45;
+
+/** The ended semester to celebrate right now (ended, and still inside the window), else null. */
+export function getSemesterToCelebrate(
+  now: Date = new Date(),
+  calendar: AcademicYearCalendar = ACADEMIC_CALENDAR,
+): CalendarSemester | null {
+  const last = getLastEndedSemester(now, calendar);
+  if (!last) return null;
+  const daysSince = daysBetween(new Date(last.end), new Date(toUtcDay(now)));
+  return daysSince <= SEMESTER_CELEBRATION_WINDOW_DAYS ? last : null;
+}
