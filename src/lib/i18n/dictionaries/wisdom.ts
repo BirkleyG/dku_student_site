@@ -59,7 +59,7 @@ export const wisdom: Record<Locale, Record<string, string>> = {
     cat_ACTIVITIES: "活动",
     cat_TRAVEL: "旅行",
     cat_STUDY: "自习地点",
-    cat_BEAUTY_NATURE: "美妆 / 自然",
+    cat_BEAUTY_NATURE: "风景 / 自然",
     cat_OTHER: "其他",
     loadingTopics: "正在加载话题…",
     couldntLoadTopics: "无法加载话题，请重试。",
