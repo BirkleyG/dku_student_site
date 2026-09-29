@@ -1,5 +1,6 @@
-import type { ChatChannelKind } from "@prisma/client";
+import type { AdminScope, ChatChannelKind, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { hasScope } from "@/lib/permissions";
 import { broadcastPush, sendPushToUser, type PushPayload } from "@/lib/push";
 
 export const GENERAL_CHANNEL_ID = "general";
@@ -27,6 +28,63 @@ export function generateInviteCode(length = 7): string {
     code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
   }
   return code;
+}
+
+/** Cap on how many groups one user may own, to keep group creation from being spammed. */
+export const MAX_OWNED_GROUPS = 20;
+
+/**
+ * THE one place a chat group gets created (user-created or admin-created).
+ * The creator becomes owner (`createdById`) and first member.
+ *
+ * Points hook: a later points card should award "Start a Group" points from
+ * `onChatGroupCreated` below — every creation path goes through here.
+ */
+export async function createChatGroup(params: { creatorId: string; name: string; description?: string | null }) {
+  let inviteCode = generateInviteCode();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const clash = await prisma.chatChannel.findUnique({ where: { inviteCode } });
+    if (!clash) break;
+    inviteCode = generateInviteCode();
+  }
+
+  const channel = await prisma.chatChannel.create({
+    data: {
+      kind: "GROUP",
+      name: params.name,
+      description: params.description ?? null,
+      inviteCode,
+      createdById: params.creatorId,
+      members: { create: [{ userId: params.creatorId }] },
+    },
+  });
+
+  await onChatGroupCreated({ channelId: channel.id, creatorId: params.creatorId });
+  return channel;
+}
+
+/** Hook point for "Start a Group" (5 pts, to be wired by the points card). Intentionally a no-op for now; never throws. */
+export async function onChatGroupCreated(event: { channelId: string; creatorId: string }): Promise<void> {
+  // TODO(points): awardPoints(event.creatorId, "START_GROUP") once that ScoreReason exists.
+  void event;
+}
+
+type PermissionUser = { id: string; role: Role; adminScopes: AdminScope[] };
+
+/** Group owner (creator) or a CHAT-scope admin may rename/delete/manage members of a GROUP channel. Never applies to GENERAL/DIRECT. */
+export function canManageGroup(user: PermissionUser, channel: { kind: ChatChannelKind; createdById: string | null }): boolean {
+  if (channel.kind !== "GROUP") return false;
+  return channel.createdById === user.id || hasScope(user, "CHAT");
+}
+
+/** Sends the invitee a MESSAGES-category push (respects their notification preferences). Call inside `after()`. */
+export async function notifyGroupInvite(params: { inviteeId: string; inviterName: string; groupName: string; channelId: string }) {
+  await sendPushToUser(params.inviteeId, {
+    category: "MESSAGES",
+    title: `${params.inviterName} invited you to ${params.groupName}`,
+    body: "Open Chat to accept or decline.",
+    url: "/chat",
+  });
 }
 
 /** True for GENERAL (everyone's implicitly in it) or an explicit membership row. */

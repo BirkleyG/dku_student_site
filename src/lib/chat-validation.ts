@@ -18,6 +18,14 @@ export const chatJoinSchema = z.object({
   code: z.string().trim().min(1, "Enter an invite code").max(40),
 });
 
+export const chatInviteSchema = z.object({
+  userIds: z.array(z.string().min(1)).min(1, "Pick at least one person").max(20),
+});
+
+export const chatInviteResponseSchema = z.object({
+  action: z.enum(["accept", "decline"]),
+});
+
 export const chatDmSchema = z.object({
   userId: z.string().min(1),
 });

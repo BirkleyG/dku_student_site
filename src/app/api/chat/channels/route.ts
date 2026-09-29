@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
-import { ensureGeneralChannel, generateInviteCode, dmChannelName } from "@/lib/chat";
+import { ensureGeneralChannel, createChatGroup, dmChannelName, MAX_OWNED_GROUPS } from "@/lib/chat";
 import { chatGroupSchema } from "@/lib/chat-validation";
 
 /** Sidebar data: the general channel, the groups this user has joined, and their DMs. */
@@ -17,7 +17,7 @@ export async function GET() {
 
   const general = await ensureGeneralChannel();
 
-  const [groups, dms] = await Promise.all([
+  const [groups, dms, invites] = await Promise.all([
     prisma.chatChannel.findMany({
       where: { kind: "GROUP", members: { some: { userId: user.id } } },
       orderBy: { name: "asc" },
@@ -27,11 +27,25 @@ export async function GET() {
       include: { members: { include: { user: { select: { id: true, firstName: true, lastName: true } } } } },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.chatGroupInvite.findMany({
+      where: { inviteeId: user.id, status: "PENDING", channel: { kind: "GROUP" } },
+      include: {
+        channel: { select: { name: true } },
+        inviter: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return NextResponse.json({
     general: { id: general.id, name: general.name, description: general.description },
-    groups: groups.map((g) => ({ id: g.id, name: g.name, description: g.description })),
+    groups: groups.map((g) => ({ id: g.id, name: g.name, description: g.description, ownerId: g.createdById })),
+    invites: invites.map((i) => ({
+      id: i.id,
+      channelId: i.channelId,
+      groupName: i.channel.name,
+      inviterName: `${i.inviter.firstName} ${i.inviter.lastName}`,
+    })),
     dms: dms.map((d) => ({
       id: d.id,
       name: dmChannelName(d, user.id),
@@ -40,7 +54,7 @@ export async function GET() {
   });
 }
 
-/** Admin (CHAT scope) creates a new GROUP channel with a fresh invite code. */
+/** Any logged-in user creates a new GROUP channel and becomes its owner. */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -48,9 +62,7 @@ export async function POST(request: Request) {
   }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user || !hasScope(user, "CHAT")) {
-    return NextResponse.json({ error: "You can't create chat groups" }, { status: 403 });
-  }
+  if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json().catch(() => null);
   const parsed = chatGroupSchema.safeParse(body);
@@ -58,22 +70,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  let inviteCode = generateInviteCode();
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const clash = await prisma.chatChannel.findUnique({ where: { inviteCode } });
-    if (!clash) break;
-    inviteCode = generateInviteCode();
+  const owned = await prisma.chatChannel.count({ where: { kind: "GROUP", createdById: user.id } });
+  if (owned >= MAX_OWNED_GROUPS && !hasScope(user, "CHAT")) {
+    return NextResponse.json({ error: "You've reached the limit of groups you can own" }, { status: 429 });
   }
 
-  const channel = await prisma.chatChannel.create({
-    data: {
-      kind: "GROUP",
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      inviteCode,
-      createdById: user.id,
-      members: { create: [{ userId: user.id }] },
-    },
+  const channel = await createChatGroup({
+    creatorId: user.id,
+    name: parsed.data.name,
+    description: parsed.data.description,
   });
 
   return NextResponse.json({ channel }, { status: 201 });
