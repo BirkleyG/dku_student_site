@@ -5,27 +5,30 @@ import {
   computeDegreeProgress,
   computeMajorProgress,
   resolveExclusiveGenEd,
-  getCommonCoreStatus,
+  computeRequiredForEveryone,
   GEN_ED_TAG_LABELS,
   type PlannedCourseLike,
 } from "@/lib/planner-progress";
-import { COMMON_CORE_COURSES } from "@/lib/common-core";
 import { CATEGORY_COLORS } from "./planner-types";
 
 export function RequirementsSidebar({
   major,
   track,
   courses,
+  miniTermCompleted,
+  onToggleMiniTerm,
 }: {
   major: string | null;
   track: string | null;
   courses: PlannedCourseLike[];
+  miniTermCompleted: boolean;
+  onToggleMiniTerm: (completed: boolean) => void;
 }) {
   const t = useT("planner");
   const majorProgress = computeMajorProgress(major, track, courses);
   const distribution = resolveExclusiveGenEd(courses);
   const degree = computeDegreeProgress(courses);
-  const commonCore = getCommonCoreStatus(courses);
+  const required = computeRequiredForEveryone(courses, miniTermCompleted);
 
   return (
     <div className="space-y-6 rounded-lg border border-ink/10 bg-paper p-5">
@@ -96,20 +99,31 @@ export function RequirementsSidebar({
       </div>
 
       <div className="border-t border-ink/10 pt-5">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-ink/40">{t("commonCoreLabel")}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-ink/40">{t("requiredForEveryoneLabel")}</p>
+          <span className="text-xs font-medium text-ink/60">
+            {required.met}/{required.total}
+          </span>
+        </div>
         <ul className="mt-1.5 space-y-1 text-xs text-ink/55">
-          {COMMON_CORE_COURSES.map(({ year, code, title }) => {
-            const course = commonCore[year];
-            return (
-              <li key={year} className="flex justify-between gap-2">
-                <span className="truncate" title={title}>
-                  {t("year", { n: year })}: {code}
-                </span>
-                <span className={course ? "text-sprout-deep" : "text-ink/30"}>{course ? "✓" : "—"}</span>
-              </li>
-            );
-          })}
+          {required.items.map(({ code, title, course }) => (
+            <li key={code} className="flex justify-between gap-2">
+              <span className="truncate" title={title}>
+                {code}
+              </span>
+              <span className={course ? "text-sprout-deep" : "text-ink/30"}>{course ? "✓" : "—"}</span>
+            </li>
+          ))}
         </ul>
+        <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-ink/70">
+          <input
+            type="checkbox"
+            checked={miniTermCompleted}
+            onChange={(e) => onToggleMiniTerm(e.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--color-sprout-deep,#3f7d4e)]"
+          />
+          {t("miniTermCheckbox")}
+        </label>
       </div>
 
       <div className="border-t border-ink/10 pt-5">

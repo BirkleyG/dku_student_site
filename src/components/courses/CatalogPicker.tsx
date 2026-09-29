@@ -2,18 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
-import { DKU_COURSE_CATALOG, type CatalogCourse } from "@/lib/course-catalog";
+import type { CatalogCourse } from "@/lib/course-catalog";
+import { searchCatalog } from "@/lib/catalog-search";
 
 /** Typeahead over the official DKU course catalog — pick one and the rest of the form fills itself in. */
 export function CatalogPicker({ onPick }: { onPick: (course: CatalogCourse) => void }) {
   const [q, setQ] = useState("");
 
   const matches = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (query.length < 2) return [];
-    return DKU_COURSE_CATALOG.filter(
-      (c) => c.code.toLowerCase().includes(query) || c.title.toLowerCase().includes(query),
-    ).slice(0, 8);
+    return searchCatalog(q);
   }, [q]);
 
   return (
@@ -39,7 +36,7 @@ export function CatalogPicker({ onPick }: { onPick: (course: CatalogCourse) => v
       </div>
 
       {matches.length > 0 ? (
-        <div className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-xl border border-ink/10 bg-paper shadow-lg">
+        <div className="absolute z-10 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-ink/10 bg-paper shadow-lg">
           {matches.map((c) => (
             <button
               key={`${c.code}-${c.title}`}

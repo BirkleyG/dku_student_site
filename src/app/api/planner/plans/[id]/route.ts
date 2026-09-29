@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const existing = await loadOwnedPlan(id, user.id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { name, major, track, isPrimary } = parsed.data;
+  const { name, major, track, isPrimary, miniTermCompleted } = parsed.data;
 
   // Only one plan can be primary — flipping one on flips every other off.
   if (isPrimary) {
@@ -45,6 +45,7 @@ export async function PATCH(request: Request, { params }: Params) {
       ...(major !== undefined ? { major } : {}),
       ...(track !== undefined ? { track } : {}),
       ...(isPrimary !== undefined ? { isPrimary } : {}),
+      ...(miniTermCompleted !== undefined ? { miniTermCompleted } : {}),
     },
     include: { courses: true },
   });

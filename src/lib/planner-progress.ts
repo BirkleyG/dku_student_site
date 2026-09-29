@@ -1,6 +1,7 @@
 import { getMajorRequirements, type RequirementUnit } from "@/lib/major-requirements";
 import { isLanguageCourse } from "@/lib/planner-language";
 import { commonCoreYearForCode } from "@/lib/common-core";
+import { REQUIRED_FOR_EVERYONE } from "@/lib/required-for-everyone";
 
 export type PlannedCourseLike = {
   id: string;
@@ -52,6 +53,9 @@ export function computeMajorProgress(major: string | null, track: string | null,
   let metUnits = 0;
 
   for (const [category, units] of Object.entries(requirements.categories)) {
+    // Electives are "pick from this list" pools, not requirements — they
+    // don't count toward (or appear in) major progress.
+    if (category === "electives") continue;
     const statuses: RequirementUnitStatus[] = (units ?? []).map((unit) => {
       const match = courses.find((c) => unitMatchesCode(unit, c.code));
       return { unit, satisfiedBy: match?.id ?? null, label: unitLabel(unit) };
@@ -67,6 +71,27 @@ export function computeMajorProgress(major: string | null, track: string | null,
     totalUnits,
     metUnits,
     percent: totalUnits > 0 ? Math.round((metUnits / totalUnits) * 100) : 0,
+  };
+}
+
+export type RequiredForEveryoneStatus = {
+  items: { code: string; title: string; course: PlannedCourseLike | null }[];
+  miniTermCompleted: boolean;
+  met: number;
+  total: number;
+};
+
+// "Required for everyone" = the four fixed courses plus the miniterm checkbox.
+export function computeRequiredForEveryone(courses: PlannedCourseLike[], miniTermCompleted: boolean): RequiredForEveryoneStatus {
+  const items = REQUIRED_FOR_EVERYONE.map((r) => ({
+    ...r,
+    course: courses.find((c) => c.code.trim().toUpperCase() === r.code) ?? null,
+  }));
+  return {
+    items,
+    miniTermCompleted,
+    met: items.filter((i) => i.course).length + (miniTermCompleted ? 1 : 0),
+    total: items.length + 1,
   };
 }
 

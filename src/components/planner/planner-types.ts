@@ -16,6 +16,7 @@ export type ApiPlan = {
   isPrimary: boolean;
   major: string | null;
   track: string | null;
+  miniTermCompleted: boolean;
   courses: ApiPlannedCourse[];
 };
 
@@ -24,6 +25,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   interdisciplinary: "bg-violet-100 text-violet-800 border-violet-300",
   disciplinary: "bg-rose-100 text-rose-800 border-rose-300",
   electives: "bg-amber-100 text-amber-800 border-amber-300",
+  requiredForEveryone: "bg-teal-100 text-teal-800 border-teal-300",
 };
 
 export const DEFAULT_CHIP_COLOR = "bg-paper-dim text-ink/70 border-ink/15";

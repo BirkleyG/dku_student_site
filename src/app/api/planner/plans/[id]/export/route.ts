@@ -62,7 +62,6 @@ export async function GET(_request: Request, { params }: Params) {
 
   const courses = plan.courses;
   const gridCourses = courses.filter((c) => c.session !== "MINI_TERM");
-  const miniTermCourses = courses.filter((c) => c.session === "MINI_TERM");
   const totalCredits = courses.reduce((sum, c) => sum + (Number(c.credits) || 0), 0);
 
   const distribution = resolveExclusiveGenEd(courses);
@@ -89,7 +88,7 @@ export async function GET(_request: Request, { params }: Params) {
     distribution: { arhu: distField(arhu), nas: distField(nas), ss: distField(ss) },
     qr: distField(qr),
     dukeFaculty: dukeFacultyCourses.map((c) => ({ code: c.code, yearSession: yearSessionLabel(c), credits: c.credits ?? "" })),
-    miniTerm: miniTermCourses[0] ? { code: miniTermCourses[0].code, yearSession: `Y${miniTermCourses[0].year} MINITERM` } : null,
+    miniTerm: plan.miniTermCompleted ? { code: "MINITERM", yearSession: "COMPLETED" } : null,
     military: militaryCourse ? { yearSession: yearSessionLabel(militaryCourse) } : null,
     chsc101: chsc101 ? { yearSession: yearSessionLabel(chsc101) } : null,
     chsc102: chsc102 ? { yearSession: yearSessionLabel(chsc102) } : null,
