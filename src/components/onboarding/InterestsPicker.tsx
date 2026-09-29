@@ -12,7 +12,7 @@ export function InterestsPicker({
   items: NavItem[];
   onContinue: (selected: string[]) => void;
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(items.map((i) => i.href)));
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -40,7 +40,7 @@ export function InterestsPicker({
       <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <p className="font-display text-xl text-ink">What are you interested in?</p>
         <p className="mt-1.5 text-sm text-ink/60">
-          I&apos;ll tailor the tour to these — everything&apos;s checked by default.
+          Pick the ones you care about and I&apos;ll tailor the tour to them. Pick none and I&apos;ll show you everything.
         </p>
 
         <div className="mt-5 grid max-h-[45vh] grid-cols-2 gap-2 overflow-y-auto">
@@ -66,10 +66,9 @@ export function InterestsPicker({
 
         <button
           onClick={() => onContinue(items.filter((i) => selected.has(i.href)).map((i) => i.href))}
-          disabled={selected.size === 0}
-          className="focus-ring mt-6 w-full rounded-full bg-gold px-5 py-3 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-40"
+          className="focus-ring mt-6 w-full rounded-full bg-gold px-5 py-3 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright"
         >
-          Continue
+          {selected.size === 0 ? "Show me everything" : "Continue"}
         </button>
       </div>
     </motion.div>,
