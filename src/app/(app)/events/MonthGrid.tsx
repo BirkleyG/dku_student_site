@@ -36,11 +36,11 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
 
       <div className="grid grid-cols-7">
         {days.map((day) => {
+          const dayKey = format(day, "yyyy-MM-dd");
           const dayEvents = events
             .filter((e) => campusDayKey(e.startsAt) === dayKey)
             // All-day items first, then by start time.
             .sort((a, b) => Number(b.allDay) - Number(a.allDay) || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-          const dayKey = format(day, "yyyy-MM-dd");
           const inMonth = isSameMonth(day, anchor);
           const selected = selectedDay ? format(selectedDay, "yyyy-MM-dd") === dayKey : false;
 
