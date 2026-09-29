@@ -9,6 +9,7 @@ import { scorePoints } from "@/lib/community-score";
 import type { ScoreReason } from "@prisma/client";
 import { getT } from "@/lib/i18n/server";
 import { LanguageToggle } from "@/components/shell/LanguageToggle";
+import { SemesterReviewSection } from "@/components/profile/SemesterReviewSection";
 
 export default async function ProfilePage() {
   const t = await getT("profile");
@@ -39,6 +40,8 @@ export default async function ProfilePage() {
         </div>
         <LanguageToggle className="mt-1 shrink-0" />
       </Reveal>
+
+      <SemesterReviewSection />
 
       <Reveal delay={0.1} className="mt-8">
         <Card className="flex items-center gap-5">
