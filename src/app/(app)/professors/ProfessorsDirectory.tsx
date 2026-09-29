@@ -124,7 +124,7 @@ export function ProfessorsDirectory({
                   <div className="mt-3 flex flex-1 items-end justify-between">
                     {avg ? (
                       <span className="flex items-center gap-2.5 text-xs text-ink/70">
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1" title={`${t("gradingLabel")}: ${t("gradingScaleHint")}`}>
                           <CircleAlert className="h-3.5 w-3.5 text-danger" /> {avg.grading.toFixed(1)}
                         </span>
                         <span className="flex items-center gap-1">
