@@ -14,15 +14,13 @@ export const studentEmailDomains = (process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN
 export const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(80),
   lastName: z.string().trim().min(1, "Last name is required").max(80),
-  netId: z.string().trim().min(1, "NetID is required").max(40),
-  email: z
+  netId: z
     .string()
     .trim()
     .toLowerCase()
-    .email("Enter a valid email")
-    .refine((email) => studentEmailDomains.some((domain) => email.endsWith(`@${domain}`)), {
-      message: `Use your NetID@${studentEmailDomains[0]} email to sign up`,
-    }),
+    .min(1, "NetID is required")
+    .max(40)
+    .regex(/^[a-z0-9._-]+$/, "NetID can only contain letters and numbers"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -52,4 +50,9 @@ export function emailMatchesNetId(email: string, netId: string): boolean {
   const normalizedNetId = normalizeNetId(netId);
   if (!normalizedNetId) return false;
   return studentEmailDomains.some((domain) => normalizedEmail === `${normalizedNetId}@${domain}`);
+}
+
+/** The account email is always derived from the NetID: `<netid>@duke.edu`. */
+export function emailFromNetId(netId: string): string {
+  return `${normalizeNetId(netId)}@${studentEmailDomains[0]}`;
 }

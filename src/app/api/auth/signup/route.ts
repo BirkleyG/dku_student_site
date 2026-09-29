@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { signupSchema, emailMatchesNetId, normalizeNetId } from "@/lib/validation";
+import { signupSchema, emailFromNetId, normalizeNetId } from "@/lib/validation";
 import { getClientIp, isRateLimited, recordFailure } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -16,21 +16,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const { firstName, lastName, netId, email, password, inviteCode } = parsed.data;
+  const { firstName, lastName, netId, password, inviteCode } = parsed.data;
+  // Email is never asked for: it is always derived from the NetID.
+  const email = emailFromNetId(netId);
 
-  // The invite code is issued per-netID, so the email has to line up with
-  // that netID too — otherwise someone could claim a code meant for netID
-  // `abc12` while signing up with a different person's email address.
-  if (!emailMatchesNetId(email, netId)) {
-    return NextResponse.json(
-      { error: "Your email doesn't match your netID.", field: "email" },
-      { status: 400 },
-    );
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email }, { netId: { equals: netId, mode: "insensitive" } }] },
+  });
   if (existing) {
-    return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
+    return NextResponse.json({ error: "An account with that NetID already exists" }, { status: 409 });
   }
 
   // Rate-limit the invite-code step specifically: someone hammering wrong
@@ -110,7 +104,7 @@ export async function POST(request: Request) {
     // check above — fall back to the DB's own unique constraint here.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       const target = (err.meta?.target as string[] | undefined) ?? [];
-      const field = target.includes("net_id") || target.includes("netId") ? "netID" : "email";
+      const field = target.includes("net_id") || target.includes("netId") ? "NetID" : "email";
       return NextResponse.json({ error: `An account with that ${field} already exists` }, { status: 409 });
     }
     throw err;

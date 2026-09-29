@@ -25,7 +25,7 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
     ? rawCallbackUrl
     : "/home";
 
-  const [email, setEmail] = useState("");
+  const [netId, setNetId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
     setLoading(true);
     setError(null);
 
-    const res = await signIn("credentials", { email, password, redirect: false });
+    const res = await signIn("credentials", { netId, password, redirect: false });
 
     setLoading(false);
     if (res?.error) {
@@ -52,7 +52,16 @@ export function LoginForm({ mode = "page", onSuccess }: Props = {}) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <Field label={t("dkuEmail")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <Field
+        label={t("netId")}
+        type="text"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        value={netId}
+        onChange={(e) => setNetId(e.target.value)}
+        required
+      />
       <Field
         label={t("password")}
         type="password"

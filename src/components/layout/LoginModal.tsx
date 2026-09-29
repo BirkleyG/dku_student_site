@@ -77,7 +77,7 @@ export function LoginModal({
     };
   }, []);
 
-  // Autofocus the email field (the dialog's first input) on open.
+  // Autofocus the NetID field (the dialog's first input) on open.
   useEffect(() => {
     dialogRef.current?.querySelector<HTMLElement>("input")?.focus();
   }, []);
