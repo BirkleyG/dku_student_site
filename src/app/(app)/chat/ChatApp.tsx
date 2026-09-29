@@ -8,6 +8,8 @@ import { Hash, Menu, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X 
 import { useRouter, useSearchParams } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
+import { CreateGroupModal } from "./CreateGroupModal";
+import { ManageGroupModal } from "./ManageGroupModal";
 import { REACTION_EMOJI } from "@/lib/chat-reactions";
 import { useIsMobileViewport } from "@/lib/useIsMobileViewport";
 import { useT } from "@/lib/i18n/client";
@@ -16,7 +18,8 @@ const POLL_MS = 4000;
 
 type SidebarChannel = { id: string; name: string; description: string | null };
 type SidebarDm = { id: string; name: string; otherUserId: string | null };
-type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[] };
+type SidebarInvite = { id: string; channelId: string; groupName: string; inviterName: string };
+type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[]; invites?: SidebarInvite[] };
 
 type ChatUser = { id: string; firstName: string; lastName: string };
 type ChatReaction = { id: string; emoji: string; userId: string };
@@ -70,6 +73,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
   const [threadComposer, setThreadComposer] = useState("");
   const [showJoin, setShowJoin] = useState(false);
   const [showDm, setShowDm] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   // The channel/DM list is a desktop-only sidebar (`hidden sm:flex`) — on
   // mobile there was no way at all to switch chats, so a header button opens
   // the same list as a full-screen overlay instead.
@@ -233,6 +238,27 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     selectChannel({ ...channel, kind: "GROUP" });
   };
 
+  const respondToInvite = async (invite: SidebarInvite, action: "accept" | "decline") => {
+    try {
+      const data = await jsonFetch(`/api/chat/invites/${invite.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      await loadSidebar();
+      if (action === "accept" && data.channel) selectChannel({ ...data.channel, kind: "GROUP" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("inviteError"));
+      await loadSidebar();
+    }
+  };
+
+  const groupRemoved = async () => {
+    setShowManage(false);
+    const data = await loadSidebar();
+    if (data) selectChannel({ ...data.general, kind: "GENERAL" });
+  };
+
   const startDm = async (user: ChatUser) => {
     setShowDm(false);
     try {
@@ -267,10 +293,35 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         />
       </SidebarSection>
 
+      {sidebar.invites && sidebar.invites.length > 0 ? (
+        <SidebarSection label={t("invitesSection")}>
+          {sidebar.invites.map((inv) => (
+            <div key={inv.id} className="rounded-lg bg-gold/10 px-2.5 py-2">
+              <p className="text-sm text-ink">{inv.groupName}</p>
+              <p className="text-xs text-ink/50">{t("invitedBy", { name: inv.inviterName })}</p>
+              <div className="mt-1.5 flex gap-2">
+                <button
+                  onClick={() => void respondToInvite(inv, "accept")}
+                  className="focus-ring rounded-full bg-ink px-3 py-1 text-xs text-paper"
+                >
+                  {t("acceptInvite")}
+                </button>
+                <button
+                  onClick={() => void respondToInvite(inv, "decline")}
+                  className="focus-ring rounded-full border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:text-ink"
+                >
+                  {t("declineInvite")}
+                </button>
+              </div>
+            </div>
+          ))}
+        </SidebarSection>
+      ) : null}
+
       <SidebarSection
         label={t("groupsSection")}
         action={
-          <button onClick={() => setShowJoin(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("joinGroup")}>
+          <button onClick={() => setShowCreate(true)} className="focus-ring text-ink/40 hover:text-ink" aria-label={t("createGroup")}>
             <Plus className="h-3.5 w-3.5" />
           </button>
         }
@@ -289,8 +340,14 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           ))
         )}
         <button
-          onClick={() => setShowJoin(true)}
+          onClick={() => setShowCreate(true)}
           className="focus-ring mt-1 block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
+        >
+          {t("createGroupLink")}
+        </button>
+        <button
+          onClick={() => setShowJoin(true)}
+          className="focus-ring block block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
         >
           {t("joinWithInviteCode")}
         </button>
@@ -344,6 +401,14 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             <h1 className="truncate font-display text-lg text-ink">{selected.name}</h1>
             {selected.description ? <p className="truncate text-xs text-ink/45">{selected.description}</p> : null}
           </div>
+          {selected.kind === "GROUP" ? (
+            <button
+              onClick={() => setShowManage(true)}
+              className="focus-ring shrink-0 rounded-full border border-ink/15 px-3 py-1 text-xs text-ink/70 hover:text-ink"
+            >
+              {t("manageGroup")}
+            </button>
+          ) : null}
         </header>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -411,6 +476,29 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
               void joinAndSelect(channel);
               router.refresh();
             }}
+          />
+        ) : null}
+        {showCreate ? (
+          <CreateGroupModal
+            onClose={() => setShowCreate(false)}
+            onCreated={(channel) => {
+              setShowCreate(false);
+              void loadSidebar().then(() => selectChannel({ id: channel.id, name: channel.name, description: channel.description, kind: "GROUP" }));
+            }}
+          />
+        ) : null}
+        {showManage && selected.kind === "GROUP" ? (
+          <ManageGroupModal
+            channel={selected}
+            currentUserId={currentUserId}
+            onClose={() => setShowManage(false)}
+            onChanged={() => {
+              void loadSidebar().then((data) => {
+                const updated = data?.groups.find((g) => g.id === selected.id);
+                if (updated) setSelected((prev) => (prev ? { ...prev, name: updated.name, description: updated.description } : prev));
+              });
+            }}
+            onLeftOrDeleted={() => void groupRemoved()}
           />
         ) : null}
         {showDm ? <NewDmModal onClose={() => setShowDm(false)} onSelected={(u) => void startDm(u)} /> : null}

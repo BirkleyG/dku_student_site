@@ -104,6 +104,8 @@ model User {
   dashboardWidgets   DashboardWidget[]
   chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
   chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
+  chatInvitesSent        ChatGroupInvite[]    @relation("ChatInviteInviter")
+  chatInvitesReceived    ChatGroupInvite[]    @relation("ChatInviteInvitee")
   chatMessages           ChatMessage[]        @relation("ChatMessageAuthor")
   chatReactions          ChatMessageReaction[]
   wisdomTopics          WisdomTopic[]          @relation("WisdomTopicCreator")
@@ -261,6 +263,7 @@ model ChatChannel {
   createdBy   User?               @relation("ChatChannelCreator", fields: [createdById], references: [id], onDelete: SetNull)
   members     ChatChannelMember[]
   messages    ChatMessage[]
+  invites     ChatGroupInvite[]
   createdAt   DateTime            @default(now())
 
   @@map("chat_channels")
@@ -276,6 +279,32 @@ model ChatChannelMember {
 
   @@unique([channelId, userId])
   @@map("chat_channel_members")
+}
+
+enum ChatInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// A group owner's invitation for another user to join a GROUP channel. The
+// invitee accepts (becomes a member) or declines. One row per (channel, invitee);
+// a declined invite can be re-sent by resetting it to PENDING.
+model ChatGroupInvite {
+  id        String           @id @default(cuid())
+  channelId String
+  channel   ChatChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  inviterId String
+  inviter   User             @relation("ChatInviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  inviteeId String
+  invitee   User             @relation("ChatInviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  status    ChatInviteStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([channelId, inviteeId])
+  @@index([inviteeId, status])
+  @@map("chat_group_invites")
 }
 
 // parentId null = a top-level message in the channel; non-null = a threaded
