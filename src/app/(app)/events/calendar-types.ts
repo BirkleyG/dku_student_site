@@ -1,4 +1,4 @@
-import type { EventCategory } from "@prisma/client";
+import type { EventCategory, EventKind } from "@prisma/client";
 
 export type ApiEvent = {
   id: string;
@@ -9,6 +9,8 @@ export type ApiEvent = {
   startsAt: string;
   endsAt: string;
   category: EventCategory;
+  allDay: boolean;
+  kind: EventKind;
   host: { firstName: string; lastName: string };
   _count: { rsvps: number };
 };

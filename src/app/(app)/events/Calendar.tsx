@@ -12,13 +12,13 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
   startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
   subWeeks,
 } from "date-fns";
+import { campusDayKey, campusWallToDate, toCampus } from "@/lib/datetime";
 import type { EventCategory } from "@prisma/client";
 import { MonthGrid } from "./MonthGrid";
 import { TimeGrid } from "./TimeGrid";
@@ -38,7 +38,7 @@ type Props = {
 export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   const t = useT("events");
   const [view, setView] = useState<CalendarView>("month");
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [anchor, setAnchor] = useState(() => toCampus(new Date()));
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [isPending, startTransition] = useTransition();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -80,7 +80,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   useEffect(() => {
     let cancelled = false;
     startTransition(async () => {
-      const res = await fetch(`/api/events?from=${from.toISOString()}&to=${to.toISOString()}`);
+      const res = await fetch(`/api/events?from=${campusWallToDate(from).toISOString()}&to=${campusWallToDate(to).toISOString()}`);
       const data = await res.json();
       if (!cancelled) setEvents(data.events ?? []);
     });
@@ -135,7 +135,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   };
 
   const goToday = () => {
-    const today = new Date();
+    const today = toCampus(new Date());
     setAnchor(today);
     // In Month view, also open today's agenda so "Today" shows today's events.
     setSelectedDay(view === "month" ? today : null);
@@ -168,7 +168,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
     view === "month" ? format(anchor, "MMMM yyyy") : view === "week" ? `${format(from, "MMM d")} – ${format(to, "MMM d, yyyy")}` : format(anchor, "EEEE, MMMM d");
 
   const selectedDayEvents = useMemo(
-    () => (selectedDay ? visibleEvents.filter((e) => isSameDay(new Date(e.startsAt), selectedDay)) : []),
+    () => (selectedDay ? visibleEvents.filter((e) => campusDayKey(e.startsAt) === format(selectedDay, "yyyy-MM-dd")) : []),
     [selectedDay, visibleEvents],
   );
 

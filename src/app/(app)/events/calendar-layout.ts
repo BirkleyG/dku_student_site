@@ -1,3 +1,4 @@
+import { toCampus } from "@/lib/datetime";
 import type { ApiEvent } from "./calendar-types";
 
 export type PositionedEvent = {
@@ -52,10 +53,12 @@ export function layoutDayEvents(dayEvents: ApiEvent[], hourHeight: number): Posi
 
     const totalColumns = columnEndTimes.length;
     for (const ev of cluster) {
-      const start = new Date(ev.startsAt);
-      const end = new Date(ev.endsAt);
+      const start = toCampus(ev.startsAt);
+      const end = toCampus(ev.endsAt);
       const startMinutes = start.getHours() * 60 + start.getMinutes();
-      const endMinutes = Math.max(startMinutes + 20, end.getHours() * 60 + end.getMinutes());
+      // An event running past midnight is clipped to the end of its start day.
+      const sameDay = start.toDateString() === end.toDateString();
+      const endMinutes = Math.min(1440, Math.max(startMinutes + 20, sameDay ? end.getHours() * 60 + end.getMinutes() : 1440));
       const width = 100 / totalColumns;
       positioned.push({
         event: ev,

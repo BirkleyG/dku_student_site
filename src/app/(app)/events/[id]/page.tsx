@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
+import { formatEventWhen, isCampusToday } from "@/lib/datetime";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { getT } from "@/lib/i18n/server";
 import { RsvpButton } from "./RsvpButton";
@@ -46,9 +46,17 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
         >
           {EVENT_CATEGORY_MAP[event.category].label}
         </span>
+        {event.kind !== "EVENT" ? (
+          <span className="ml-2 rounded-full bg-ink px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+            {event.kind === "DEADLINE" ? t("kindDeadline") : t("kindHoliday")}
+          </span>
+        ) : null}
+        {event.allDay && isCampusToday(event.startsAt) ? (
+          <p className="mt-3 rounded-xl bg-gold/10 px-4 py-2 text-sm text-ink/70">{t("headsUp")}</p>
+        ) : null}
         <h1 className="mt-2 font-display text-4xl">{event.title}</h1>
         <p className="mt-2 text-ink/60">
-          {format(event.startsAt, "EEEE, MMMM d · h:mm a")}–{format(event.endsAt, "h:mm a")} · {event.location} ·{" "}
+          {formatEventWhen(event.startsAt, event.endsAt, event.allDay)} · {event.location} ·{" "}
           {t("hostedBy", { name: `${event.host.firstName} ${event.host.lastName}` })}
         </p>
       </Reveal>

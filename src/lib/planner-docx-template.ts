@@ -4,6 +4,8 @@
 // the export is byte-for-byte the same document structure/formatting DKU
 // students already use — only the data cells change.
 //
+import { formatCampus } from "@/lib/datetime";
+
 // The template's static structure (converted once via `soffice --headless
 // --convert-to docx`, then inspected table-by-table) is:
 //   - Tables 0-3: one per year, each 9 rows x 8 cols. Row 0 = "YEAR X"
@@ -206,7 +208,7 @@ export function fillFourYearPlanTemplate(
   );
   xml = xml.replace(
     "Updated August 2024",
-    `Updated ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+    `Updated ${formatCampus(new Date(), "MMMM yyyy")}`,
   );
 
   const tableSpans = findSpans(xml, TABLE_RE);

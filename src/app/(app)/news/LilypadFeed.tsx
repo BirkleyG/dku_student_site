@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { format } from "date-fns";
+import { formatDateOnly } from "@/lib/datetime";
 import { Search, ArrowUpRight } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
@@ -155,7 +155,7 @@ function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; active
         </div>
         <div className="flex flex-1 flex-col p-5">
           <p className="text-xs uppercase tracking-wide text-ink/40">
-            {format(new Date(post.date), "MMM d, yyyy")}
+            {formatDateOnly(post.date, "MMM d, yyyy")}
             {displayCategory ? <span className="text-gold-bright"> · {displayCategory}</span> : null}
           </p>
           <h3 className="mt-1.5 font-display text-xl leading-snug">{post.title}</h3>

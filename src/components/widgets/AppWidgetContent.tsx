@@ -1,4 +1,4 @@
-import { format, isSameWeek, isToday } from "date-fns";
+import { formatCampus, formatDateOnly, isCampusToday, isSameCampusWeek } from "@/lib/datetime";
 import type { EventCategory } from "@prisma/client";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n/client";
 
 export type WidgetData = {
   now: string;
-  events: { id: string; title: string; startsAt: string; endsAt: string; location: string; category: EventCategory }[];
+  events: { id: string; title: string; startsAt: string; endsAt: string; location: string; category: EventCategory; allDay?: boolean }[];
   chatMessages: { id: string; channelName: string; body: string; authorName: string; createdAt: string }[];
   trackedChannels: Record<string, { channelId: string; channelName: string; unreadCount: number } | null>;
   chatChannels: { id: string; name: string }[];
@@ -37,7 +37,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
       const { categories, timeframe } = eventsTallyConfig(instance.config);
       const inRange = data.events.filter((e) => {
         const start = new Date(e.startsAt);
-        return timeframe === "today" ? isToday(start) : isSameWeek(start, now, { weekStartsOn: 0 });
+        return timeframe === "today" ? isCampusToday(start, now) : isSameCampusWeek(start, now);
       });
       const matching = categories.length ? inRange.filter((e) => categories.includes(e.category)) : inRange;
       const filterLabel =
@@ -58,20 +58,21 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
 
     case "EVENTS_AGENDA": {
       const upcoming = data.events
-        .filter((e) => isToday(new Date(e.startsAt)) && new Date(e.endsAt) >= now)
-        .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+        .filter((e) => isCampusToday(e.startsAt, now) && new Date(e.endsAt) >= now)
+        .sort((a, b) => Number(!!b.allDay) - Number(!!a.allDay) || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
       const visible = upcoming.slice(0, 4);
       const remaining = upcoming.length - visible.length;
       return (
         <div className="flex h-full flex-col">
-          <p className="text-xs text-ink/40">{format(now, "EEEE, MMM d · h:mm a")}</p>
+          <p className="text-xs text-ink/40">{formatCampus(now, "EEEE, MMM d · h:mm a")}</p>
+          {upcoming.some((e) => e.allDay) ? <p className="mt-1 text-xs font-medium text-gold">{t("headsUp")}</p> : null}
           {visible.length ? (
             <ul className="mt-2 space-y-1.5 text-sm">
               {visible.map((e) => (
                 <li key={e.id} className="flex items-center gap-1.5 truncate text-ink/75">
                   <HappeningNowDot startsAt={e.startsAt} endsAt={e.endsAt} />
                   <span className="truncate">
-                    <span className="text-ink/40">{format(new Date(e.startsAt), "h:mm a")}</span> {e.title}
+                    <span className="text-ink/40">{e.allDay ? t("allDay") : formatCampus(e.startsAt, "h:mm a")}</span> {e.title}
                   </span>
                 </li>
               ))}
@@ -188,7 +189,7 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
         <ul className="space-y-1.5 text-sm">
           {items.slice(0, 4).map((p) => (
             <li key={p.id} className="truncate text-ink/75">
-              <span className="text-ink/40">{format(new Date(p.date), "MMM d")}</span> {p.title}
+              <span className="text-ink/40">{formatDateOnly(p.date, "MMM d")}</span> {p.title}
             </li>
           ))}
         </ul>

@@ -2,13 +2,11 @@
 // so DKU Life counts a kitchen as "open" exactly the way DKU Eats does. Keep
 // in sync if that file changes.
 
-const CAMPUS_UTC_OFFSET_MINUTES = 8 * 60; // Kunshan, UTC+8, no DST
+import { toCampus } from "@/lib/datetime";
+
 const WEEK_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function campusNow(now: Date): Date {
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utcMs + CAMPUS_UTC_OFFSET_MINUTES * 60000);
-}
+const campusNow = toCampus; // Kunshan, UTC+8, no DST
 
 function toMinutes(val: unknown): number | null {
   if (typeof val !== "string" || !val) return null;
