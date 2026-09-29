@@ -20,12 +20,14 @@ const CATEGORY_LABEL_KEYS: Record<NotificationCategory, string> = {
   MESSAGES: "catMessagesLabel",
   RECOMMENDATIONS: "catRecommendationsLabel",
   ORDERS: "catOrdersLabel",
+  ACADEMIC: "catAcademicLabel",
 };
 const CATEGORY_DESCRIPTION_KEYS: Record<NotificationCategory, string> = {
   EVENTS: "catEventsDescription",
   MESSAGES: "catMessagesDescription",
   RECOMMENDATIONS: "catRecommendationsDescription",
   ORDERS: "catOrdersDescription",
+  ACADEMIC: "catAcademicDescription",
 };
 
 /**

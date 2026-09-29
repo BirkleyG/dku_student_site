@@ -39,6 +39,7 @@ enum NotificationCategory {
   MESSAGES
   RECOMMENDATIONS
   ORDERS
+  ACADEMIC
 }
 
 enum PushDeliveryStatus {
@@ -134,6 +135,7 @@ model User {
   slbInitiativeVotes  SlbInitiativeVote[]
   notificationPreferences NotificationPreference[]
   academicPlans           AcademicPlan[]
+  semesterCelebrations    SemesterCelebration[]
 
   @@map("users")
 }
@@ -865,4 +867,18 @@ model PlannedCourse {
 
   @@index([planId])
   @@map("planned_courses")
+}
+
+// One row per (user, semester): records that the end-of-semester popup was
+// shown/notified and whether the user dismissed it, so it appears once.
+model SemesterCelebration {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterKey String
+  notifiedAt  DateTime  @default(now())
+  dismissedAt DateTime?
+
+  @@unique([userId, semesterKey])
+  @@map("semester_celebrations")
 }
