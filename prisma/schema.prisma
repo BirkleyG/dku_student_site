@@ -318,6 +318,7 @@ enum WisdomCategory {
   ACTIVITIES
   TRAVEL
   STUDY
+  BEAUTY_NATURE
   OTHER
 }
 

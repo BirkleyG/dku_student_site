@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MapPin, MessageSquareText, Trash2 } from "lucide-react";
 import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
-import { wisdomCategories, wisdomCategoryLabels } from "@/lib/wisdom-validation";
+import { wisdomCategories } from "@/lib/wisdom-validation";
 import { useT } from "@/lib/i18n/client";
 
 type ApiTopic = {
@@ -23,39 +23,56 @@ export function WisdomTopicList({ currentUserId, isAdmin = false }: { currentUse
   const t = useT("wisdom");
   const [topics, setTopics] = useState<ApiTopic[] | null>(null);
   const [category, setCategory] = useState<(typeof wisdomCategories)[number] | "ALL">("ALL");
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const qs = category === "ALL" ? "" : `?category=${category}`;
-    fetch(`/api/wisdom${qs}`)
-      .then((r) => r.json())
+    fetch(`/api/wisdom${qs}`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error("bad response");
+        return r.json();
+      })
       .then((data) => {
-        if (!cancelled) setTopics(data.topics ?? []);
+        setTopics(data.topics ?? []);
+        setFailed(false);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setTopics([]);
+        setFailed(true);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [category]);
+
+  const selectCategory = (next: (typeof wisdomCategories)[number] | "ALL") => {
+    if (next === category) return;
+    // Clear stale results so the new filter shows a loading state, never the previous filter's topics.
+    setTopics(null);
+    setCategory(next);
+  };
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        <FilterChip active={category === "ALL"} onClick={() => setCategory("ALL")}>
+        <FilterChip active={category === "ALL"} onClick={() => selectCategory("ALL")}>
           {t("all")}
         </FilterChip>
         {wisdomCategories.map((c) => (
-          <FilterChip key={c} active={category === c} onClick={() => setCategory(c)}>
-            {wisdomCategoryLabels[c]}
+          <FilterChip key={c} active={category === c} onClick={() => selectCategory(c)}>
+            {t(`cat_${c}`)}
           </FilterChip>
         ))}
       </div>
 
       {topics === null ? (
         <p className="mt-10 text-sm text-ink/40">{t("loadingTopics")}</p>
+      ) : failed ? (
+        <p className="mt-10 text-ink/50">{t("couldntLoadTopics")}</p>
       ) : topics.length === 0 ? (
         <p className="mt-10 text-ink/50">{t("nothingHereStartTopic")}</p>
       ) : (
-        <StaggerGroup className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StaggerGroup key={category} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {topics.map((topic) => (
             <StaggerItem key={topic.id}>
               <TopicCard
@@ -95,7 +112,7 @@ function TopicCard({
     <Card className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
-          {wisdomCategoryLabels[topic.category]}
+          {t(`cat_${topic.category}`)}
         </span>
         {topic.requireLocation ? (
           <span className="flex items-center gap-1 text-xs text-ink/45">

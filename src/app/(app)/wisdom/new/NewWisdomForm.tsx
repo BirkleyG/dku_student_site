@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { wisdomTopicSchema, wisdomCategories, wisdomCategoryLabels, type WisdomTopicInput } from "@/lib/wisdom-validation";
+import { wisdomTopicSchema, wisdomCategories, type WisdomTopicInput } from "@/lib/wisdom-validation";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
@@ -54,7 +54,7 @@ export function NewWisdomForm() {
         >
           {wisdomCategories.map((c) => (
             <option key={c} value={c}>
-              {wisdomCategoryLabels[c]}
+              {t(`cat_${c}`)}
             </option>
           ))}
         </select>
