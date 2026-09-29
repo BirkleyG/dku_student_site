@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordSignal } from "@/lib/points";
 import { WidgetKind, type Prisma } from "@prisma/client";
 
 const bodySchema = z.object({
@@ -49,6 +50,8 @@ export async function POST(request: Request) {
         : prisma.dashboardWidget.create({ data: { userId: user.id, kind: w.kind, config, position } });
     }),
   ]);
+
+  if (parsed.data.widgets.some((w) => !existingIds.has(w.id))) await recordSignal(user.id, "WIDGET_ADDED");
 
   return NextResponse.json({ ok: true });
 }

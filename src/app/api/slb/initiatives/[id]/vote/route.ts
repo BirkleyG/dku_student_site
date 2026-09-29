@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { getSlbViewer, json } from "@/lib/slb";
 
 // Community vote: 1 = yes, -1 = no, 0 = take my vote back.
@@ -27,6 +28,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/slb/initiat
       create: { initiativeId: id, userId: viewer.id, value: parsed.data.value },
       update: { value: parsed.data.value },
     });
+    // Keyed on (user, initiative): withdrawing and re-voting never pays twice.
+    await awardPoints(viewer.id, "SLB_REACT", id);
   }
   return json({ ok: true });
 }

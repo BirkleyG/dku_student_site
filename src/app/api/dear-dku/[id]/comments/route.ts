@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { dearDkuCommentSchema } from "@/lib/dear-dku-validation";
 
 type Params = { params: Promise<{ id: string }> };
@@ -28,6 +29,8 @@ export async function POST(request: Request, { params }: Params) {
     data: { postId, body: parsed.data.body, authorId: user.id },
     include: { author: { select: { firstName: true, lastName: true } } },
   });
+
+  await awardPoints(user.id, "DEAR_COMMENT", comment.id);
 
   return NextResponse.json({ comment }, { status: 201 });
 }

@@ -10,6 +10,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSemesters, isSemesterEnded, type CalendarSemester } from "@/lib/academic-calendar";
 import { campusDayKey } from "@/lib/datetime";
+import { getUserPointsSummary, getUnlockedAchievements } from "@/lib/points";
 
 export type ReviewTone = "green" | "gold" | "blue" | "rose" | "violet" | "orange";
 
@@ -227,22 +228,35 @@ export const REVIEW_SECTIONS: ReviewSection[] = [
     },
   },
   {
-    id: "score",
-    label: "Community score",
+    id: "points",
+    label: "Points earned",
     compute: async ({ userId, range }) => {
-      const agg = await prisma.scoreEvent.aggregate({
-        where: { userId, createdAt: inRange(range) },
-        _sum: { points: true },
-        _count: { _all: true },
-      });
-      const points = agg._sum.points ?? 0;
-      if (!points) return null;
+      const summary = await getUserPointsSummary(userId, { from: range.from, to: range.to });
+      if (!summary.total) return null;
+      const top = [...summary.sources].sort((a, b) => b.points - a.points).slice(0, 4);
       return {
-        id: "score",
+        id: "points",
         title: "You earned",
-        big: `${points.toLocaleString("en-US")} pts`,
-        caption: `Across ${plural(agg._count._all, "contribution")} to the community.`,
+        big: `${summary.total.toLocaleString("en-US")} pts`,
+        caption: top[0] ? `Most of it came from ${top[0].label}.` : "Thanks for being part of the community.",
+        details: top.map((s) => ({ label: s.label, value: `${s.points} pts` })),
         tone: "gold",
+      };
+    },
+  },
+  {
+    id: "achievements",
+    label: "Achievements unlocked",
+    compute: async ({ userId, range }) => {
+      const unlocked = await getUnlockedAchievements(userId, { from: range.from, to: range.to });
+      if (!unlocked.length) return null;
+      return {
+        id: "achievements",
+        title: "You unlocked",
+        big: plural(unlocked.length, "achievement"),
+        caption: `Including ${unlocked[0].emoji} ${unlocked[0].name}.`,
+        details: unlocked.slice(0, 4).map((a) => ({ label: `${a.emoji} ${a.name}`, value: `+${a.points} pts` })),
+        tone: "violet",
       };
     },
   },

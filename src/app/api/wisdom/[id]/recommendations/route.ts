@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wisdomRecommendationSchema } from "@/lib/wisdom-validation";
-import { awardPoints } from "@/lib/community-score";
+import { awardPoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: Params) {
     data: { topicId, placeName, location: location || null, description, authorId: user.id },
     include: { author: { select: { firstName: true, lastName: true } }, votes: true },
   });
-  await awardPoints(user.id, "WISDOM_POST");
+  await awardPoints(user.id, "WISDOM_REC", recommendation.id);
 
   return NextResponse.json({ recommendation }, { status: 201 });
 }

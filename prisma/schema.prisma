@@ -92,6 +92,7 @@ model User {
   emailVerified DateTime?
   image         String?
   communityScore Int      @default(0)
+  showOnLeaderboard Boolean @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -124,6 +125,7 @@ model User {
   courseComments      CourseComment[]     @relation("CourseCommentAuthor")
   professorReviews    ProfessorReview[]   @relation("ProfessorReviewAuthor")
   scoreEvents         ScoreEvent[]
+  pointEvents         PointEvent[]
   uploads             Upload[]
   pushSubscriptions   PushSubscription[]
   pushDeliveries      PushDelivery[]
@@ -671,6 +673,28 @@ model ScoreEvent {
   createdAt DateTime    @default(now())
 
   @@map("score_events")
+}
+
+// Append-only points ledger. Activity rows (kind ACTIVITY) pay points per object,
+// achievement rows (kind ACHIEVEMENT, key "ACH:<id>") pay a one-time bonus, and
+// SIGNAL rows are zero-point facts that achievements are built on. The unique
+// (userId, key, refId) makes every award idempotent, so undo/redo can't farm
+// points. User.communityScore is a denormalized SUM(points) kept in sync by
+// src/lib/points.ts. Replaces the old ScoreEvent table (kept, no longer written).
+model PointEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  kind      String
+  points    Int
+  refId     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@unique([userId, key, refId])
+  @@index([userId, createdAt])
+  @@index([key])
+  @@map("point_events")
 }
 
 // Small user-uploaded images (event posters), stored in Postgres so uploads

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isChannelMember, notifyNewChatMessage } from "@/lib/chat";
 import { chatMessageSchema } from "@/lib/chat-validation";
-import { awardPoints } from "@/lib/community-score";
+import { recordSignal } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -89,9 +89,8 @@ export async function POST(request: Request, { params }: Params) {
     include: { author: authorSelect, ...reactionsInclude },
   });
 
-  if (channel.kind !== "DIRECT") {
-    await awardPoints(user.id, parsed.data.parentId ? "CHAT_REPLY" : "CHAT_MESSAGE");
-  }
+  // Messages don't pay points themselves; they only feed the chat achievements.
+  await recordSignal(user.id, "CHAT_MESSAGE", message.id);
 
   // Notify recipients after the response goes out — a push failure or slow
   // push service should never delay or break sending a message.

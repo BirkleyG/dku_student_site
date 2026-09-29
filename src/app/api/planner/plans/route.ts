@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordSignal } from "@/lib/points";
 import { planCreateSchema } from "@/lib/planner-validation";
 
 export async function GET() {
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
     },
     include: { courses: true },
   });
+
+  await recordSignal(user.id, "PLAN_CREATED", plan.id);
 
   return NextResponse.json({ plan }, { status: 201 });
 }

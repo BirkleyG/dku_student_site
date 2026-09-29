@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
+import { revokePoints } from "@/lib/points";
 
 type Params = { params: Promise<{ id: string; commentId: string }> };
 
@@ -23,5 +24,6 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   await prisma.dearDkuComment.delete({ where: { id: commentId } });
+  await revokePoints(comment.authorId, "DEAR_COMMENT", commentId);
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/points";
 import { eventSchema } from "@/lib/event-validation";
 import { broadcastPush } from "@/lib/push";
 import { formatCampus } from "@/lib/datetime";
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
       hostId: user.id,
     },
   });
+
+  await awardPoints(user.id, "EVENT_HOST", event.id);
 
   // Notify subscribed users after the response goes out — a push failure or
   // slow push service should never delay or break event creation. `after()`
