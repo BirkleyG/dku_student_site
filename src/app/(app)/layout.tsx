@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         {children}
       </RouteChrome>
-      {currentUser ? <SemesterCelebration active={showCelebration} isAdmin={isAdmin} /> : null}
+      {currentUser ? <SemesterCelebration active={showCelebration} isAdmin={isAdmin} semesterKey={celebrationSemester?.key ?? null} /> : null}
     </div>
   );
 }

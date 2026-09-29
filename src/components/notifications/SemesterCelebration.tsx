@@ -10,7 +10,16 @@ import { Confetti } from "@/components/effects/Confetti";
  * `?semesterPreview=1` — preview mode never writes to the server or sends a
  * notification.
  */
-export function SemesterCelebration({ active, isAdmin }: { active: boolean; isAdmin: boolean }) {
+export function SemesterCelebration({
+  active,
+  isAdmin,
+  semesterKey,
+}: {
+  active: boolean;
+  isAdmin: boolean;
+  /** Ended semester being celebrated; enables the link to its Semester in Review. */
+  semesterKey?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(false);
 
@@ -69,7 +78,16 @@ export function SemesterCelebration({ active, isAdmin }: { active: boolean; isAd
         <p className="relative mt-3 text-gray-700">
           You made it through another session at DKU! Take some time to log your courses and rate your professors!
         </p>
-        <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        {semesterKey ? (
+          <Link
+            href={`/profile?review=${encodeURIComponent(semesterKey)}`}
+            onClick={dismiss}
+            className="relative mt-6 block rounded-lg bg-gold-bright px-5 py-2.5 font-semibold text-ink hover:opacity-90"
+          >
+            See your Semester in Review
+          </Link>
+        ) : null}
+        <div className={`relative flex flex-col gap-3 sm:flex-row sm:justify-center ${semesterKey ? "mt-3" : "mt-6"}`}>
           <Link
             href="/courses"
             onClick={dismiss}
