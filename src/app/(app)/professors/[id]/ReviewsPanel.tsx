@@ -189,7 +189,7 @@ export function ReviewsPanel({
 
       {averages ? (
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <RatingStat icon={CircleAlert} iconClass="text-danger" label={t("gradingLabel")} value={averages.grading} />
+          <RatingStat icon={CircleAlert} iconClass="text-danger" label={t("gradingLabel")} hint={t("gradingScaleHint")} value={averages.grading} />
           <RatingStat icon={Star} iconClass="fill-gold-bright text-gold-bright" label={t("teachingLabel")} value={averages.teaching} />
           <RatingStat icon={Smile} iconClass="text-sprout-deep" label={t("funLabel")} value={averages.fun} />
         </div>
@@ -203,7 +203,7 @@ export function ReviewsPanel({
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3 text-xs text-ink/50">
                 <span className="flex items-center gap-1">
-                  <CircleAlert className="h-3.5 w-3.5 text-danger" /> {r.gradingRating}/5
+                  <CircleAlert className="h-3.5 w-3.5 text-danger" aria-hidden /> <span title={t("gradingScaleHint")}>{t("gradingLabel")} {r.gradingRating}/5</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <Star className="h-3.5 w-3.5 fill-gold-bright text-gold-bright" /> {r.teachingRating}/5
@@ -361,6 +361,8 @@ export function ReviewsPanel({
               icon={CircleAlert}
               activeClass="text-danger"
               label={t("gradingPickerLabel")}
+              lowLabel={t("gradingScaleLow")}
+              highLabel={t("gradingScaleHigh")}
               value={grading}
               onChange={setGrading}
             />
@@ -392,11 +394,13 @@ function RatingStat({
   icon: Icon,
   iconClass,
   label,
+  hint,
   value,
 }: {
   icon: LucideIcon;
   iconClass: string;
   label: string;
+  hint?: string;
   value: number;
 }) {
   return (
@@ -404,6 +408,7 @@ function RatingStat({
       <Icon className={`mx-auto h-5 w-5 ${iconClass}`} />
       <p className="mt-1 text-2xl font-display">{value.toFixed(1)}</p>
       <p className="mt-1 text-xs uppercase tracking-[0.1em] text-ink/45">{label}</p>
+      {hint ? <p className="mt-1 text-[11px] leading-snug text-ink/45">{hint}</p> : null}
     </div>
   );
 }
@@ -412,12 +417,16 @@ function IconRatingPicker({
   icon: Icon,
   activeClass,
   label,
+  lowLabel,
+  highLabel,
   value,
   onChange,
 }: {
   icon: LucideIcon;
   activeClass: string;
   label: string;
+  lowLabel?: string;
+  highLabel?: string;
   value: number;
   onChange: (v: number) => void;
 }) {
@@ -432,6 +441,12 @@ function IconRatingPicker({
           </button>
         ))}
       </div>
+      {lowLabel && highLabel ? (
+        <div className="mt-1 flex justify-between gap-3 text-[11px] text-ink/45">
+          <span>{lowLabel}</span>
+          <span className="text-right">{highLabel}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
