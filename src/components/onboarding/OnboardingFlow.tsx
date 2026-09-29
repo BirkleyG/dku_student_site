@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoginModal } from "@/components/layout/LoginModal";
 import { ChatBubbleList } from "@/components/chat/ChatThread";
@@ -162,6 +162,7 @@ type Stage = "greeting" | "askName" | "chatIntro" | "spotlightHamburger" | "spot
 
 export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; onComplete: (interests: string[]) => void }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session } = useSession();
   const isLoggedIn = Boolean(session?.user);
   const [stage, setStage] = useState<Stage>("greeting");
@@ -171,6 +172,8 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
   const [name, setName] = useState("");
   const [nameValue, setNameValue] = useState("");
   const [selectedTabs, setSelectedTabs] = useState<string[]>([]);
+  // What the visitor actually ticked (empty = nothing, tour showed every tab).
+  const [chosenInterests, setChosenInterests] = useState<string[]>([]);
   const [tabIndex, setTabIndex] = useState(0);
   const [deepDiveIndex, setDeepDiveIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -215,6 +218,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
   };
 
   const beginTabTour = (interests: string[]) => {
+    setChosenInterests(interests);
     setSelectedTabs(interests.length ? interests : navItems.map((i) => i.href));
     setTabIndex(0);
     setStage("tabTour");
@@ -281,7 +285,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
 
   const finishWithoutAccount = () => {
     echo("Maybe later");
-    onComplete(selectedTabs);
+    onComplete(chosenInterests);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -360,7 +364,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
           </>
         );
       case "createAccount":
-        return <Welcome variant="modal" initialFirstName={name} onFinish={() => onComplete(selectedTabs)} />;
+        return <Welcome variant="modal" initialFirstName={name} onFinish={() => onComplete(chosenInterests)} />;
       default:
         return null;
     }
@@ -368,6 +372,28 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
   }, [stage, messages, nameValue, name, selectedTabs]);
 
   const showModal = ["greeting", "askName", "chatIntro", "accountOffer", "createAccount"].includes(stage);
+
+  // router.push() only changes `pathname` once the destination has actually
+  // loaded, so a deep dive must wait for it — otherwise its first step looks
+  // for a target on the page we're still leaving, gives up, and the whole
+  // tour skips ahead (or strands on a closed menu) when the page finally
+  // arrives. The 15s cap skips the deep dive rather than hanging forever.
+  const routeReady = stage !== "deepDive" || pathname === currentTabHref;
+  const finishDeepDiveRef = useRef(finishDeepDive);
+  useEffect(() => {
+    finishDeepDiveRef.current = finishDeepDive;
+  });
+  useEffect(() => {
+    if (stage !== "deepDive" || routeReady) return;
+    const timer = window.setTimeout(() => finishDeepDiveRef.current(), 15000);
+    return () => window.clearTimeout(timer);
+  }, [stage, routeReady]);
+
+  // The drawer auto-closes on every route change; while the tour is pointing
+  // at menu items, put it back so those steps never lose their target.
+  useEffect(() => {
+    if (stage === "spotlightMenu" || stage === "tabTour") navMenuTourBridge.set(true);
+  }, [stage, pathname, tabIndex]);
 
   const canDeepDive = Boolean(currentTabConfig?.deepDive) && (!currentTabConfig?.requiresAuth || isLoggedIn);
   const isLastTab = tabIndex + 1 >= selectedTabs.length;
@@ -381,7 +407,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
         <LoginModal
           labelledBy="onboarding-modal-title"
           className="sm:max-w-xl"
-          onDismiss={stage === "createAccount" ? () => onComplete(selectedTabs) : onClose}
+          onDismiss={stage === "createAccount" ? () => onComplete(chosenInterests) : onClose}
         >
           <h2 id="onboarding-modal-title" className="sr-only">
             Welcome to DKU Life
@@ -436,7 +462,16 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
         )
       ) : null}
 
-      {stage === "deepDive" && deepDiveStep ? (
+      {stage === "deepDive" && !routeReady ? (
+        <div
+          role="status"
+          className="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex justify-center px-4 sm:bottom-10"
+        >
+          <p className="rounded-full bg-ink/85 px-4 py-2 text-xs font-medium text-white shadow-lg">Loading the page…</p>
+        </div>
+      ) : null}
+
+      {stage === "deepDive" && routeReady && deepDiveStep ? (
         <Spotlight
           target={deepDiveStep.target}
           title={deepDiveStep.title}

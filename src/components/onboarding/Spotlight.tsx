@@ -141,7 +141,7 @@ export function Spotlight({
     // a fixed number of frames.
     const tick = () => {
       update();
-      if (Date.now() - started < 4000) {
+      if (Date.now() - started < 8000) {
         frame = requestAnimationFrame(tick);
       } else if (!found) {
         onUnavailableRef.current?.();
