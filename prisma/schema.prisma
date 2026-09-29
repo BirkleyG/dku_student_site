@@ -508,6 +508,7 @@ model Professor {
 
   offerings CourseOffering[]
   reviews   ProfessorReview[]
+  resources CourseResource[]
 
   @@map("professors")
 }
@@ -563,18 +564,29 @@ enum CourseResourceType {
   TIP
 }
 
+enum CourseExamType {
+  MIDTERM
+  FINAL
+  OTHER
+}
+
 model CourseResource {
-  id        String             @id @default(cuid())
-  courseId  String
-  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  type      CourseResourceType
-  semester  String?
-  title     String
-  body      String?
-  fileUrl   String?
-  authorId  String
-  author    User               @relation("CourseResourceAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt DateTime           @default(now())
+  id          String             @id @default(cuid())
+  courseId    String
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  type        CourseResourceType
+  semester    String?
+  title       String
+  body        String?
+  fileUrl     String?
+  fileName    String?
+  // Syllabuses and past exams are tied to the professor who taught them.
+  professorId String?
+  professor   Professor?         @relation(fields: [professorId], references: [id], onDelete: SetNull)
+  examType    CourseExamType?
+  authorId    String
+  author      User               @relation("CourseResourceAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
 
   @@map("course_resources")
 }

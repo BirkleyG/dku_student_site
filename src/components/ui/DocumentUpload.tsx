@@ -6,7 +6,7 @@ import { ALLOWED_DOCUMENT_TYPES, MAX_DOCUMENT_BYTES } from "@/lib/uploads";
 
 type Props = {
   value: string | undefined;
-  onChange: (url: string) => void;
+  onChange: (url: string, fileName?: string) => void;
   fileName?: string;
 };
 
@@ -40,7 +40,7 @@ export function DocumentUpload({ value, onChange, fileName }: Props) {
         return;
       }
       setName(file.name);
-      onChange(data.url);
+      onChange(data.url, file.name);
     } finally {
       setUploading(false);
     }

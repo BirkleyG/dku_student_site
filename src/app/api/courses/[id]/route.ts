@@ -14,7 +14,10 @@ export async function GET(_request: Request, { params }: Params) {
       offerings: { include: { professor: true } },
       resources: {
         orderBy: { createdAt: "desc" },
-        include: { author: { select: { firstName: true, lastName: true } } },
+        include: {
+          author: { select: { firstName: true, lastName: true } },
+          professor: { select: { id: true, firstName: true, lastName: true } },
+        },
       },
     },
   });

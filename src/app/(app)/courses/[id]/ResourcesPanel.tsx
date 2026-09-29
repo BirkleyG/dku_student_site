@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Link as LinkIcon, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DocumentUpload } from "@/components/ui/DocumentUpload";
 import { SemesterPicker } from "@/components/ui/SemesterPicker";
-import { courseResourceTypes, courseResourceTypeLabels, type CourseResourceInput } from "@/lib/course-validation";
+import {
+  courseExamTypeLabels,
+  courseExamTypes,
+  courseResourceTypes,
+  courseResourceTypeLabels,
+  courseShareTypes,
+} from "@/lib/course-validation";
 import { useT } from "@/lib/i18n/client";
 
 type ApiResource = {
@@ -16,54 +23,116 @@ type ApiResource = {
   semester: string | null;
   body: string | null;
   fileUrl: string | null;
+  fileName: string | null;
+  examType: (typeof courseExamTypes)[number] | null;
+  professor: { id: string; firstName: string; lastName: string } | null;
   authorId: string;
   createdAt: string;
   author: { firstName: string; lastName: string };
 };
 
+type ProfessorOption = { id: string; firstName: string; lastName: string };
+
+type ShareType = (typeof courseShareTypes)[number];
+
+type ShareForm = {
+  type: ShareType;
+  professorId: string;
+  semester: string;
+  examType: string;
+  title: string;
+  body: string;
+  fileUrl: string;
+  fileName: string;
+};
+
+const emptyForm = (type: ShareType): ShareForm => ({
+  type,
+  professorId: "",
+  semester: "",
+  examType: "",
+  title: "",
+  body: "",
+  fileUrl: "",
+  fileName: "",
+});
+
+const inputClass =
+  "focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold";
+
+const SHARE_TYPE_KEYS = {
+  SYLLABUS: "shareTypeSyllabus",
+  MATERIALS: "shareTypeMaterials",
+  EXAM: "shareTypeExam",
+} as const;
+
+const EXAM_TYPE_KEYS = {
+  MIDTERM: "examTypeMidterm",
+  FINAL: "examTypeFinal",
+  OTHER: "examTypeOther",
+} as const;
+
 export function ResourcesPanel({
   courseId,
   currentUserId,
   canManage,
+  professors,
   isAdmin,
   initialResources,
 }: {
   courseId: string;
   currentUserId: string | null;
   canManage: boolean;
+  professors: ProfessorOption[];
   isAdmin: boolean;
   initialResources: ApiResource[];
 }) {
   const t = useT("courses");
   const [resources, setResources] = useState(initialResources);
   const [filter, setFilter] = useState<(typeof courseResourceTypes)[number] | "ALL">("ALL");
-  const [form, setForm] = useState<Partial<CourseResourceInput>>({ type: "NOTES" });
+  const [form, setForm] = useState<ShareForm>(emptyForm("SYLLABUS"));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // NOTES / TIP can't be posted anymore, but old ones stay browsable.
+  const filterTypes = courseResourceTypes.filter(
+    (type) => (courseShareTypes as readonly string[]).includes(type) || resources.some((r) => r.type === type),
+  );
   const visible = filter === "ALL" ? resources : resources.filter((r) => r.type === filter);
 
   const submit = async () => {
     setError(null);
-    if (!form.title?.trim()) {
-      setError(t("errGiveTitle"));
-      return;
+    if (form.type !== "MATERIALS") {
+      if (!form.professorId) return setError(t("errPickProfessor"));
+      if (form.type === "SYLLABUS" && !/ \d{4}$/.test(form.semester)) return setError(t("errPickSemester"));
+      if (form.type === "EXAM" && !form.examType) return setError(t("errPickExamType"));
+    } else if (form.title.trim().length < 2) {
+      return setError(t("errSayWhatItIs"));
     }
+    if (!form.fileUrl) return setError(t("errAttachFile"));
+
+    const payload =
+      form.type === "SYLLABUS"
+        ? { type: form.type, professorId: form.professorId, semester: form.semester }
+        : form.type === "EXAM"
+          ? { type: form.type, professorId: form.professorId, examType: form.examType }
+          : { type: form.type, title: form.title, body: form.body };
+
     setSubmitting(true);
     const res = await fetch(`/api/courses/${courseId}/resources`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: form.type ?? "NOTES", title: form.title, semester: form.semester ?? "", body: form.body ?? "", fileUrl: form.fileUrl ?? "" }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      body: JSON.stringify({ ...payload, fileUrl: form.fileUrl, fileName: form.fileName }),
+    }).catch(() => null);
+    if (!res || !res.ok) {
+      const body = (await res?.json().catch(() => ({}))) ?? {};
       setError(body.error ?? t("couldntAdd"));
       setSubmitting(false);
       return;
     }
     const { resource } = await res.json();
     setResources((prev) => [resource, ...prev]);
-    setForm({ type: form.type });
+    setForm(emptyForm(form.type));
     setSubmitting(false);
   };
 
@@ -81,9 +150,9 @@ export function ResourcesPanel({
         <FilterChip active={filter === "ALL"} onClick={() => setFilter("ALL")}>
           {t("allFilter")}
         </FilterChip>
-        {courseResourceTypes.map((t) => (
-          <FilterChip key={t} active={filter === t} onClick={() => setFilter(t)}>
-            {courseResourceTypeLabels[t]}
+        {filterTypes.map((type) => (
+          <FilterChip key={type} active={filter === type} onClick={() => setFilter(type)}>
+            {courseResourceTypeLabels[type]}
           </FilterChip>
         ))}
       </div>
@@ -100,9 +169,22 @@ export function ResourcesPanel({
                     <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                       {courseResourceTypeLabels[r.type]}
                     </span>
+                    {r.examType ? (
+                      <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-ink/70">
+                        {courseExamTypeLabels[r.examType]}
+                      </span>
+                    ) : null}
                     {r.semester ? <span className="text-xs text-ink/45">{r.semester}</span> : null}
                   </div>
                   <p className="mt-1.5 font-medium text-ink">{r.title}</p>
+                  {r.professor ? (
+                    <Link
+                      href={`/professors/${r.professor.id}`}
+                      className="focus-ring mt-0.5 inline-block text-sm text-ink/60 underline decoration-ink/25 underline-offset-2 hover:text-ink"
+                    >
+                      {r.professor.firstName} {r.professor.lastName}
+                    </Link>
+                  ) : null}
                   {r.body ? <p className="mt-1 whitespace-pre-wrap text-sm text-ink/70">{r.body}</p> : null}
                   {r.fileUrl ? (
                     <a
@@ -111,7 +193,7 @@ export function ResourcesPanel({
                       rel="noreferrer noopener"
                       className="focus-ring mt-2 inline-flex items-center gap-1.5 text-xs text-ink/60 underline decoration-ink/25 underline-offset-2 hover:text-ink"
                     >
-                      <LinkIcon className="h-3.5 w-3.5" /> {t("openFileLink")}
+                      <FileText className="h-3.5 w-3.5" /> {r.fileName ?? t("openFileLink")}
                     </a>
                   ) : null}
                   <p className="mt-2 text-xs text-ink/40">
@@ -137,43 +219,84 @@ export function ResourcesPanel({
         <div className="mt-6 space-y-3 rounded-2xl border border-ink/10 bg-paper-dim/60 p-4">
           <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{t("shareSomethingHeading")}</p>
           <select
-            value={form.type ?? "NOTES"}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as CourseResourceInput["type"] }))}
-            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink focus:border-gold"
+            value={form.type}
+            onChange={(e) => {
+              setError(null);
+              setForm(emptyForm(e.target.value as ShareType));
+            }}
+            className={inputClass}
           >
-            {courseResourceTypes.map((t) => (
-              <option key={t} value={t}>
-                {courseResourceTypeLabels[t]}
+            {courseShareTypes.map((type) => (
+              <option key={type} value={type}>
+                {t(SHARE_TYPE_KEYS[type])}
               </option>
             ))}
           </select>
-          <input
-            value={form.title ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder={t("titlePlaceholder")}
-            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
+
+          {form.type === "MATERIALS" ? (
+            <>
+              <input
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder={t("materialTitlePlaceholder")}
+                maxLength={160}
+                className={inputClass}
+              />
+              <textarea
+                value={form.body}
+                onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                placeholder={t("materialDescriptionPlaceholder")}
+                rows={3}
+                className={inputClass}
+              />
+            </>
+          ) : (
+            <>
+              <select
+                value={form.professorId}
+                onChange={(e) => setForm((f) => ({ ...f, professorId: e.target.value }))}
+                className={inputClass}
+              >
+                <option value="">{t("professorSelectPlaceholder")}</option>
+                {professors.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.firstName} {p.lastName}
+                  </option>
+                ))}
+              </select>
+              <Link
+                href="/professors/new"
+                className="focus-ring block text-xs text-ink/50 underline decoration-ink/25 underline-offset-2 hover:text-ink"
+              >
+                {t("professorNotListed")}
+              </Link>
+              {form.type === "SYLLABUS" ? (
+                <SemesterPicker
+                  value={form.semester}
+                  onChange={(semester) => setForm((f) => ({ ...f, semester }))}
+                  optionalLabel={t("sessionYearHeading")}
+                />
+              ) : (
+                <select
+                  value={form.examType}
+                  onChange={(e) => setForm((f) => ({ ...f, examType: e.target.value }))}
+                  className={inputClass}
+                >
+                  <option value="">{t("examTypeSelectPlaceholder")}</option>
+                  {courseExamTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {t(EXAM_TYPE_KEYS[type])}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </>
+          )}
+
+          <DocumentUpload
+            value={form.fileUrl || undefined}
+            onChange={(fileUrl, fileName) => setForm((f) => ({ ...f, fileUrl, fileName: fileName ?? "" }))}
           />
-          <SemesterPicker
-            value={form.semester ?? ""}
-            onChange={(semester) => setForm((f) => ({ ...f, semester }))}
-            optionalLabel={t("noSpecificSemester")}
-          />
-          <textarea
-            value={form.body ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-            placeholder={t("notesPlaceholder")}
-            rows={3}
-            className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-          />
-          <DocumentUpload value={form.fileUrl} onChange={(url) => setForm((f) => ({ ...f, fileUrl: url }))} />
-          {!form.fileUrl ? (
-            <input
-              value={form.fileUrl ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, fileUrl: e.target.value }))}
-              placeholder={t("fileLinkOrPastePlaceholder")}
-              className="focus-ring w-full rounded-xl border border-ink/15 bg-paper px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold"
-            />
-          ) : null}
           {error ? <p className="text-sm text-danger">{error}</p> : null}
           <Button onClick={submit} disabled={submitting} className="w-full">
             {submitting ? t("sharing") : t("share")}

@@ -48,12 +48,55 @@ export const courseResourceTypeLabels: Record<(typeof courseResourceTypes)[numbe
   TIP: "Tips & tricks",
 };
 
-export const courseResourceSchema = z.object({
-  type: z.enum(courseResourceTypes),
-  title: z.string().trim().min(2, "Give it a title").max(160),
-  semester: z.string().trim().max(40).optional().or(z.literal("")),
-  body: z.string().trim().max(6000).optional().or(z.literal("")),
-  fileUrl: z.string().trim().url("Enter a valid link").optional().or(z.literal("")),
-});
+// What a student can share. NOTES and TIP still exist on old rows, so they keep
+// labels and filter chips, but new posts are one of these three.
+export const courseShareTypes = ["SYLLABUS", "MATERIALS", "EXAM"] as const;
+
+export const courseExamTypes = ["MIDTERM", "FINAL", "OTHER"] as const;
+
+export const courseExamTypeLabels: Record<(typeof courseExamTypes)[number], string> = {
+  MIDTERM: "Midterm",
+  FINAL: "Final",
+  OTHER: "Other",
+};
+
+// Files uploaded through /api/uploads come back as a relative path, so a plain
+// z.url() rejects them — accept our own upload path or an absolute http(s) link.
+const fileUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => /^\/api\/uploads\/[A-Za-z0-9_-]+$/.test(v) || /^https?:\/\/\S+$/.test(v), "Attach a file first");
+
+const semesterSchema = z
+  .string()
+  .trim()
+  .regex(/^(Fall|Spring|Summer Session 1|Summer Session 2) \d{4}$/, "Pick a session and enter the year");
+
+const shareBase = {
+  fileUrl: fileUrlSchema,
+  fileName: z.string().trim().max(200).optional().or(z.literal("")),
+};
+
+export const courseResourceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("SYLLABUS"),
+    professorId: z.string().trim().min(1, "Pick a professor"),
+    semester: semesterSchema,
+    ...shareBase,
+  }),
+  z.object({
+    type: z.literal("EXAM"),
+    professorId: z.string().trim().min(1, "Pick a professor"),
+    examType: z.enum(courseExamTypes, { error: "Pick an exam type" }),
+    ...shareBase,
+  }),
+  z.object({
+    type: z.literal("MATERIALS"),
+    title: z.string().trim().min(2, "Say what it is").max(160),
+    body: z.string().trim().max(6000).optional().or(z.literal("")),
+    ...shareBase,
+  }),
+]);
 
 export type CourseResourceInput = z.infer<typeof courseResourceSchema>;

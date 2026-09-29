@@ -14,15 +14,22 @@ import { CommentsPanel } from "./CommentsPanel";
 export default async function CoursePage({ params }: PageProps<"/courses/[id]">) {
   const { id } = await params;
   const t = await getT("courses");
-  const [session, course] = await Promise.all([
+  const [session, professors, course] = await Promise.all([
     auth(),
+    prisma.professor.findMany({
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true },
+    }),
     prisma.course.findUnique({
       where: { id },
       include: {
         offerings: { include: { professor: true } },
         resources: {
           orderBy: { createdAt: "desc" },
-          include: { author: { select: { firstName: true, lastName: true } } },
+          include: {
+            author: { select: { firstName: true, lastName: true } },
+            professor: { select: { id: true, firstName: true, lastName: true } },
+          },
         },
         comments: {
           orderBy: { createdAt: "asc" },
@@ -84,6 +91,7 @@ export default async function CoursePage({ params }: PageProps<"/courses/[id]">)
           courseId={course.id}
           currentUserId={currentUser?.id ?? null}
           canManage={canEdit}
+          professors={professors}
           isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
           initialResources={course.resources.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))}
         />
