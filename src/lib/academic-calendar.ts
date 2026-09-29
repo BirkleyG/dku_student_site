@@ -4,6 +4,8 @@
 // one-week mini-term between its two sessions. Update this file each year
 // once the next year's calendar PDF is published — there's no live feed for
 // it.
+import { campusDayKey } from "@/lib/datetime";
+
 export type CalendarSession = {
   key: string;
   label: string;
@@ -48,12 +50,17 @@ export type CurrentSessionStatus =
   | { inSession: true; session: CalendarSession; week: number; day: number; totalWeeks: number }
   | { inSession: false; nextSession: CalendarSession | null; upcomingHoliday: CalendarHoliday | null };
 
+// Today's *campus* date as a UTC-midnight Date, comparable with the ISO dates above.
+function campusToday(now: Date): Date {
+  return new Date(`${campusDayKey(now)}T00:00:00Z`);
+}
+
 function daysBetween(a: Date, b: Date): number {
   return Math.floor((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export function getCurrentSessionStatus(now: Date = new Date(), calendar: AcademicYearCalendar = ACADEMIC_CALENDAR): CurrentSessionStatus {
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const today = campusToday(now);
 
   for (const session of calendar.sessions) {
     const start = new Date(session.start);
@@ -80,7 +87,7 @@ export function getCurrentSessionStatus(now: Date = new Date(), calendar: Academ
 }
 
 export function daysUntil(dateIso: string, now: Date = new Date()): number {
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const today = campusToday(now);
   return daysBetween(today, new Date(dateIso));
 }
 

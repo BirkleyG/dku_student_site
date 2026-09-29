@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventSchema } from "@/lib/event-validation";
 import { broadcastPush } from "@/lib/push";
+import { formatCampus } from "@/lib/datetime";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 
 export async function GET(request: Request) {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = user.role === "ADMIN";
-  const { title, description, location, posterUrl, startsAt, endsAt, recurrence, category } = parsed.data;
+  const { title, description, location, posterUrl, startsAt, endsAt, allDay, kind, recurrence, category } = parsed.data;
 
   const event = await prisma.event.create({
     data: {
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
       posterUrl: posterUrl || null,
       startsAt,
       endsAt,
+      allDay,
+      kind,
       // Recurring events require admin approval — non-admins are silently capped to a one-off.
       recurrence: isAdmin ? recurrence : "NONE",
       category,
@@ -71,8 +74,10 @@ export async function POST(request: Request) {
     await broadcastPush(
       {
         category: "EVENTS",
-        title: `New event: ${event.title}`,
-        body: `${categoryLabel} · ${event.location}`,
+        title: `${event.kind === "DEADLINE" ? "New deadline" : event.kind === "HOLIDAY" ? "New holiday" : "New event"}: ${event.title}`,
+        body: event.allDay
+          ? `${formatCampus(event.startsAt, "EEE, MMM d")} · All day`
+          : `${categoryLabel} · ${formatCampus(event.startsAt, "EEE, MMM d · h:mm a")} · ${event.location}`,
         url: `/events/${event.id}`,
       },
       { excludeUserId: user.id },

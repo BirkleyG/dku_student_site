@@ -188,6 +188,12 @@ enum EventCategory {
   PARTIES
 }
 
+enum EventKind {
+  EVENT
+  DEADLINE
+  HOLIDAY
+}
+
 model Event {
   id            String         @id @default(cuid())
   title         String
@@ -196,6 +202,10 @@ model Event {
   posterUrl     String?
   startsAt      DateTime
   endsAt        DateTime
+  // All-day items (deadlines, holidays, all-day events) have no time or duration:
+  // startsAt is 00:00 campus time on the day, endsAt is 24h later.
+  allDay        Boolean        @default(false)
+  kind          EventKind      @default(EVENT)
   recurrence    RecurrenceRule @default(NONE)
   category      EventCategory  @default(SOCIAL_EVENTS)
   approved      Boolean        @default(true)

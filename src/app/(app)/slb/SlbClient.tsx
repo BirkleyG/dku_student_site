@@ -6,6 +6,7 @@ import { Check, Plus, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import type { SlbInitiativeStatus } from "@prisma/client";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { parseCampusInput } from "@/lib/datetime";
 
 const textareaClass =
   "focus-ring w-full rounded-xl border border-ink/15 bg-paper-dim px-4 py-3 text-ink placeholder:text-ink/30 focus:border-gold";
@@ -96,7 +97,7 @@ export function NewPoll() {
             const err = await send("/api/slb/polls", "POST", {
               question,
               options: options.map((o) => o.trim()).filter(Boolean),
-              closesAt: closesAt ? new Date(closesAt).toISOString() : null,
+              closesAt: closesAt ? (parseCampusInput(closesAt) ?? new Date(closesAt)).toISOString() : null,
             });
             setBusy(false);
             if (err) return setError(err);

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { format } from "date-fns";
+import { formatCampus } from "@/lib/datetime";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAnyAdmin, hasScope, canModerateEvent } from "@/lib/permissions";
@@ -118,7 +118,7 @@ export default async function AdminPage() {
             .map((e) => ({
               id: e.id,
               title: e.title,
-              subtitle: `${EVENT_CATEGORY_MAP[e.category].label} · ${format(e.startsAt, "MMM d, h:mm a")} · ${e.host.firstName} ${e.host.lastName}`,
+              subtitle: `${EVENT_CATEGORY_MAP[e.category].label} · ${formatCampus(e.startsAt, e.allDay ? "MMM d" : "MMM d, h:mm a")}${e.allDay ? " (all day)" : ""} · ${e.host.firstName} ${e.host.lastName}`,
               endpoint: `/api/events/${e.id}`,
             }))}
         />

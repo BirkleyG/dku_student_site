@@ -1,6 +1,7 @@
 "use client";
 
-import { format, isSameDay, isSameMonth, isToday, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+import { format, isSameMonth, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+import { campusDayKey } from "@/lib/datetime";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { useT } from "@/lib/i18n/client";
@@ -21,6 +22,7 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
   const gridStart = startOfWeek(startOfMonth(anchor));
   const gridEnd = endOfWeek(endOfMonth(anchor));
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+  const todayKey = campusDayKey(new Date());
 
   return (
     <div className="overflow-hidden rounded-3xl border border-ink/10 bg-paper">
@@ -35,14 +37,16 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
       <div className="grid grid-cols-7">
         {days.map((day) => {
           const dayEvents = events
-            .filter((e) => isSameDay(new Date(e.startsAt), day))
-            .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+            .filter((e) => campusDayKey(e.startsAt) === dayKey)
+            // All-day items first, then by start time.
+            .sort((a, b) => Number(b.allDay) - Number(a.allDay) || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+          const dayKey = format(day, "yyyy-MM-dd");
           const inMonth = isSameMonth(day, anchor);
-          const selected = selectedDay ? isSameDay(day, selectedDay) : false;
+          const selected = selectedDay ? format(selectedDay, "yyyy-MM-dd") === dayKey : false;
 
           return (
             <button
-              key={day.toISOString()}
+              key={dayKey}
               onClick={() => onSelectDay(day)}
               className={`focus-ring flex min-h-[104px] flex-col items-stretch border-b border-l border-ink/10 p-1.5 text-left [&:nth-child(7n+1)]:border-l-0 ${
                 inMonth ? "bg-paper" : "bg-paper-dim/40"
@@ -50,7 +54,7 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
             >
               <span
                 className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-                  isToday(day) ? "bg-ink text-white" : inMonth ? "text-ink/70" : "text-ink/30"
+                  dayKey === todayKey ? "bg-ink text-white" : inMonth ? "text-ink/70" : "text-ink/30"
                 }`}
               >
                 {format(day, "d")}
@@ -66,7 +70,7 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
                       style={{ backgroundColor: meta.tint, color: meta.color }}
                     >
                       <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
-                      <span className="truncate">{event.title}</span>
+                      <span className={`truncate ${event.allDay ? "font-medium" : ""}`}>{event.title}</span>
                     </span>
                   );
                 })}

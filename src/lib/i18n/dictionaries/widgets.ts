@@ -40,6 +40,8 @@ export const widgets: Record<Locale, Record<string, string>> = {
     noNewMessages: "No new messages",
     noArticlesYet: "No articles yet.",
     nothingLeftToday: "Nothing left on today's calendar.",
+    headsUp: "Heads up, this is happening today!",
+    allDay: "All day",
     moreToday: "+{n} more today",
   },
   zh: {
@@ -81,6 +83,8 @@ export const widgets: Record<Locale, Record<string, string>> = {
     noNewMessages: "没有新消息",
     noArticlesYet: "还没有文章。",
     nothingLeftToday: "今天日程已结束。",
+    headsUp: "注意，今天有安排！",
+    allDay: "全天",
     moreToday: "今天还有 {n} 项",
   },
 };

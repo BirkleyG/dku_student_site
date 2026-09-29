@@ -1,4 +1,4 @@
-import { addDays, startOfDay } from "date-fns";
+import { addCampusDays, campusStartOfDay } from "@/lib/datetime";
 import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -62,8 +62,8 @@ export default async function HomePage() {
     }
   }
 
-  const today = startOfDay(new Date());
-  const weekAhead = addDays(today, 7);
+  const today = campusStartOfDay();
+  const weekAhead = addCampusDays(today, 7);
 
   const chatMessageInclude = { author: true, channel: true } satisfies Prisma.ChatMessageInclude;
   let events: Prisma.EventGetPayload<object>[] = [];
@@ -149,6 +149,7 @@ export default async function HomePage() {
       endsAt: e.endsAt.toISOString(),
       location: e.location,
       category: e.category,
+      allDay: e.allDay,
     })),
     chatMessages: chatMessages.map((m) => ({
       id: m.id,

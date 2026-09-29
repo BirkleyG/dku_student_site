@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { campusWallToDate, formatCampus, isCampusToday } from "@/lib/datetime";
 import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { useT } from "@/lib/i18n/client";
@@ -13,6 +14,11 @@ type Props = {
   events: ApiEvent[];
   onClose: () => void;
 };
+
+// The agenda's `day` is a wall-clock day; this returns the matching campus instant.
+function campusNoon(day: Date): Date {
+  return campusWallToDate(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 12));
+}
 
 export function DayAgenda({ day, events, onClose }: Props) {
   const t = useT("events");
@@ -32,6 +38,10 @@ export function DayAgenda({ day, events, onClose }: Props) {
         </button>
       </div>
 
+      {isCampusToday(campusNoon(day)) && events.some((e) => e.allDay) ? (
+        <p className="border-b border-ink/10 bg-gold/10 px-5 py-2 text-sm text-ink/70">{t("headsUp")}</p>
+      ) : null}
+
       <div className="space-y-1 p-3">
         {events.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-ink/40">{t("nothingThisDay")}</p>
@@ -45,7 +55,9 @@ export function DayAgenda({ day, events, onClose }: Props) {
                 className="focus-ring flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-paper-dim"
               >
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />
-                <span className="w-20 shrink-0 text-xs text-ink/45">{format(new Date(event.startsAt), "h:mm a")}</span>
+                <span className="w-20 shrink-0 text-xs text-ink/45">
+                  {event.allDay ? t("allDayShort") : formatCampus(event.startsAt, "h:mm a")}
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 truncate text-sm text-ink">
                     <HappeningNowDot startsAt={event.startsAt} endsAt={event.endsAt} />
@@ -57,7 +69,7 @@ export function DayAgenda({ day, events, onClose }: Props) {
                   className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
                   style={{ backgroundColor: meta.tint, color: meta.color }}
                 >
-                  {meta.label}
+                  {event.kind === "DEADLINE" ? t("kindDeadline") : event.kind === "HOLIDAY" ? t("kindHoliday") : meta.label}
                 </span>
               </Link>
             );
