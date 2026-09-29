@@ -14,12 +14,14 @@ export const planUpdateSchema = z.object({
   major: z.enum(MAJOR_NAMES as [string, ...string[]]).nullable().optional(),
   track: z.string().trim().max(80).nullable().optional(),
   isPrimary: z.boolean().optional(),
+  miniTermCompleted: z.boolean().optional(),
 });
 
 export type PlanUpdateInput = z.infer<typeof planUpdateSchema>;
 
 const semesters = ["FALL", "SPRING"] as const;
-const sessions = ["SESSION_1", "SESSION_2", "FULL", "MINI_TERM"] as const;
+// MINI_TERM stays in the DB enum but is no longer plannable (see AcademicPlan.miniTermCompleted).
+const sessions = ["SESSION_1", "SESSION_2", "FULL"] as const;
 const genEdTags = [
   "COMMON_CORE_Y1",
   "COMMON_CORE_Y2",

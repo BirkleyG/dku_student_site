@@ -5,6 +5,7 @@ import { Plus, Star, Trash2, Download, GraduationCap } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { MAJOR_NAMES, tracksForMajor } from "@/lib/major-requirements";
 import { findRequirementCategoryForCode } from "@/lib/planner-progress";
+import { isRequiredForEveryone } from "@/lib/required-for-everyone";
 import { isLanguageCourse } from "@/lib/planner-language";
 import { RequirementsSidebar } from "@/components/planner/RequirementsSidebar";
 import { AddCourseModal, type NewCourseInput, type EditingCourse } from "@/components/planner/AddCourseModal";
@@ -22,9 +23,8 @@ type SlotKey = { year: number; semester: "FALL" | "SPRING"; session: ApiPlannedC
 const YEARS = [1, 2, 3, 4];
 const SEMESTERS: ("FALL" | "SPRING")[] = ["FALL", "SPRING"];
 
-function slotSessions(semester: "FALL" | "SPRING"): ApiPlannedCourse["session"][] {
-  return semester === "FALL" ? ["SESSION_1", "SESSION_2", "FULL"] : ["SESSION_1", "MINI_TERM", "SESSION_2", "FULL"];
-}
+// The old Mini-Term slot is gone; miniterm is a checkbox in the sidebar.
+const SLOT_SESSIONS: ApiPlannedCourse["session"][] = ["SESSION_1", "SESSION_2", "FULL"];
 
 function sessionLabelKey(session: ApiPlannedCourse["session"]): string {
   switch (session) {
@@ -33,7 +33,7 @@ function sessionLabelKey(session: ApiPlannedCourse["session"]): string {
     case "SESSION_2":
       return "session2";
     case "MINI_TERM":
-      return "miniTerm";
+      return "miniTerm"; // legacy value; no longer plannable
     case "FULL":
       return "fullSession";
   }
@@ -76,7 +76,7 @@ export function PlannerBoard() {
     setShowNewPlanModal(false);
   };
 
-  const patchPlan = async (data: Partial<Pick<ApiPlan, "major" | "track" | "isPrimary" | "name">>) => {
+  const patchPlan = async (data: Partial<Pick<ApiPlan, "major" | "track" | "isPrimary" | "name" | "miniTermCompleted">>) => {
     if (!selectedPlan) return;
     const res = await fetch(`/api/planner/plans/${selectedPlan.id}`, {
       method: "PATCH",
@@ -264,7 +264,7 @@ export function PlannerBoard() {
                             <span className="text-xs text-ink/45">{t("semesterCredits", { n: semesterCredits })}</span>
                           </div>
                           <div className="mt-2 space-y-2">
-                            {slotSessions(semester).map((session) => {
+                            {SLOT_SESSIONS.map((session) => {
                               const slotCourses = semesterCourses.filter((c) => c.session === session);
                               return (
                                 <div key={session}>
@@ -274,7 +274,9 @@ export function PlannerBoard() {
                                       const category = findRequirementCategoryForCode(selectedPlan.major, selectedPlan.track, c.code);
                                       const color = category
                                         ? CATEGORY_COLORS[category]
-                                        : isLanguageCourse(c.code)
+                                        : isRequiredForEveryone(c.code)
+                                          ? CATEGORY_COLORS.requiredForEveryone
+                                          : isLanguageCourse(c.code)
                                           ? LANGUAGE_CHIP_COLOR
                                           : DEFAULT_CHIP_COLOR;
                                       return (
@@ -325,7 +327,13 @@ export function PlannerBoard() {
             </div>
           </div>
 
-          <RequirementsSidebar major={selectedPlan.major} track={selectedPlan.track} courses={selectedPlan.courses} />
+          <RequirementsSidebar
+            major={selectedPlan.major}
+            track={selectedPlan.track}
+            courses={selectedPlan.courses}
+            miniTermCompleted={selectedPlan.miniTermCompleted}
+            onToggleMiniTerm={(completed) => patchPlan({ miniTermCompleted: completed })}
+          />
         </div>
       ) : null}
 
