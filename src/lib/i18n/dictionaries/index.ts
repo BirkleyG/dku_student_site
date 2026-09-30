@@ -20,6 +20,7 @@ import { slb } from "./slb";
 import { admin } from "./admin";
 import { chat } from "./chat";
 import { planner } from "./planner";
+import { rooms } from "./rooms";
 
 export const namespaces = {
   common,
@@ -43,6 +44,7 @@ export const namespaces = {
   admin,
   chat,
   planner,
+  rooms,
 } satisfies Record<string, Record<Locale, Record<string, string>>>;
 
 export type Namespace = keyof typeof namespaces;

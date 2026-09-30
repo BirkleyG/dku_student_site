@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Pencil,
   Map,
+  DoorOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export const navItems: NavItem[] = [
   { href: "/clubs", label: "Clubs", labelKey: "clubs", icon: Users2 },
   { href: "/courses", label: "Courses", labelKey: "courses", icon: BookOpen },
   { href: "/professors", label: "Professors", labelKey: "professors", icon: GraduationCap },
+  { href: "/rooms", label: "Rooms", labelKey: "rooms", icon: DoorOpen },
   { href: "/planner", label: "Planner", labelKey: "planner", icon: Map },
   { href: "/marketplace", label: "Marketplace", labelKey: "marketplace", icon: ShoppingBag },
   { href: "/slb", label: "SLB", labelKey: "slb", icon: Landmark },
