@@ -135,6 +135,12 @@ const TAB_CONFIG: Record<string, TabConfig> = {
       { target: "professors-add-btn", title: "Add a professor", body: "Once you're signed in, add a professor who's missing." },
     ],
   },
+  "/rooms": {
+    blurb: "Book study rooms, meeting rooms, and music rooms.",
+    deepDive: [
+      { target: "rooms-types", title: "Pick a room type", body: "Study spaces, meeting rooms, the Data Visualization Workshop and music rooms — with the booking rules for each." },
+    ],
+  },
   "/marketplace": {
     blurb: "Buy, sell, and trade with other students.",
     deepDive: [
