@@ -6,8 +6,22 @@ import { X } from "lucide-react";
 import type { EventCategory } from "@prisma/client";
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { widgetCatalog, type WidgetInstance } from "@/lib/widgets";
+import { wisdomCategories } from "@/lib/wisdom-validation";
+import { CONVERTER_CURRENCIES } from "@/lib/widget-external";
+import { navItems } from "@/lib/nav";
 import type { WidgetData } from "./AppWidgetContent";
 import { useT } from "@/lib/i18n/client";
+
+const TIME_ZONES = [
+  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "America/Toronto", "America/Sao_Paulo",
+  "Europe/London", "Europe/Paris", "Europe/Berlin", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Seoul",
+  "Asia/Tokyo", "Australia/Sydney", "Pacific/Auckland",
+];
+
+const chipClass = (active: boolean) =>
+  `rounded-full border px-3 py-1 text-xs transition-colors ${
+    active ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/50 hover:border-ink/35"
+  }`;
 
 export function WidgetConfigEditor({
   instance,
@@ -37,6 +51,21 @@ export function WidgetConfigEditor({
     typeof instance.config.categoryId === "number" ? instance.config.categoryId : null,
   );
 
+  const [wisdomCategory, setWisdomCategory] = useState<string>(
+    typeof instance.config.category === "string" ? instance.config.category : "FOOD",
+  );
+  const [pinnedChannelId, setPinnedChannelId] = useState<string>(
+    typeof instance.config.channelId === "string" ? instance.config.channelId : "general",
+  );
+  const [timeZone, setTimeZone] = useState<string>(
+    typeof instance.config.timeZone === "string" ? instance.config.timeZone : "America/New_York",
+  );
+  const [currency, setCurrency] = useState<string>(typeof instance.config.currency === "string" ? instance.config.currency : "USD");
+  const [hrefs, setHrefs] = useState<string[]>(
+    Array.isArray(instance.config.hrefs) ? (instance.config.hrefs as string[]) : ["/events", "/eats", "/chat", "/courses"],
+  );
+  const navT = useT("nav");
+
   const toggleCategory = (key: EventCategory) => {
     setCategories((prev) => (prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]));
   };
@@ -46,6 +75,11 @@ export function WidgetConfigEditor({
     else if (instance.kind === "EATS_FAVORITE") onSave(restaurantName ? { restaurantName } : {});
     else if (instance.kind === "CHAT_TRACKED_CHANNEL") onSave({ channelId });
     else if (instance.kind === "LILYPAD_LATEST") onSave({ categoryId: lilypadCategoryId });
+    else if (instance.kind === "WISDOM_TALLY" || instance.kind === "WISDOM_NEWEST") onSave({ category: wisdomCategory });
+    else if (instance.kind === "CHAT_PINNED") onSave({ channelId: pinnedChannelId });
+    else if (instance.kind === "CAMPUS_DUAL_CLOCK") onSave({ timeZone });
+    else if (instance.kind === "CAMPUS_CURRENCY") onSave({ currency });
+    else if (instance.kind === "CAMPUS_QUICK_LINKS") onSave({ hrefs });
     else onSave({});
   };
 
@@ -185,6 +219,90 @@ export function WidgetConfigEditor({
                 </button>
               ))}
             </div>
+          </div>
+        ) : null}
+
+
+        {instance.kind === "WISDOM_TALLY" || instance.kind === "WISDOM_NEWEST" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("category")}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {wisdomCategories.map((c) => (
+                <button key={c} onClick={() => setWisdomCategory(c)} className={chipClass(wisdomCategory === c)}>
+                  {t(`wisdomCat_${c}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {instance.kind === "CHAT_PINNED" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("chatToPin")}</p>
+            <div className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
+              {data.chatChannels.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setPinnedChannelId(c.id)}
+                  className={`block w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                    pinnedChannelId === c.id ? "border-gold bg-gold/10 text-ink" : "border-ink/15 text-ink/70 hover:border-ink/35"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {instance.kind === "CAMPUS_DUAL_CLOCK" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("homeTimeZone")}</p>
+            <div className="mt-2 flex max-h-56 flex-wrap gap-1.5 overflow-y-auto">
+              {TIME_ZONES.map((tz) => (
+                <button key={tz} onClick={() => setTimeZone(tz)} className={chipClass(timeZone === tz)}>
+                  {tz.split("/").pop()?.replace(/_/g, " ")}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {instance.kind === "CAMPUS_CURRENCY" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("convertYuanTo")}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {CONVERTER_CURRENCIES.map((c) => (
+                <button key={c} onClick={() => setCurrency(c)} className={chipClass(currency === c)}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {instance.kind === "CAMPUS_QUICK_LINKS" ? (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink/50">{t("quickLinkTabs")}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {navItems
+                .filter((n) => n.href !== "/home")
+                .map((n) => {
+                  const active = hrefs.includes(n.href);
+                  return (
+                    <button
+                      key={n.href}
+                      onClick={() =>
+                        setHrefs((prev) => (prev.includes(n.href) ? prev.filter((h) => h !== n.href) : prev.length < 8 ? [...prev, n.href] : prev))
+                      }
+                      className={chipClass(active)}
+                    >
+                      {navT(n.labelKey)}
+                    </button>
+                  );
+                })}
+            </div>
+            <p className="mt-2 text-[11px] text-ink/40">{t("quickLinkLimit")}</p>
           </div>
         ) : null}
 

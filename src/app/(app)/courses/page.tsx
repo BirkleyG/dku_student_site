@@ -6,7 +6,8 @@ import { LinkButton } from "@/components/ui/Button";
 import { getT } from "@/lib/i18n/server";
 import { CoursesDirectory } from "./CoursesDirectory";
 
-export default async function CoursesPage() {
+export default async function CoursesPage({ searchParams }: PageProps<"/courses">) {
+  const { q } = await searchParams;
   const session = await auth();
   const t = await getT("courses");
   const currentUser = session?.user?.email
@@ -33,6 +34,7 @@ export default async function CoursesPage() {
           <CoursesDirectory
             currentUserId={currentUser?.id ?? null}
             isAdmin={currentUser ? hasScope(currentUser, "COURSES") : false}
+            initialQuery={typeof q === "string" ? q.slice(0, 80) : ""}
           />
         </div>
       </Reveal>

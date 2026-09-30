@@ -5,7 +5,9 @@ import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import type { WidgetInstance } from "@/lib/widgets";
 import type { EatsWidgetData } from "@/lib/eats-live";
 import type { LilypadCategory, LilypadPost } from "@/lib/lilypad";
+import type { WidgetExt } from "@/lib/widget-types";
 import { useT } from "@/lib/i18n/client";
+import { ExtWidget } from "./ExtWidgets";
 
 export type WidgetData = {
   now: string;
@@ -16,6 +18,10 @@ export type WidgetData = {
   eats: EatsWidgetData;
   lilypadCategories: LilypadCategory[];
   lilypadByWidget: Record<string, LilypadPost[]>;
+  /** View models for the newer widget kinds, keyed by widget kind. See src/lib/widget-data.ts. */
+  ext: WidgetExt;
+  signedIn: boolean;
+  isAdmin: boolean;
 };
 
 function Empty({ label }: { label: string }) {
@@ -197,6 +203,6 @@ export function AppWidgetContent({ instance, data }: { instance: WidgetInstance;
     }
 
     default:
-      return null;
+      return <ExtWidget instance={instance} data={data} />;
   }
 }

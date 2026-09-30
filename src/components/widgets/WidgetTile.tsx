@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { X, GripVertical, Settings2 } from "lucide-react";
+import { X, GripVertical, Settings2, ArrowUpRight } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { widgetCatalog, sizeSpec, hrefForInstance, type WidgetInstance } from "@/lib/widgets";
@@ -80,10 +80,22 @@ export function WidgetTile({
         }`}
         {...(editing ? { ...attributes, ...listeners } : {})}
       >
-        <WidgetTileCard instance={instance} data={data} jiggle={editing} jiggleIndex={index} className="hover:border-ink/20" />
+        {/* An interactive tile's own buttons must not be swallowed by the drag handle while editing. */}
+        <div className={`h-full ${meta.interactive && editing ? "pointer-events-none" : ""}`}>
+          <WidgetTileCard instance={instance} data={data} jiggle={editing} jiggleIndex={index} className="hover:border-ink/20" />
+        </div>
 
         {editing ? (
           <GripVertical className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-ink/25" />
+        ) : meta.interactive ? (
+          // Interactive tiles have their own controls, so no whole-tile link: just a small way through to the page.
+          <Link
+            href={hrefForInstance(instance)}
+            className="focus-ring absolute right-2.5 top-2.5 z-10 grid h-6 w-6 place-items-center rounded-full text-ink/35 transition-colors hover:bg-paper-dim hover:text-ink"
+            aria-label={t("open", { label: meta.label })}
+          >
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         ) : (
           <Link href={hrefForInstance(instance)} className="focus-ring absolute inset-0 rounded-lg" aria-label={t("open", { label: meta.label })} />
         )}
