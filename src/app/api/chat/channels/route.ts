@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
 import { ensureGeneralChannel, createChatGroup, dmChannelName, MAX_OWNED_GROUPS } from "@/lib/chat";
 import { chatGroupSchema } from "@/lib/chat-validation";
+import { getMentionCounts, getUnreadCounts } from "@/lib/chat-state";
 
 /** Sidebar data: the general channel, the groups this user has joined, and their DMs. */
 export async function GET() {
@@ -37,9 +38,15 @@ export async function GET() {
     }),
   ]);
 
+  const [unread, mentions] = await Promise.all([
+    getUnreadCounts(user, [general.id, ...groups.map((g) => g.id), ...dms.map((d) => d.id)]),
+    getMentionCounts(user.id),
+  ]);
+  const counts = (id: string) => ({ unread: unread[id] ?? 0, mentions: mentions[id] ?? 0 });
+
   return NextResponse.json({
-    general: { id: general.id, name: general.name, description: general.description },
-    groups: groups.map((g) => ({ id: g.id, name: g.name, description: g.description, ownerId: g.createdById })),
+    general: { id: general.id, name: general.name, description: general.description, ...counts(general.id) },
+    groups: groups.map((g) => ({ id: g.id, name: g.name, description: g.description, ownerId: g.createdById, ...counts(g.id) })),
     invites: invites.map((i) => ({
       id: i.id,
       channelId: i.channelId,
@@ -50,6 +57,7 @@ export async function GET() {
       id: d.id,
       name: dmChannelName(d, user.id),
       otherUserId: d.members.find((m) => m.userId !== user.id)?.userId ?? null,
+      ...counts(d.id),
     })),
   });
 }

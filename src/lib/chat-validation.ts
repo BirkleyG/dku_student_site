@@ -3,6 +3,8 @@ import { z } from "zod";
 export const chatMessageSchema = z.object({
   body: z.string().trim().min(1, "Message can't be empty").max(4000),
   parentId: z.string().min(1).optional(),
+  /** Ids of people @mentioned in the body; the server drops any that don't check out. */
+  mentions: z.array(z.string().min(1)).max(10).optional(),
 });
 
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;

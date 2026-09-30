@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { isChannelMember, notifyNewChatMessage } from "@/lib/chat";
 import { chatMessageSchema } from "@/lib/chat-validation";
 import { recordSignal } from "@/lib/points";
+import { markChannelRead, validateMentions } from "@/lib/chat-state";
 
 type Params = { params: Promise<{ id: string }> };
 
 const authorSelect = { select: { id: true, firstName: true, lastName: true } } as const;
-const reactionsInclude = { reactions: true } as const;
+const reactionsInclude = { reactions: true, mentions: { select: { user: authorSelect } } } as const;
 
 export async function GET(request: Request, { params }: Params) {
   const session = await auth();
@@ -47,6 +48,8 @@ export async function GET(request: Request, { params }: Params) {
     take: 100,
     include: { author: authorSelect, _count: { select: { replies: true } }, ...reactionsInclude },
   });
+  // Having loaded the list means you've seen it; the open chat polls this, so it stays read while you watch.
+  await markChannelRead(user.id, channelId);
   return NextResponse.json({ messages: messages.reverse() });
 }
 
@@ -79,15 +82,26 @@ export async function POST(request: Request, { params }: Params) {
     }
   }
 
+  const mentionIds = await validateMentions({
+    channel: { id: channel.id, kind: channel.kind },
+    authorId: user.id,
+    body: parsed.data.body,
+    userIds: parsed.data.mentions ?? [],
+  });
+
   const message = await prisma.chatMessage.create({
     data: {
       channelId,
       authorId: user.id,
       body: parsed.data.body,
       parentId: parsed.data.parentId ?? null,
+      mentions: { create: mentionIds.map((userId) => ({ userId })) },
     },
     include: { author: authorSelect, ...reactionsInclude },
   });
+
+  // Sending means you've caught up.
+  await markChannelRead(user.id, channelId);
 
   // Messages don't pay points themselves; they only feed the chat achievements.
   await recordSignal(user.id, "CHAT_MESSAGE", message.id);

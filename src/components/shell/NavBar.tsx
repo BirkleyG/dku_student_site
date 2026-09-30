@@ -13,6 +13,7 @@ import { navMenuTourBridge } from "@/lib/tourBridge";
 import { useIsMobileViewport } from "@/lib/useIsMobileViewport";
 import { NavMenu } from "./NavMenu";
 import { HelpMenu } from "@/components/onboarding/HelpMenu";
+import { FriendsButton } from "@/components/friends/FriendsButton";
 
 const SCROLL_THRESHOLD = 24;
 // A swipe starting within this many px of the right screen edge, moving left
@@ -197,6 +198,7 @@ export function NavBar({ userLabel, isAdmin, initialStarred, initialStarredMobil
               {t("logIn")}
             </Link>
           )}
+          {isLoggedIn ? <FriendsButton /> : null}
           <div className="relative">
             <button
               ref={helpButtonRef}

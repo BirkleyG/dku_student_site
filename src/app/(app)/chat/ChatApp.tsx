@@ -15,9 +15,11 @@ import { useIsMobileViewport } from "@/lib/useIsMobileViewport";
 import { useT } from "@/lib/i18n/client";
 
 const POLL_MS = 4000;
+const SIDEBAR_POLL_MS = 15000;
 
-type SidebarChannel = { id: string; name: string; description: string | null };
-type SidebarDm = { id: string; name: string; otherUserId: string | null };
+type Counts = { unread?: number; mentions?: number };
+type SidebarChannel = { id: string; name: string; description: string | null } & Counts;
+type SidebarDm = { id: string; name: string; otherUserId: string | null } & Counts;
 type SidebarInvite = { id: string; channelId: string; groupName: string; inviterName: string };
 type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[]; invites?: SidebarInvite[] };
 
@@ -29,6 +31,7 @@ type ChatMessage = {
   createdAt: string;
   author: ChatUser;
   reactions?: ChatReaction[];
+  mentions?: { user: ChatUser }[];
   _count?: { replies: number };
 };
 
@@ -114,6 +117,18 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
+  // Keeps the unread badges on the other chats fresh while this one is open.
+  useEffect(() => {
+    const id = setInterval(() => {
+      jsonFetch("/api/chat/channels")
+        .then((data: SidebarData) => setSidebar(data))
+        .catch(() => {
+          // a missed refresh just leaves the old badges up
+        });
+    }, SIDEBAR_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   const loadMessages = useCallback(async (channelId: string) => {
     try {
       const data = await jsonFetch(`/api/chat/channels/${channelId}/messages`);
@@ -189,7 +204,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
     setShowChannels(false);
   };
 
-  const send = async (parentId?: string) => {
+  const send = async (parentId?: string, mentions: string[] = []) => {
     if (!selected) return;
     const value = parentId ? threadComposer : composer;
     if (!value.trim()) return;
@@ -199,7 +214,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       const data = await jsonFetch(`/api/chat/channels/${selected.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: value, parentId }),
+        body: JSON.stringify({ body: value, parentId, mentions }),
       });
       if (parentId) {
         setThreadReplies((prev) => [...prev, data.message]);
@@ -289,6 +304,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           icon={<Hash className="h-4 w-4" />}
           label={sidebar.general.name}
           active={selected.id === sidebar.general.id}
+          unread={sidebar.general.unread}
+          mentions={sidebar.general.mentions}
           onClick={() => selectChannel({ ...sidebar.general, kind: "GENERAL" })}
         />
       </SidebarSection>
@@ -335,6 +352,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
               icon={<Hash className="h-4 w-4" />}
               label={g.name}
               active={selected.id === g.id}
+              unread={g.unread}
+              mentions={g.mentions}
               onClick={() => selectChannel({ ...g, kind: "GROUP" })}
             />
           ))
@@ -370,6 +389,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
               icon={<MessageCircle className="h-4 w-4" />}
               label={d.name}
               active={selected.id === d.id}
+              unread={d.unread}
+              mentions={d.mentions}
               onClick={() => selectChannel({ ...d, description: null, kind: "DIRECT" })}
             />
           ))
@@ -437,7 +458,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           <Composer
             value={composer}
             onChange={setComposer}
-            onSend={() => void send()}
+            channel={{ id: selected.id, kind: selected.kind }}
+            onSend={(ids) => void send(undefined, ids)}
             disabled={sending}
             placeholder={t("messagePlaceholder", { name: selected.name })}
           />
@@ -459,7 +481,8 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             replies={threadReplies}
             composer={threadComposer}
             onComposerChange={setThreadComposer}
-            onSend={() => void send(threadRootId)}
+            channel={{ id: selected.id, kind: selected.kind }}
+            onSend={(ids) => void send(threadRootId, ids)}
             onClose={closeThread}
             sending={sending}
             currentUserId={currentUserId}
@@ -525,13 +548,20 @@ function SidebarRow({
   icon,
   label,
   active,
+  unread = 0,
+  mentions = 0,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  unread?: number;
+  mentions?: number;
   onClick: () => void;
 }) {
+  // The chat you're looking at is, by definition, read.
+  const shownUnread = active ? 0 : unread;
+  const shownMentions = active ? 0 : mentions;
   return (
     <button
       onClick={onClick}
@@ -540,7 +570,19 @@ function SidebarRow({
       }`}
     >
       <span className="text-ink/40">{icon}</span>
-      <span className="truncate">{label}</span>
+      <span className={`truncate ${shownUnread > 0 ? "font-semibold text-ink" : ""}`}>{label}</span>
+      {shownMentions > 0 ? (
+        <span className="ml-auto shrink-0 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-semibold leading-none text-ink" title="Mentions">
+          @{shownMentions}
+        </span>
+      ) : null}
+      {shownUnread > 0 ? (
+        <span
+          className={`${shownMentions > 0 ? "" : "ml-auto "}shrink-0 rounded-full bg-ink px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white`}
+        >
+          {shownUnread > 99 ? "99+" : shownUnread}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -572,6 +614,26 @@ function Avatar({ user }: { user: ChatUser }) {
     >
       {initials}
     </div>
+  );
+}
+
+/** Message text with each "@First Last" mention picked out. */
+function MessageBody({ body, mentions }: { body: string; mentions?: { user: ChatUser }[] }) {
+  if (!mentions?.length) return <>{body}</>;
+  const escape = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(${mentions.map((m) => escape(`@${m.user.firstName} ${m.user.lastName}`)).join("|")})`, "gi");
+  return (
+    <>
+      {body.split(pattern).map((part, i) =>
+        i % 2 === 1 ? (
+          <span key={i} className="rounded bg-gold/30 px-0.5 font-medium text-ink">
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
 
@@ -609,7 +671,7 @@ function MessageRow({
             isMine ? "rounded-br-sm bg-gold/20 text-ink" : "rounded-bl-sm bg-paper-dim text-ink/85"
           }`}
         >
-          {message.body}
+          <MessageBody body={message.body} mentions={message.mentions} />
         </div>
 
         {reactionGroups.length > 0 ? (
@@ -683,29 +745,132 @@ function MessageRow({
   );
 }
 
+type ComposerChannel = { id: string; kind: "GENERAL" | "GROUP" | "DIRECT" };
+
+/** The "@query" being typed right before the caret, if any. */
+function activeMention(value: string): { query: string; start: number } | null {
+  const m = /(^|\s)@([^\s@]{0,24})$/.exec(value);
+  return m ? { query: m[2], start: value.length - m[2].length - 1 } : null;
+}
+
 function Composer({
   value,
   onChange,
   onSend,
   disabled,
   placeholder,
+  channel,
 }: {
   value: string;
   onChange: (v: string) => void;
-  onSend: () => void;
+  onSend: (mentionIds: string[]) => void;
   disabled: boolean;
   placeholder: string;
+  channel: ComposerChannel;
 }) {
   const t = useT("chat");
+  // People picked from the @ menu. Only those whose "@First Last" is still in the text are sent.
+  const picked = useRef<Map<string, ChatUser>>(new Map());
+  const [suggestions, setSuggestions] = useState<ChatUser[]>([]);
+  const [highlight, setHighlight] = useState(0);
+  const members = useRef<{ channelId: string; users: ChatUser[] } | null>(null);
+  const mention = channel.kind === "DIRECT" ? null : activeMention(value);
+  const query = mention?.query ?? null;
+
+  useEffect(() => {
+    if (query === null) return;
+    let cancelled = false;
+    const run = async () => {
+      let users: ChatUser[] = [];
+      try {
+        if (channel.kind === "GROUP") {
+          if (members.current?.channelId !== channel.id) {
+            const data = await jsonFetch(`/api/chat/channels/${channel.id}/members`);
+            members.current = { channelId: channel.id, users: (data.members ?? []) as ChatUser[] };
+          }
+          const q = query.toLowerCase();
+          users = members.current.users.filter((u) => `${u.firstName} ${u.lastName}`.toLowerCase().includes(q));
+        } else if (query.length >= 2) {
+          users = ((await jsonFetch(`/api/users/search?q=${encodeURIComponent(query)}`)).users ?? []) as ChatUser[];
+        }
+      } catch {
+        users = [];
+      }
+      if (!cancelled) {
+        setSuggestions(users.slice(0, 5));
+        setHighlight(0);
+      }
+    };
+    const id = setTimeout(run, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+  }, [query, channel.id, channel.kind]);
+
+  const open = query !== null && suggestions.length > 0;
+
+  const choose = (user: ChatUser) => {
+    if (!mention) return;
+    picked.current.set(user.id, user);
+    onChange(`${value.slice(0, mention.start)}@${user.firstName} ${user.lastName} `);
+    setSuggestions([]);
+  };
+
+  const send = () => {
+    const lower = value.toLowerCase();
+    const ids = [...picked.current.values()].filter((u) => lower.includes(`@${u.firstName} ${u.lastName}`.toLowerCase())).map((u) => u.id);
+    picked.current = new Map();
+    onSend(ids);
+  };
+
   return (
-    <div className="flex items-end gap-2">
+    <div className="relative flex items-end gap-2">
+      {open ? (
+        <ul role="listbox" aria-label={t("mentionSomeone")} className="absolute bottom-full left-0 z-10 mb-2 w-64 overflow-hidden rounded-xl border border-ink/10 bg-paper shadow-lg">
+          {suggestions.map((u, i) => (
+            <li key={u.id} role="option" aria-selected={i === highlight}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(u);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${i === highlight ? "bg-gold/15 text-ink" : "text-ink/75 hover:bg-paper-dim"}`}
+              >
+                <Avatar user={u} />
+                <span className="truncate">
+                  {u.firstName} {u.lastName}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
+          if (open) {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              setHighlight((h) => (h + (e.key === "ArrowDown" ? 1 : suggestions.length - 1)) % suggestions.length);
+              return;
+            }
+            if (e.key === "Enter" || e.key === "Tab") {
+              e.preventDefault();
+              choose(suggestions[highlight]);
+              return;
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setSuggestions([]);
+              return;
+            }
+          }
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            onSend();
+            send();
           }
         }}
         placeholder={placeholder}
@@ -717,7 +882,7 @@ function Composer({
         className="focus-ring w-full resize-none rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-base text-ink placeholder:text-ink/30 focus:border-gold sm:text-sm"
       />
       <button
-        onClick={onSend}
+        onClick={send}
         disabled={disabled || !value.trim()}
         className="focus-ring shrink-0 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
       >
@@ -786,6 +951,7 @@ function ThreadPanel({
   replies,
   composer,
   onComposerChange,
+  channel,
   onSend,
   onClose,
   sending,
@@ -796,7 +962,8 @@ function ThreadPanel({
   replies: ChatMessage[];
   composer: string;
   onComposerChange: (v: string) => void;
-  onSend: () => void;
+  channel: ComposerChannel;
+  onSend: (mentionIds: string[]) => void;
   onClose: () => void;
   sending: boolean;
   currentUserId: string;
@@ -842,7 +1009,7 @@ function ThreadPanel({
         ))}
       </div>
       <div className="shrink-0 border-t border-ink/10 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
-        <Composer value={composer} onChange={onComposerChange} onSend={onSend} disabled={sending} placeholder={t("replyInThread")} />
+        <Composer value={composer} onChange={onComposerChange} channel={channel} onSend={onSend} disabled={sending} placeholder={t("replyInThread")} />
       </div>
     </div>
   );

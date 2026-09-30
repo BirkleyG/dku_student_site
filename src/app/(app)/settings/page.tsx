@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Reveal } from "@/components/motion/Reveal";
 import { getNotificationPreferences } from "@/lib/notification-preferences";
 import { NotificationPreferencesForm } from "@/components/settings/NotificationPreferencesForm";
+import { SocialPreferencesForm } from "@/components/settings/SocialPreferencesForm";
 import { getT } from "@/lib/i18n/server";
 
 export default async function SettingsPage() {
@@ -11,7 +12,8 @@ export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.email) redirect("/login");
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
+  const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, birthdayMonth: true, birthdayDay: true, showBirthday: true, shareActivity: true, showOnlineStatus: true },
+  });
   if (!user) redirect("/login");
 
   const preferences = await getNotificationPreferences(user.id);
@@ -26,6 +28,18 @@ export default async function SettingsPage() {
 
       <Reveal delay={0.1} className="mt-8">
         <NotificationPreferencesForm initialPreferences={preferences} />
+      </Reveal>
+
+      <Reveal delay={0.15} className="mt-8">
+        <SocialPreferencesForm
+          initial={{
+            birthdayMonth: user.birthdayMonth,
+            birthdayDay: user.birthdayDay,
+            showBirthday: user.showBirthday,
+            shareActivity: user.shareActivity,
+            showOnlineStatus: user.showOnlineStatus,
+          }}
+        />
       </Reveal>
     </div>
   );

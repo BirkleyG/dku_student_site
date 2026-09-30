@@ -45,7 +45,7 @@ export default async function HomePage() {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     userId = user?.id ?? null;
     widgetUser = user
-      ? { id: user.id, role: user.role, communityScore: user.communityScore, showOnLeaderboard: user.showOnLeaderboard }
+      ? { id: user.id, role: user.role, communityScore: user.communityScore, showOnLeaderboard: user.showOnLeaderboard, createdAt: user.createdAt }
       : null;
     // DKU Eats SSO signs people in with their DKU Life user id as the Firebase
     // uid; guest orders are keyed by netID instead, so match on both.

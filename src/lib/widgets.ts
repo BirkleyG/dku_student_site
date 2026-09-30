@@ -5,7 +5,7 @@ import {
   MessageCircle, MessageSquarePlus, MessagesSquare, Newspaper, Pin, PenLine, Percent, Phone, Pencil, Radio, Search,
   Send, ShieldCheck, ShoppingBag, Shuffle, Sparkles, Sprout, Star, Sun, Target, ThumbsUp, TrendingUp, Trophy,
   UserRound, Users, UsersRound, UtensilsCrossed, Vote, Wind, Zap, FileText, ClipboardList, Map as MapIcon,
-  PartyPopper, Footprints, type LucideIcon,
+  PartyPopper, Footprints, BellDot, AtSign, Cake, UserCheck, type LucideIcon,
 } from "lucide-react";
 
 export type WidgetKind = PrismaWidgetKind;
@@ -163,6 +163,10 @@ const moreWidgets = Object.fromEntries([
   def("WISDOM_NEWEST", "Newest tip", "MEDIUM", Sparkles, "/wisdom", "The latest tip in a Wisdom category you pick.", { configurable: true }),
   def("WISDOM_UPVOTES", "Your tip upvotes", "SMALL", Star, "/wisdom", "Total upvotes on the tips you've shared."),
   def("WISDOM_SHARE", "Share a tip", "LARGE", Lightbulb, "/wisdom", "Add a Wisdom recommendation without leaving Home.", { interactive: true }),
+  // Friends
+  def("FRIENDS_ONLINE", "Friends online", "MEDIUM", UserCheck, "/home", "Which of your friends have the site open right now.", { interactive: true }),
+  def("FRIENDS_ACTIVITY", "Friend updates", "MEDIUM", Users, "/home", "What the people you follow have been up to.", { interactive: true }),
+  def("FRIENDS_BIRTHDAYS", "Friends' birthdays", "MEDIUM", Cake, "/home", "Upcoming birthdays of friends who chose to share them."),
   // Clubs
   def("CLUBS_SPOTLIGHT", "Club of the week", "MEDIUM", Star, "/clubs", "A different club in the spotlight every week."),
   def("CLUBS_MINE", "My clubs", "MEDIUM", UsersRound, "/clubs", "Quick links to the clubs you've joined.", { interactive: true }),
@@ -175,6 +179,8 @@ const moreWidgets = Object.fromEntries([
   def("CHAT_COMPOSER", "Quick post", "MEDIUM", Send, "/chat", "Post to the DKU Life board straight from Home.", { interactive: true }),
   def("CHAT_PINNED", "Pinned chat", "SMALL", Pin, "/chat", "The latest message from one chat you pick.", { configurable: true }),
   def("CHAT_INVITES", "Group invites", "SMALL", MessageSquarePlus, "/chat", "Chat groups waiting for you to accept or decline."),
+  def("CHAT_UNREAD", "Unread messages", "SMALL", BellDot, "/chat", "How many messages are waiting across your chats."),
+  def("CHAT_MENTIONS", "Mentions", "MEDIUM", AtSign, "/chat", "Messages where someone @mentioned you."),
   def("CHAT_DM", "Message someone", "MEDIUM", MessageCircle, "/chat", "Find a person and jump into a direct message.", { interactive: true }),
   // Dear DKU
   def("DEAR_LATEST", "Latest Dear DKU", "MEDIUM", PenLine, "/dear-dku", "The newest piece published on Dear DKU."),
@@ -244,8 +250,12 @@ export const widgetGroups: WidgetGroup[] = [
     key: "chat",
     label: "Chat",
     icon: MessagesSquare,
-    kinds: ["CHAT_LATEST", "CHAT_RECENT", "CHAT_TRACKED_CHANNEL", "CHAT_COMPOSER", "CHAT_PINNED", "CHAT_INVITES", "CHAT_DM"],
+    kinds: [
+      "CHAT_LATEST", "CHAT_RECENT", "CHAT_UNREAD", "CHAT_MENTIONS", "CHAT_TRACKED_CHANNEL", "CHAT_COMPOSER", "CHAT_PINNED",
+      "CHAT_INVITES", "CHAT_DM",
+    ],
   },
+  { key: "friends", label: "Friends", icon: Users, kinds: ["FRIENDS_ONLINE", "FRIENDS_ACTIVITY", "FRIENDS_BIRTHDAYS"] },
   { key: "lilypad", label: "The Lilypad", icon: Newspaper, kinds: ["LILYPAD_LATEST", "LILYPAD_HEADLINE", "LILYPAD_TICKER"] },
   {
     key: "wisdom",
