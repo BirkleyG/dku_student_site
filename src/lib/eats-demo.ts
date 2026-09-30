@@ -48,6 +48,13 @@ export function demoEatsActivity(): { id: string; text: string; timeAgo: string 
   });
 }
 
+export function demoEatsBusy(open: number): { name: string; count: number }[] {
+  const minute = new Date().getMinutes();
+  return DEMO_RESTAURANTS.slice(0, open)
+    .map((name, i) => ({ name, count: 1 + ((minute + i * 3) % 7) }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export function demoEatsWidgetData(): EatsWidgetData {
   const { open, total } = demoEatsOpenCount();
   const order = demoEatsOrder();
@@ -58,5 +65,7 @@ export function demoEatsWidgetData(): EatsWidgetData {
     vendors: DEMO_RESTAURANTS.map((name, i) => ({ id: `demo-${i}`, name, open: i < open })),
     order: order ? { restaurant: order.restaurant, status: order.status, detail: `Ready in ~${order.etaMinutes} min` } : null,
     activity: demoEatsActivity(),
+    busy: demoEatsBusy(open),
+    lastOrder: { restaurant: DEMO_RESTAURANTS[dayIndex() % DEMO_RESTAURANTS.length], status: "Ready for pickup", timeAgo: "2d ago" },
   };
 }

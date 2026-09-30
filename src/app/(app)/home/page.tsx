@@ -13,7 +13,9 @@ import { HomeDashboard } from "@/components/widgets/HomeDashboard";
 import { Reveal } from "@/components/motion/Reveal";
 import { GoldBurst } from "@/components/effects/GoldBurst";
 import type { EatsWidgetData } from "@/lib/eats-live";
-import { getT } from "@/lib/i18n/server";
+import { getServerLocale, getT } from "@/lib/i18n/server";
+import { loadWidgetExt, type WidgetUser } from "@/lib/widget-data";
+import { dmChannelName } from "@/lib/chat";
 
 // fetchEatsWidgetData already catches its own errors and returns null on
 // failure, but this dashboard has been taken down by an unhandled query
@@ -35,12 +37,16 @@ export default async function HomePage() {
 
   let layout: WidgetInstance[] = defaultLayout.map((w) => ({ id: crypto.randomUUID(), kind: w.kind, config: w.config ?? {} }));
   let userId: string | null = null;
+  let widgetUser: WidgetUser | null = null;
   let eatsUser: { id: string; netId: string | null } | null = null;
   let savedRows: Awaited<ReturnType<typeof prisma.dashboardWidget.findMany>> = [];
 
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     userId = user?.id ?? null;
+    widgetUser = user
+      ? { id: user.id, role: user.role, communityScore: user.communityScore, showOnLeaderboard: user.showOnLeaderboard }
+      : null;
     // DKU Eats SSO signs people in with their DKU Life user id as the Firebase
     // uid; guest orders are keyed by netID instead, so match on both.
     eatsUser = user ? { id: user.id, netId: user.netId } : null;
@@ -98,10 +104,12 @@ export default async function HomePage() {
   }
 
   const joinedChannels = userId
-    ? await prisma.chatChannel.findMany({
-        where: { OR: [{ id: "general" }, { members: { some: { userId } } }] },
-        select: { id: true, name: true },
-      })
+    ? (
+        await prisma.chatChannel.findMany({
+          where: { OR: [{ id: "general" }, { members: { some: { userId } } }] },
+          select: { id: true, name: true, kind: true, members: { select: { user: { select: { id: true, firstName: true, lastName: true } } } } },
+        })
+      ).map((c) => ({ id: c.id, name: c.kind === "DIRECT" ? dmChannelName(c, userId) : c.name }))
     : [];
 
   const trackedWidgets = savedRows.filter((w) => w.kind === "CHAT_TRACKED_CHANNEL");
@@ -140,8 +148,12 @@ export default async function HomePage() {
     }),
   ]);
 
+  const now = new Date();
+  const [t2, locale] = await Promise.all([getT("widgets"), getServerLocale()]);
+  const ext = await loadWidgetExt({ user: widgetUser, now, t: t2, locale });
+
   const data: WidgetData = {
-    now: new Date().toISOString(),
+    now: now.toISOString(),
     events: events.map((e) => ({
       id: e.id,
       title: e.title,
@@ -163,6 +175,9 @@ export default async function HomePage() {
     eats: await fetchEatsWidgetDataSafely(eatsUser),
     lilypadCategories,
     lilypadByWidget,
+    ext,
+    signedIn: Boolean(userId),
+    isAdmin: widgetUser?.role === "ADMIN",
   };
 
   return (

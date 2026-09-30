@@ -17,8 +17,12 @@ export function WidgetGallery({
   onClose: () => void;
 }) {
   const t = useT("widgets");
-  const [activeGroup, setActiveGroup] = useState(widgetGroups[0].key);
-  const group = widgetGroups.find((g) => g.key === activeGroup) ?? widgetGroups[0];
+  // Admin-only widgets (and groups that hold nothing else) are hidden from everyone else.
+  const groups = widgetGroups
+    .map((g) => ({ ...g, kinds: g.kinds.filter((k) => data.isAdmin || !widgetCatalog[k].adminOnly) }))
+    .filter((g) => g.kinds.length > 0);
+  const [activeGroup, setActiveGroup] = useState(groups[0].key);
+  const group = groups.find((g) => g.key === activeGroup) ?? groups[0];
 
   return (
     <motion.div
@@ -45,7 +49,7 @@ export function WidgetGallery({
 
         <div className="flex min-h-0 flex-1">
           <div className="flex w-28 shrink-0 flex-col gap-1 overflow-y-auto border-r border-ink/10 p-2 sm:w-40">
-            {widgetGroups.map((g) => {
+            {groups.map((g) => {
               const Icon = g.icon;
               const active = g.key === activeGroup;
               return (
@@ -67,7 +71,7 @@ export function WidgetGallery({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {group.kinds.map((kind) => {
                 const meta = widgetCatalog[kind];
-                const previewConfig = kind === "EATS_FAVORITE" ? defaultConfigFor(kind) : {};
+                const previewConfig = defaultConfigFor(kind);
                 return (
                   <button
                     key={kind}
@@ -86,7 +90,7 @@ export function WidgetGallery({
                             : "aspect-square max-w-[16rem]"
                       }`}
                     >
-                      <div className="min-w-0 overflow-hidden">
+                      <div className="pointer-events-none min-w-0 overflow-hidden">
                         <AppWidgetContent instance={{ id: `preview-${kind}`, kind, config: previewConfig }} data={data} />
                       </div>
                     </div>

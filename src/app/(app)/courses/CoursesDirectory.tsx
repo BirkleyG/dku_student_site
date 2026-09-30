@@ -22,13 +22,16 @@ type ApiCourse = {
 export function CoursesDirectory({
   currentUserId,
   isAdmin = false,
+  initialQuery = "",
 }: {
   currentUserId: string | null;
   isAdmin?: boolean;
+  /** Pre-fills the search box, e.g. from the Home "Course search" widget (`/courses?q=...`). */
+  initialQuery?: string;
 }) {
   const t = useT("courses");
   const [courses, setCourses] = useState<ApiCourse[] | null>(null);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [department, setDepartment] = useState<string | "ALL">("ALL");
 
   useEffect(() => {

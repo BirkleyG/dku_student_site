@@ -9,6 +9,8 @@ import { awardPoints } from "@/lib/points";
 export type EatsVendor = { id: string; name: string; open: boolean };
 export type EatsOrderStatus = { restaurant: string; status: string; detail: string | null };
 export type EatsActivityItem = { id: string; text: string; timeAgo: string };
+export type EatsBusyItem = { name: string; count: number };
+export type EatsLastOrder = { restaurant: string; status: string; timeAgo: string };
 export type EatsWidgetData = {
   live: boolean;
   openCount: number;
@@ -16,6 +18,10 @@ export type EatsWidgetData = {
   vendors: EatsVendor[];
   order: EatsOrderStatus | null;
   activity: EatsActivityItem[];
+  /** Orders placed in the last hour per kitchen (kitchens with none are absent), busiest first. */
+  busy: EatsBusyItem[];
+  /** The signed-in user's most recent non-cancelled order, however old. */
+  lastOrder: EatsLastOrder | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -117,6 +123,40 @@ async function loadActivity(): Promise<EatsActivityItem[]> {
   }));
 }
 
+const BUSY_WINDOW_MS = 60 * 60 * 1000;
+
+async function loadBusy(): Promise<EatsBusyItem[]> {
+  const snap = await (await db()).collection("orders").orderBy("createdAt", "desc").select("vendorName", "createdAt").limit(100).get();
+  const cutoff = Date.now() - BUSY_WINDOW_MS;
+  const counts = new Map<string, number>();
+  for (const doc of snap.docs) {
+    if (toMillis(doc.get("createdAt")) < cutoff) break;
+    const name = String(doc.get("vendorName") ?? "").trim();
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+}
+
+async function loadLastOrder(uid: string, netId: string | null): Promise<EatsLastOrder | null> {
+  const orders = (await db()).collection("orders");
+  const fields = ["vendorName", "status", "createdAt"] as const;
+  const queries = [
+    orders.where("customerUid", "==", uid).select(...fields).limit(20).get(),
+    netId ? orders.where("customerNetId", "==", netId).select(...fields).limit(20).get() : null,
+  ].filter((q): q is NonNullable<typeof q> => q !== null);
+  const latest = (await Promise.all(queries))
+    .flatMap((snap) => snap.docs)
+    .map((doc) => ({
+      restaurant: String(doc.get("vendorName") ?? "DKU Eats"),
+      status: String(doc.get("status") ?? ""),
+      createdAt: toMillis(doc.get("createdAt")),
+    }))
+    .filter((o) => o.status !== "cancelled" && o.status !== "canceled" && o.createdAt > 0)
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+  if (!latest) return null;
+  return { restaurant: latest.restaurant, status: STATUS_LABELS[latest.status] ?? "Completed", timeAgo: timeAgo(latest.createdAt, Date.now()) };
+}
+
 /**
  * Points sync: DKU Eats lives in its own Firestore, so orders are pulled in when the user opens their
  * Profile. Awards EATS_ORDER per order id (idempotent) and EATS_RUN_RESTAURANT if a vendor doc lists the
@@ -162,10 +202,12 @@ export async function fetchEatsWidgetData(user: { id: string; netId: string | nu
   if (Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return null;
 
   const work = (async () => {
-    const [vendors, order, activity] = await Promise.all([
+    const [vendors, order, activity, busy, lastOrder] = await Promise.all([
       loadVendors(),
       user ? loadActiveOrder(user.id, user.netId) : Promise.resolve(null),
       loadActivity(),
+      loadBusy(),
+      user ? loadLastOrder(user.id, user.netId) : Promise.resolve(null),
     ]);
     const now = new Date();
     const withStatus = vendors.map((v) => ({ id: v.id, name: v.name, open: isOpenNow(v.hours, now) }));
@@ -176,6 +218,8 @@ export async function fetchEatsWidgetData(user: { id: string; netId: string | nu
       vendors: withStatus,
       order,
       activity,
+      busy,
+      lastOrder,
     } satisfies EatsWidgetData;
   })();
 

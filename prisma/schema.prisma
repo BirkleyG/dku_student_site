@@ -104,6 +104,7 @@ model User {
   hostedEvents       Event[]              @relation("EventHost")
   rsvps              Rsvp[]
   dashboardWidgets   DashboardWidget[]
+  dailyVisits        DailyVisit[]
   chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
   chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
   chatInvitesSent        ChatGroupInvite[]    @relation("ChatInviteInviter")
@@ -243,6 +244,65 @@ enum WidgetKind {
   CHAT_RECENT
   CHAT_TRACKED_CHANNEL
   LILYPAD_LATEST
+  EVENTS_NEXT_RSVP
+  EVENTS_MY_WEEK
+  EVENTS_HOST_LAUNCH
+  EVENTS_TRENDING
+  EVENTS_HOSTING
+  EVENTS_HAPPENING_NOW
+  EVENTS_DEADLINE
+  SLB_LATEST
+  SLB_POLL
+  SLB_TRENDING
+  LILYPAD_HEADLINE
+  LILYPAD_TICKER
+  WISDOM_TOP
+  WISDOM_TALLY
+  WISDOM_SURPRISE
+  WISDOM_DAILY
+  WISDOM_NEWEST
+  WISDOM_UPVOTES
+  WISDOM_SHARE
+  CLUBS_SPOTLIGHT
+  CLUBS_MINE
+  CLUBS_NEWEST
+  EATS_RANDOM
+  EATS_BUSY
+  EATS_LAST_ORDER
+  CHAT_COMPOSER
+  CHAT_PINNED
+  CHAT_INVITES
+  CHAT_DM
+  DEAR_LATEST
+  DEAR_COMMENTED
+  DEAR_WRITE
+  DEAR_RANDOM
+  COURSES_COMMENTS
+  COURSES_SEARCH
+  COURSES_RESOURCES
+  PROFESSORS_SPOTLIGHT
+  PROFESSORS_REVIEWS
+  PROFESSORS_TO_RATE
+  PLANNER_CREDITS
+  PLANNER_SEMESTERS
+  PROFILE_POINTS
+  PROFILE_ACHIEVEMENTS
+  PROFILE_LEADERBOARD
+  PROFILE_NEXT_ACHIEVEMENT
+  PROFILE_RECENT_POINTS
+  PROFILE_SHOWCASE
+  PROFILE_RECAP
+  CAMPUS_QUICK_LINKS
+  CAMPUS_BREAK_COUNTDOWN
+  CAMPUS_SEMESTER_PROGRESS
+  CAMPUS_DUAL_CLOCK
+  CAMPUS_WEATHER
+  CAMPUS_AIR_QUALITY
+  CAMPUS_LOGIN_STREAK
+  CAMPUS_CURRENCY
+  CAMPUS_CONTACTS
+  MARKET_POST_LAUNCH
+  ADMIN_ACTIVE_USERS
 }
 
 model DashboardWidget {
@@ -255,6 +315,20 @@ model DashboardWidget {
   createdAt DateTime   @default(now())
 
   @@map("dashboard_widgets")
+}
+
+/// One row per user per campus day they opened the Home dashboard. Powers the login-streak widget and the
+/// admin active-users widget. `day` is a campus-time "yyyy-MM-dd" key.
+model DailyVisit {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day])
+  @@index([day])
+  @@map("daily_visits")
 }
 
 enum ChatChannelKind {
