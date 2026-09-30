@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import type { TFunction } from "@/lib/i18n/translate";
+import { makeT, type TFunction } from "@/lib/i18n/translate";
 import type { Locale } from "@/lib/i18n/locale";
 import { addCampusDays, campusDayKey, campusStartOfDay, formatCampus, isSameCampusWeek } from "@/lib/datetime";
 import { ACADEMIC_CALENDAR, getCurrentSessionStatus } from "@/lib/academic-calendar";
@@ -12,6 +12,8 @@ import { ACHIEVEMENTS, ACHIEVEMENT_BY_ID, isAchievementKey } from "@/lib/achieve
 import { ACTIVITY_RULES, POINT_SOURCES, isActivityKey } from "@/lib/points-rules";
 import { getReviewSemesters } from "@/lib/semester-review";
 import { dmChannelName } from "@/lib/chat";
+import { getMentionCounts, getUnreadCounts } from "@/lib/chat-state";
+import { getFriendActivity, getOnlineFriends, getUpcomingBirthdays } from "@/lib/friends";
 import { CAMPUS_CONTACTS, NATIONAL_EMERGENCY } from "@/lib/campus-contacts";
 import {
   WEATHER_EMOJI,
@@ -21,7 +23,7 @@ import {
 } from "@/lib/widget-external";
 import type { WV, WidgetExt, WvItem, WvShuffleItem } from "@/lib/widget-types";
 
-export type WidgetUser = { id: string; role: "STUDENT" | "ADMIN"; communityScore: number; showOnLeaderboard: boolean };
+export type WidgetUser = { id: string; role: "STUDENT" | "ADMIN"; communityScore: number; showOnLeaderboard: boolean; createdAt: Date };
 
 type Ctx = { user: WidgetUser | null; now: Date; t: TFunction; locale: Locale };
 
@@ -889,7 +891,85 @@ const loadCampus: Loader = async ({ user, now, t, locale }) => {
 
 // ---------------------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------------------
+// Chat unread/mentions and friends
+// ---------------------------------------------------------------------------------------------------------
+
+const loadSocial: Loader = async ({ user, now, t, locale }) => {
+  const kinds = ["CHAT_UNREAD", "CHAT_MENTIONS", "FRIENDS_ONLINE", "FRIENDS_ACTIVITY", "FRIENDS_BIRTHDAYS"];
+  if (!user) return Object.fromEntries(kinds.map((k) => [k, empty(t("logInToSee"))]));
+  const tf = makeT("friends", locale);
+
+  const [channels, mentionRows, mentionCounts, online, activity, birthdays] = await Promise.all([
+    prisma.chatChannel.findMany({
+      where: { OR: [{ id: "general" }, { members: { some: { userId: user.id } } }] },
+      include: { members: { include: { user: { select: { id: true, firstName: true, lastName: true } } } } },
+    }),
+    prisma.chatMention.findMany({
+      where: { userId: user.id, readAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: { message: { include: { author: { select: { firstName: true } }, channel: { select: { id: true, name: true, kind: true } } } } },
+    }),
+    getMentionCounts(user.id),
+    getOnlineFriends(user.id),
+    getFriendActivity(user.id, 4),
+    getUpcomingBirthdays(user.id, 45, now),
+  ]);
+
+  const unread = await getUnreadCounts(user, channels.map((c) => c.id));
+  const nameOf = (c: (typeof channels)[number]) => (c.kind === "DIRECT" ? dmChannelName(c, user.id) : c.name);
+  const total = Object.values(unread).reduce((a, b) => a + b, 0);
+  const busiest = [...channels].sort((a, b) => (unread[b.id] ?? 0) - (unread[a.id] ?? 0))[0];
+  const mentionTotal = Object.values(mentionCounts).reduce((a, b) => a + b, 0);
+
+  const out: Record<string, WV> = {};
+  out.CHAT_UNREAD = {
+    t: "stat",
+    value: total > 99 ? "99+" : String(total),
+    label: total === 0 ? t("allCaughtUp") : t(total === 1 ? "unreadOne" : "unreadMany"),
+    sub: total > 0 && busiest ? t("mostIn", { name: nameOf(busiest) }) : mentionTotal > 0 ? t("mentionsWaiting", { n: mentionTotal }) : undefined,
+  };
+  out.CHAT_MENTIONS = {
+    t: "list",
+    empty: t("noMentions"),
+    items: mentionRows.map((m) => ({
+      id: m.id,
+      primary: `${m.message.author.firstName}: ${clip(m.message.body, 70)}`,
+      secondary: `${m.message.channel.kind === "DIRECT" ? t("directMessage") : m.message.channel.name} · ${ago(m.message.createdAt)}`,
+    })),
+  };
+  out.FRIENDS_ONLINE = {
+    t: "list",
+    empty: t("noFriendsOnline"),
+    items: online.slice(0, 4).map((p) => ({ id: p.id, primary: p.name, secondary: tf("online") })),
+  };
+  out.FRIENDS_ACTIVITY = {
+    t: "list",
+    empty: t("noFriendUpdates"),
+    items: activity.map((a) => ({
+      id: a.id,
+      primary: tf(`act_${a.kind}`, { name: a.name, subject: locale === "zh" && a.subjectZh ? a.subjectZh : a.subject }),
+      secondary: ago(new Date(a.at)),
+    })),
+  };
+  out.FRIENDS_BIRTHDAYS = {
+    t: "list",
+    empty: t("noBirthdays"),
+    items: birthdays.slice(0, 4).map((b) => ({
+      id: b.id,
+      primary: b.name,
+      secondary:
+        b.daysAway === 0
+          ? t("birthdayToday")
+          : `${formatCampus(new Date(Date.UTC(2000, b.month - 1, b.day, 12)), "MMM d")} · ${t(b.daysAway === 1 ? "inOneDay" : "inDays", { n: b.daysAway })}`,
+    })),
+  };
+  return out;
+};
+
 const loaders: [string, Loader][] = [
+  ["social", loadSocial],
   ["events", loadEvents],
   ["slb", loadSlb],
   ["lilypad", loadLilypad],

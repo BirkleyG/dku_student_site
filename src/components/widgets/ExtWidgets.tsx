@@ -8,6 +8,7 @@ import { navItems } from "@/lib/nav";
 import { widgetCatalog, type WidgetInstance } from "@/lib/widgets";
 import type { WV, WvItem } from "@/lib/widget-types";
 import { useT } from "@/lib/i18n/client";
+import { OPEN_FRIENDS_EVENT } from "@/components/friends/FriendsButton";
 import type { WidgetData } from "./AppWidgetContent";
 
 const CTRL_INPUT =
@@ -485,6 +486,20 @@ export function ExtWidget({ instance, data }: { instance: WidgetInstance; data: 
       );
     case "COURSES_SEARCH":
       return <CourseSearch />;
+    case "FRIENDS_ONLINE":
+    case "FRIENDS_ACTIVITY": {
+      const wv = data.ext[instance.kind];
+      return (
+        <div className="flex h-full flex-col gap-1.5">
+          {wv?.t === "list" ? <Rows items={wv.items} linked={false} empty={wv.empty} /> : <Empty label={data.signedIn ? t("widgetUnavailable") : t("logInToSee")} />}
+          {data.signedIn ? (
+            <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_FRIENDS_EVENT))} className={`${CTRL_BUTTON} mt-auto w-fit`}>
+              {t("openFriendsPanel")}
+            </button>
+          ) : null}
+        </div>
+      );
+    }
     case "CAMPUS_QUICK_LINKS":
       return <QuickLinks hrefs={Array.isArray(instance.config.hrefs) ? (instance.config.hrefs as string[]) : []} />;
     case "CAMPUS_DUAL_CLOCK":

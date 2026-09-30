@@ -38,6 +38,11 @@ export const NOTIFICATION_CATEGORIES: CategoryMeta[] = [
     label: "Academic",
     description: "End-of-semester reminders to log courses and rate professors.",
   },
+  {
+    key: "FRIENDS",
+    label: "Friends",
+    description: "When someone follows you or becomes your friend.",
+  },
 ];
 
 export const NOTIFICATION_CATEGORY_KEYS: NotificationCategory[] = NOTIFICATION_CATEGORIES.map((c) => c.key);

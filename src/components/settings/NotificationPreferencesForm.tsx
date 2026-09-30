@@ -21,6 +21,7 @@ const CATEGORY_LABEL_KEYS: Record<NotificationCategory, string> = {
   RECOMMENDATIONS: "catRecommendationsLabel",
   ORDERS: "catOrdersLabel",
   ACADEMIC: "catAcademicLabel",
+  FRIENDS: "catFriendsLabel",
 };
 const CATEGORY_DESCRIPTION_KEYS: Record<NotificationCategory, string> = {
   EVENTS: "catEventsDescription",
@@ -28,6 +29,7 @@ const CATEGORY_DESCRIPTION_KEYS: Record<NotificationCategory, string> = {
   RECOMMENDATIONS: "catRecommendationsDescription",
   ORDERS: "catOrdersDescription",
   ACADEMIC: "catAcademicDescription",
+  FRIENDS: "catFriendsDescription",
 };
 
 /**

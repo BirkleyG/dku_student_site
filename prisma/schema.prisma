@@ -40,6 +40,7 @@ enum NotificationCategory {
   RECOMMENDATIONS
   ORDERS
   ACADEMIC
+  FRIENDS
 }
 
 enum PushDeliveryStatus {
@@ -93,6 +94,15 @@ model User {
   image         String?
   communityScore Int      @default(0)
   showOnLeaderboard Boolean @default(true)
+  // Social: birthday is month/day only (no year), opt-in, and only ever shown to mutual friends. Activity is
+  // shown to followers unless turned off. Online status is shown to mutual friends unless turned off.
+  birthdayMonth     Int?
+  birthdayDay       Int?
+  showBirthday      Boolean   @default(false)
+  shareActivity     Boolean   @default(true)
+  showOnlineStatus  Boolean   @default(true)
+  lastSeenAt        DateTime?
+  friendsSeenAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -105,6 +115,10 @@ model User {
   rsvps              Rsvp[]
   dashboardWidgets   DashboardWidget[]
   dailyVisits        DailyVisit[]
+  following          Follow[]             @relation("FollowFollower")
+  followers          Follow[]             @relation("FollowFollowing")
+  chatReadStates     ChatReadState[]
+  chatMentions       ChatMention[]
   chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
   chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
   chatInvitesSent        ChatGroupInvite[]    @relation("ChatInviteInviter")
@@ -303,6 +317,11 @@ enum WidgetKind {
   CAMPUS_CONTACTS
   MARKET_POST_LAUNCH
   ADMIN_ACTIVE_USERS
+  CHAT_UNREAD
+  CHAT_MENTIONS
+  FRIENDS_ONLINE
+  FRIENDS_ACTIVITY
+  FRIENDS_BIRTHDAYS
 }
 
 model DashboardWidget {
@@ -352,6 +371,7 @@ model ChatChannel {
   members     ChatChannelMember[]
   messages    ChatMessage[]
   invites     ChatGroupInvite[]
+  readStates  ChatReadState[]
   createdAt   DateTime            @default(now())
 
   @@map("chat_channels")
@@ -408,6 +428,7 @@ model ChatMessage {
   parent    ChatMessage?  @relation("ChatMessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   ChatMessage[] @relation("ChatMessageReplies")
   reactions ChatMessageReaction[]
+  mentions  ChatMention[]
   createdAt DateTime      @default(now())
 
   @@index([channelId, parentId, createdAt])
@@ -416,6 +437,35 @@ model ChatMessage {
 
 // One row per (message, user, emoji) — a user can react to the same message
 // with several different emoji, but not stack the same one twice.
+/// When a user last looked at a chat. Unread = messages from other people newer than this. The open chat
+/// refreshes it on every poll, so it stays 0 while you're reading.
+model ChatReadState {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId  String
+  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime    @default(now())
+
+  @@unique([userId, channelId])
+  @@map("chat_read_states")
+}
+
+/// An @mention of a user in a message. readAt is set once they open that chat.
+model ChatMention {
+  id        String      @id @default(cuid())
+  messageId String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@unique([messageId, userId])
+  @@index([userId, readAt])
+  @@map("chat_mentions")
+}
+
 model ChatMessageReaction {
   id        String      @id @default(cuid())
   messageId String
@@ -1022,4 +1072,18 @@ model SemesterCelebration {
 
   @@unique([userId, semesterKey])
   @@map("semester_celebrations")
+}
+
+/// One-way follow. Two people who follow each other are "friends".
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@map("follows")
 }
