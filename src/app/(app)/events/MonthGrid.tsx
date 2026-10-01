@@ -2,7 +2,7 @@
 
 import { format, isSameMonth, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { campusDayKey } from "@/lib/datetime";
-import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { eventMeta } from "./event-meta";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { useT } from "@/lib/i18n/client";
 import type { ApiEvent } from "./calendar-types";
@@ -62,7 +62,7 @@ export function MonthGrid({ anchor, events, selectedDay, onSelectDay }: Props) {
 
               <span className="flex flex-1 flex-col gap-0.5 overflow-hidden">
                 {dayEvents.slice(0, MAX_VISIBLE).map((event) => {
-                  const meta = EVENT_CATEGORY_MAP[event.category];
+                  const meta = eventMeta(event);
                   return (
                     <span
                       key={event.id}

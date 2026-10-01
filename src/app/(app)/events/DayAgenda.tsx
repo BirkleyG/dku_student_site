@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { campusWallToDate, formatCampus, isCampusToday } from "@/lib/datetime";
-import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { eventHref, eventMeta } from "./event-meta";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { useT } from "@/lib/i18n/client";
 import type { ApiEvent } from "./calendar-types";
@@ -47,11 +47,11 @@ export function DayAgenda({ day, events, onClose }: Props) {
           <p className="px-2 py-6 text-center text-sm text-ink/40">{t("nothingThisDay")}</p>
         ) : (
           events.map((event) => {
-            const meta = EVENT_CATEGORY_MAP[event.category];
+            const meta = eventMeta(event);
             return (
               <Link
                 key={event.id}
-                href={`/events/${event.id}`}
+                href={eventHref(event)}
                 className="focus-ring flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-paper-dim"
               >
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />

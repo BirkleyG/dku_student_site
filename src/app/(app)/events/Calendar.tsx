@@ -28,6 +28,7 @@ import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import type { ApiEvent, CalendarView } from "./calendar-types";
 
 const STORAGE_KEY = "dku-life-hidden-event-categories";
+const EATS_STORAGE_KEY = "dku-life-calendar-show-eats";
 const ALL_CATEGORY_KEYS = EVENT_CATEGORIES.map((c) => c.key);
 
 type Props = {
@@ -42,6 +43,9 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
   const [events, setEvents] = useState<ApiEvent[]>([]);
   const [isPending, startTransition] = useTransition();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  // DKU Eats availability is a per-device preference (like guests' category filters), off by default.
+  const [showEats, setShowEats] = useState(false);
+  const [eatsEvents, setEatsEvents] = useState<ApiEvent[]>([]);
   // Matches the server-rendered set exactly so hydration has nothing to
   // reconcile; guests' localStorage prefs (which don't exist on the server)
   // are layered in right after mount, below.
@@ -89,7 +93,62 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
     };
   }, [from, to]);
 
-  const visibleEvents = useMemo(() => events.filter((e) => !hidden.has(e.category)), [events, hidden]);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage, not derivable from props/state.
+      if (localStorage.getItem(EATS_STORAGE_KEY) === "1") setShowEats(true);
+    } catch {
+      // ignore inaccessible storage
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showEats) return;
+    let cancelled = false;
+    const params = new URLSearchParams({ sources: "eats", from: format(from, "yyyy-MM-dd"), to: format(to, "yyyy-MM-dd") });
+    fetch(`/api/calendar?${params}`)
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data: { items?: { id: string; title: string; description: string; location: string; start: string; end: string; allDay: boolean }[] }) => {
+        if (cancelled) return;
+        setEatsEvents(
+          (data.items ?? []).map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            location: item.location,
+            posterUrl: null,
+            startsAt: item.start,
+            endsAt: item.end,
+            category: "SOCIAL_EVENTS", // placeholder; `source: "eats"` drives colour and link
+            allDay: item.allDay,
+            kind: "EVENT",
+            source: "eats",
+            host: { firstName: "", lastName: "" },
+            _count: { rsvps: 0 },
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setEatsEvents([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showEats, from, to]);
+
+  const toggleEats = (on: boolean) => {
+    setShowEats(on);
+    try {
+      localStorage.setItem(EATS_STORAGE_KEY, on ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  };
+
+  const visibleEvents = useMemo(
+    () => [...events.filter((e) => !hidden.has(e.category)), ...(showEats ? eatsEvents : [])],
+    [events, hidden, showEats, eatsEvents],
+  );
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(from, i)), [from]);
   const dayViewDays = useMemo(() => [anchor], [anchor]);
 
@@ -232,7 +291,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
       </div>
 
       <aside className="w-full shrink-0 lg:w-72">
-        <CategoryFilterPanel hidden={hidden} onToggle={toggleCategory} onShowAll={showAll} onHideAll={hideAll} />
+        <CategoryFilterPanel hidden={hidden} onToggle={toggleCategory} onShowAll={showAll} onHideAll={hideAll} eatsOn={showEats} onToggleEats={toggleEats} />
       </aside>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { EVENT_CATEGORY_GROUPS } from "@/lib/event-categories";
 import { Switch } from "@/components/ui/Switch";
+import { EATS_META } from "./event-meta";
 import { useT } from "@/lib/i18n/client";
 import type { EventCategory } from "@prisma/client";
 
@@ -10,11 +11,26 @@ type Props = {
   onToggle: (key: EventCategory) => void;
   onShowAll: () => void;
   onHideAll: () => void;
+  eatsOn: boolean;
+  onToggleEats: (on: boolean) => void;
 };
 
-export function CategoryFilterPanel({ hidden, onToggle, onShowAll, onHideAll }: Props) {
+export function CategoryFilterPanel({ hidden, onToggle, onShowAll, onHideAll, eatsOn, onToggleEats }: Props) {
   const t = useT("events");
   return (
+    <div className="space-y-4">
+    <div className="rounded-3xl border border-ink/10 bg-paper p-5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 font-display text-lg">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: EATS_META.color, opacity: eatsOn ? 1 : 0.35 }} />
+            {t("eatsToggle")}
+          </span>
+          <span className="mt-1 block text-xs text-ink/50">{t("eatsToggleHint")}</span>
+        </span>
+        <Switch checked={eatsOn} onChange={onToggleEats} color={EATS_META.color} label={t("eatsToggle")} />
+      </div>
+    </div>
     <div className="rounded-3xl border border-ink/10 bg-paper p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg">{t("eventTypes")}</h2>
@@ -53,6 +69,7 @@ export function CategoryFilterPanel({ hidden, onToggle, onShowAll, onHideAll }: 
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }

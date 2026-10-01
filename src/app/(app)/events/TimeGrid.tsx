@@ -6,7 +6,7 @@ import { useLenis } from "lenis/react";
 import { format, setHours } from "date-fns";
 import { campusDayKey, formatCampus } from "@/lib/datetime";
 import { useT } from "@/lib/i18n/client";
-import { EVENT_CATEGORY_MAP } from "@/lib/event-categories";
+import { eventHref, eventMeta } from "./event-meta";
 import { HappeningNowDot } from "@/components/motion/HappeningNowDot";
 import { layoutDayEvents } from "./calendar-layout";
 import type { ApiEvent } from "./calendar-types";
@@ -79,11 +79,11 @@ export function TimeGrid({ days, events, onDayHeaderClick }: Props) {
             return (
               <div key={key} className="min-w-0 flex-1 space-y-1 border-l border-ink/10 p-1 first:border-l-0">
                 {allDayEvents.map((event) => {
-                  const meta = EVENT_CATEGORY_MAP[event.category];
+                  const meta = eventMeta(event);
                   return (
                     <Link
                       key={event.id}
-                      href={`/events/${event.id}`}
+                      href={eventHref(event)}
                       title={`${event.title} · ${t("allDayShort")}`}
                       className="focus-ring block truncate rounded px-1.5 py-0.5 text-[11px] font-medium leading-tight hover:opacity-90"
                       style={{ backgroundColor: meta.tint, color: meta.color, borderLeft: `3px solid ${meta.color}` }}
@@ -125,11 +125,11 @@ export function TimeGrid({ days, events, onDayHeaderClick }: Props) {
               ))}
 
               {positioned.map(({ event, top, height, left, width }) => {
-                const meta = EVENT_CATEGORY_MAP[event.category];
+                const meta = eventMeta(event);
                 return (
                   <Link
                     key={event.id}
-                    href={`/events/${event.id}`}
+                    href={eventHref(event)}
                     className="focus-ring absolute overflow-hidden rounded-lg px-2 py-1 text-left text-xs leading-tight shadow-sm transition-opacity hover:opacity-90"
                     style={{
                       top,

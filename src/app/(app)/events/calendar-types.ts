@@ -9,6 +9,8 @@ export type ApiEvent = {
   startsAt: string;
   endsAt: string;
   category: EventCategory;
+  /** Set for DKU Eats availability entries pulled from /api/calendar; absent for real events. */
+  source?: "eats";
   allDay: boolean;
   kind: EventKind;
   host: { firstName: string; lastName: string };

@@ -1,6 +1,7 @@
 import type { Firestore, Timestamp } from "firebase-admin/firestore";
 import { getEatsAdminApp, isEatsConfigured } from "@/lib/eats-sso";
 import { isOpenNow } from "@/lib/eats-hours";
+import type { EatsVendorRecord } from "@/lib/eats-calendar";
 import { awardPoints } from "@/lib/points";
 
 // Reads DKU Eats' Firestore directly with the same service account DKU Life
@@ -39,7 +40,7 @@ const VENDOR_CACHE_MS = 60 * 1000;
 const FAILURE_BACKOFF_MS = 60 * 1000;
 let lastFailureAt = 0;
 
-let vendorCache: { at: number; vendors: { id: string; name: string; hours: unknown }[] } | null = null;
+let vendorCache: { at: number; vendors: EatsVendorRecord[] } | null = null;
 
 // Loaded on demand (like firebase-admin/auth in eats-sso.ts) so a module-load
 // problem in the Firebase SDK can never take down pages that import this file.
@@ -67,11 +68,19 @@ function timeAgo(ms: number, now: number): string {
 
 async function loadVendors() {
   if (vendorCache && Date.now() - vendorCache.at < VENDOR_CACHE_MS) return vendorCache.vendors;
-  const snap = await (await db()).collection("vendors").select("name", "hours", "approved", "display").get();
+  const snap = await (await db()).collection("vendors").select("name", "hours", "approved", "display", "serviceType", "weeklyPickup", "quotas", "quotaSystemEnabled").get();
   const vendors = snap.docs
     // Same rule the DKU Eats app uses for its own kitchen list.
     .filter((doc) => doc.get("approved") !== false && doc.get("display") !== false)
-    .map((doc) => ({ id: doc.id, name: String(doc.get("name") ?? "").trim(), hours: doc.get("hours") }))
+    .map((doc) => ({
+      id: doc.id,
+      name: String(doc.get("name") ?? "").trim(),
+      hours: doc.get("hours"),
+      serviceType: doc.get("serviceType"),
+      weeklyPickup: doc.get("weeklyPickup"),
+      quotas: doc.get("quotas"),
+      quotaSystemEnabled: doc.get("quotaSystemEnabled"),
+    }))
     .filter((v) => v.name)
     .sort((a, b) => a.name.localeCompare(b.name));
   vendorCache = { at: Date.now(), vendors };
@@ -233,6 +242,21 @@ export async function fetchEatsWidgetData(user: { id: string; netId: string | nu
   } catch (err) {
     lastFailureAt = Date.now();
     console.error("DKU Eats widget data failed:", err);
+    return null;
+  }
+}
+
+/** Kitchen settings for the calendar feed, or null if Eats is not configured or does not answer in time. */
+export async function fetchEatsVendorsForCalendar(): Promise<EatsVendorRecord[] | null> {
+  if (!isEatsConfigured()) return null;
+  if (Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return null;
+  try {
+    const result = await Promise.race([loadVendors(), new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS))]);
+    if (!result) lastFailureAt = Date.now();
+    return result;
+  } catch (err) {
+    lastFailureAt = Date.now();
+    console.error("DKU Eats calendar vendors failed:", err);
     return null;
   }
 }
