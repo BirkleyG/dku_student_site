@@ -238,7 +238,7 @@ export function Calendar({ loggedIn, initialHiddenCategories }: Props) {
           <div className="flex items-center gap-2">
             <button
               onClick={goToday}
-              className="focus-ring rounded-full border border-ink/15 px-4 py-1.5 text-sm text-ink/70 hover:border-ink/35"
+              className="focus-ring rounded-sm border border-ink/15 px-4 py-1.5 text-sm text-ink/70 hover:border-ink/35"
             >
               {t("today")}
             </button>

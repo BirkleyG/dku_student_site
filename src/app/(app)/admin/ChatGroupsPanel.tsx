@@ -81,7 +81,7 @@ export function ChatGroupsPanel({ initialGroups }: { initialGroups: ChatGroup[] 
         <button
           onClick={() => void createGroup()}
           disabled={creating || !name.trim()}
-          className="focus-ring rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
+          className="focus-ring rounded-sm bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright disabled:opacity-50"
         >
           {creating ? t("chatGroupCreating") : t("chatGroupCreateButton")}
         </button>

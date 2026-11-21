@@ -131,7 +131,7 @@ export function NotificationPreferencesForm({ initialPreferences }: Props) {
               type="button"
               onClick={() => void handleDisablePush()}
               disabled={busy}
-              className="focus-ring shrink-0 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-medium text-ink/70 transition-colors hover:text-ink disabled:opacity-50"
+              className="focus-ring shrink-0 rounded-sm border border-ink/15 px-3 py-1.5 text-xs font-medium text-ink/70 transition-colors hover:text-ink disabled:opacity-50"
             >
               {busy ? t("pushDisablingButton") : t("pushDisableButton")}
             </button>
@@ -144,7 +144,7 @@ export function NotificationPreferencesForm({ initialPreferences }: Props) {
               type="button"
               onClick={() => void handleEnablePush()}
               disabled={busy}
-              className="focus-ring mt-3 rounded-full bg-gold px-4 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-gold-bright disabled:opacity-50"
+              className="focus-ring mt-3 rounded-sm bg-gold px-4 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-gold-bright disabled:opacity-50"
             >
               {busy ? t("pushEnablingButton") : t("pushEnableButton")}
             </button>

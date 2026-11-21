@@ -139,7 +139,7 @@ export function SemesterReviewSection() {
           <button
             type="button"
             onClick={() => setStoryOpen(true)}
-            className="mt-4 rounded-full bg-gold-bright px-5 py-2.5 text-sm font-semibold text-ink hover:opacity-90"
+            className="mt-4 rounded-sm bg-gold-bright px-5 py-2.5 text-sm font-semibold text-ink hover:opacity-90"
           >
             View your semester
           </button>

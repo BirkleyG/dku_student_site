@@ -72,7 +72,7 @@ export function FriendsButton() {
       >
         <Users className="h-4 w-4" strokeWidth={1.75} />
         {summary.unseen > 0 ? (
-          <span className="absolute -right-1 -top-1 grid min-w-[1.1rem] place-items-center rounded-full bg-gold px-1 text-[10px] font-semibold leading-[1.1rem] text-ink ring-2 ring-paper">
+          <span className="absolute -right-1 -top-1 grid min-w-[1.1rem] place-items-center rounded-sm bg-gold px-1 text-[10px] font-semibold leading-[1.1rem] text-ink ring-2 ring-paper">
             {summary.unseen > 9 ? "9+" : summary.unseen}
           </span>
         ) : summary.online > 0 ? (

@@ -41,7 +41,7 @@ export default async function WisdomTopicPage({ params }: PageProps<"/wisdom/[id
       <Reveal className="flex items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+            <span className="rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
               {t(`cat_${topic.category}`)}
             </span>
             {topic.requireLocation ? (
@@ -69,6 +69,8 @@ export default async function WisdomTopicPage({ params }: PageProps<"/wisdom/[id
       <Reveal delay={0.1}>
         <RecommendationList
           topicId={topic.id}
+          topicTitle={topic.title}
+          category={topic.category}
           requireLocation={topic.requireLocation}
           currentUserId={currentUser?.id ?? null}
           isAdmin={isWisdomAdmin}

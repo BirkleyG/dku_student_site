@@ -98,7 +98,7 @@ export function WidgetGallery({
                       <p className="flex items-center gap-1.5 text-xs font-medium text-ink">
                         {meta.label}
                         {meta.eatsData && !data.eats.live ? (
-                          <span className="rounded-full bg-ink/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink/40">{t("sample")}</span>
+                          <span className="rounded-sm bg-ink/5 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink/40">{t("sample")}</span>
                         ) : null}
                       </p>
                       <p className="mt-0.5 text-xs text-ink/50">{meta.blurb}</p>

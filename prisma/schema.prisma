@@ -82,6 +82,8 @@ enum GenEdTag {
 }
 
 model User {
+  announcements     Announcement[]     @relation("AnnouncementAuthor")
+  announcementVotes AnnouncementVote[]
   id            String    @id @default(cuid())
   netId         String?   @unique
   firstName     String
@@ -212,6 +214,7 @@ enum EventKind {
 }
 
 model Event {
+  announcements Announcement[]
   id            String         @id @default(cuid())
   title         String
   description   String
@@ -511,6 +514,10 @@ model WisdomRecommendation {
   topic       WisdomTopic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
   placeName   String
   location    String?
+  /** Resolved street address from the map search (GCJ-02 coordinates, AMap datum). */
+  address     String?
+  lat         Float?
+  lng         Float?
   description String
   authorId    String
   author      User         @relation("WisdomRecAuthor", fields: [authorId], references: [id], onDelete: Cascade)
@@ -1086,4 +1093,32 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@map("follows")
+}
+
+/** Campus-wide post on the Announcement Board. Ranking/visibility: src/lib/announcement-rank.ts. */
+model Announcement {
+  id        String             @id @default(cuid())
+  title     String
+  body      String
+  eventId   String?
+  event     Event?             @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  authorId  String
+  author    User               @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  votes     AnnouncementVote[]
+  createdAt DateTime           @default(now())
+
+  @@index([createdAt])
+  @@map("announcements")
+}
+
+model AnnouncementVote {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value          Int
+
+  @@unique([announcementId, userId])
+  @@map("announcement_votes")
 }

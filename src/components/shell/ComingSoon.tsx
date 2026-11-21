@@ -27,7 +27,7 @@ export function ComingSoon({
           {children}
         </Reveal>
       ) : null}
-      <Reveal delay={0.15} className="mt-10 inline-block rounded-full border border-ink/15 px-4 py-1.5 text-xs text-ink/40">
+      <Reveal delay={0.15} className="mt-10 inline-block rounded-sm border border-ink/15 px-4 py-1.5 text-xs text-ink/40">
         {t("buildingThisNext")}
       </Reveal>
     </div>

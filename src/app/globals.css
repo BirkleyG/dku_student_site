@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* DKU Life palette — deep pine green (Duke-blue analog), white, dusty gold, sprout green */
+  /* DKU Life palette. Plain white ground, one near-black green for text and primary
+     actions, one ochre accent used sparingly. No beige, no pastel washes. */
   --color-canvas: #ffffff;
-  --color-paper: #fbfaf6;
-  --color-paper-dim: #f1ede3;
+  --color-paper: #f6f6f4;
+  --color-paper-dim: #eaeae6;
 
-  --color-ink: #0d2b20;
+  --color-ink: #15221b;
 
-  --color-gold: #a79564;
-  --color-gold-bright: #b9a46b;
+  --color-gold: #b8862b;
+  --color-gold-bright: #c99636;
 
-  --color-sprout: #bfe6c4;
-  --color-sprout-deep: #6fa87d;
+  --color-sprout: #dbe7de;
+  --color-sprout-deep: #2e6b45;
 
-  --color-danger: #b3452f;
+  --color-danger: #b3261e;
 
   --background: var(--color-canvas);
   --foreground: var(--color-ink);
@@ -37,8 +38,28 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --font-display: var(--font-instrument-serif);
-  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-plex-sans);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+
+  /* Tight radius scale: corners are a detail, not the look. rounded-full stays
+     for avatars and status dots only. */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 5px;
+  --radius-3xl: 6px;
+}
+
+@layer components {
+  /* Headings use the same family as body text, set heavier and tighter. */
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    line-height: 1.15;
+  }
 }
 
 body {
@@ -77,8 +98,8 @@ body {
 }
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-gold);
-  outline-offset: 3px;
-  border-radius: 4px;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* iOS-style "jiggle mode" for widgets in edit state — subtle, with each
@@ -98,3 +119,17 @@ body {
     animation-play-state: running;
   }
 }
+
+/* Wisdom map: plain DKU label, square popups to match the rest of the UI */
+.dku-map-label {
+  background: #15221b;
+  color: #fff;
+  border: 0;
+  border-radius: 1px;
+  box-shadow: none;
+  font: 600 11px/1.2 var(--font-plex-sans), system-ui, sans-serif;
+  padding: 2px 5px;
+}
+.dku-map-label::before { display: none; }
+.leaflet-popup-content-wrapper { border-radius: 3px; }
+.leaflet-container { font-family: var(--font-plex-sans), system-ui, sans-serif; }

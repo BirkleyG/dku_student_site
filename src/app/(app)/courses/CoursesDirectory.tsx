@@ -92,7 +92,7 @@ export function CoursesDirectory({
             <StaggerItem key={course.id}>
               <Card className="flex h-full flex-col">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="w-fit rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+                  <span className="w-fit rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                     {course.department}
                   </span>
                   {isAdmin || course.createdById === currentUserId ? (

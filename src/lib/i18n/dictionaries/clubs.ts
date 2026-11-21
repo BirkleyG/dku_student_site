@@ -2,6 +2,7 @@ import type { Locale } from "../locale";
 
 export const clubs: Record<Locale, Record<string, string>> = {
   en: {
+    messageManager: "Message {name} on DKU Life",
     // ClubsDirectory
     filterEverything: "Everything",
     filterAllCategories: "All categories",
@@ -80,6 +81,7 @@ export const clubs: Record<Locale, Record<string, string>> = {
     addClubButton: "Add a club",
   },
   zh: {
+    messageManager: "在 DKU Life 私信 {name}",
     // ClubsDirectory
     filterEverything: "全部",
     filterAllCategories: "所有类别",

@@ -69,7 +69,7 @@ export default async function ProfessorPage({ params }: PageProps<"/professors/[
             <Link
               key={c.id}
               href={`/courses/${c.id}`}
-              className="focus-ring rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-gold hover:text-ink"
+              className="focus-ring rounded-sm border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-gold hover:text-ink"
             >
               {c.code}
             </Link>

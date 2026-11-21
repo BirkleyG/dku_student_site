@@ -86,12 +86,12 @@ export function ClubsDirectory() {
                 <Link href={`/clubs/${club.id}`} className="block h-full">
                   <Card className="flex h-full flex-col">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="w-fit rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+                      <span className="w-fit rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                         {clubCategoryLabels[club.category]}
                         {club.athleticKind ? ` · ${athleticKindLabels[club.athleticKind]}` : ""}
                       </span>
                       {club.type === "ORGANIZATION" ? (
-                        <span className="rounded-full border border-ink/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink/50">
+                        <span className="rounded-sm border border-ink/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink/50">
                           {t("organizationBadge")}
                         </span>
                       ) : null}

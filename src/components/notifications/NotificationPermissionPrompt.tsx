@@ -107,14 +107,14 @@ export function NotificationPermissionPrompt({
                   type="button"
                   onClick={() => void handleEnable()}
                   disabled={busy}
-                  className="focus-ring rounded-full bg-gold px-4 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-gold-bright disabled:opacity-50"
+                  className="focus-ring rounded-sm bg-gold px-4 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-gold-bright disabled:opacity-50"
                 >
                   {busy ? "Enabling…" : error ? "Try again" : "Enable"}
                 </button>
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="focus-ring rounded-full px-3 py-1.5 text-sm text-ink/50 transition-colors hover:text-ink"
+                  className="focus-ring rounded-sm px-3 py-1.5 text-sm text-ink/50 transition-colors hover:text-ink"
                 >
                   Not now
                 </button>

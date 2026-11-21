@@ -126,7 +126,7 @@ export function MembersPanel({
             <div>
               <span className="text-ink">{m.name}</span>
               {m.role === "MANAGER" ? (
-                <span className="ml-2 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold-deep">
+                <span className="ml-2 rounded-sm bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold-deep">
                   {t("managerBadge")}
                 </span>
               ) : null}

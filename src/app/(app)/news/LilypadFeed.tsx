@@ -143,7 +143,7 @@ function LilypadCardView({ post, activeCategoryId }: { post: LilypadPost; active
       rel="noopener noreferrer"
       className="focus-ring block h-full"
     >
-      <Card className="flex h-full flex-col overflow-hidden p-0 transition-transform duration-300 hover:-translate-y-0.5">
+      <Card className="flex h-full flex-col overflow-hidden p-0 transition-transform duration-300">
         <div className="relative aspect-[16/10] w-full shrink-0 bg-sprout/15">
           {post.image ? (
             <Image src={post.image} alt="" fill unoptimized className="object-cover" />

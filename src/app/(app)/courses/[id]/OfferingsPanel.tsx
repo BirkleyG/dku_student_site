@@ -113,7 +113,7 @@ export function OfferingsPanel({
           <Link
             key={o.id}
             href={`/professors/${o.professor.id}`}
-            className="focus-ring rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-gold hover:text-ink"
+            className="focus-ring rounded-sm border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-gold hover:text-ink"
           >
             {o.professor.firstName} {o.professor.lastName} · {o.semester}
           </Link>
@@ -122,7 +122,7 @@ export function OfferingsPanel({
         {canEdit && !adding ? (
           <button
             onClick={() => setAdding(true)}
-            className="focus-ring inline-flex items-center gap-1 rounded-full border border-dashed border-ink/20 px-3 py-1.5 text-xs text-ink/50 transition-colors hover:border-ink/40 hover:text-ink"
+            className="focus-ring inline-flex items-center gap-1 rounded-sm border border-dashed border-ink/20 px-3 py-1.5 text-xs text-ink/50 transition-colors hover:border-ink/40 hover:text-ink"
           >
             <Plus className="h-3.5 w-3.5" /> Link a professor
           </button>

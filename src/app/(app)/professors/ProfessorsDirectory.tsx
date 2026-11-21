@@ -102,7 +102,7 @@ export function ProfessorsDirectory({
               <StaggerItem key={p.id}>
                 <Card className="flex h-full flex-col">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="w-fit rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+                    <span className="w-fit rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                       {p.department}
                     </span>
                     {isAdmin || p.addedById === currentUserId ? (

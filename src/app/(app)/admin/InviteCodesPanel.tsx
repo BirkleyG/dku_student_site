@@ -70,7 +70,7 @@ export function InviteCodesPanel({ initialCodes }: { initialCodes: InviteCode[] 
         <button
           onClick={() => void createCode()}
           disabled={creating || !netId.trim()}
-          className="focus-ring rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
+          className="focus-ring rounded-sm bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright disabled:opacity-50"
         >
           {creating ? t("generating") : t("generateButton")}
         </button>

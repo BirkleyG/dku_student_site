@@ -28,7 +28,7 @@ export const navItems: NavItem[] = [
   { href: "/home", label: "Home", labelKey: "home", icon: Home },
   { href: "/events", label: "Events", labelKey: "events", icon: CalendarDays },
   { href: "/eats", label: "DKU Eats", labelKey: "eats", icon: UtensilsCrossed },
-  { href: "/chat", label: "Chat", labelKey: "chat", icon: MessagesSquare },
+  { href: "/chat", label: "Board", labelKey: "chat", icon: MessagesSquare },
   { href: "/news", label: "News", labelKey: "news", icon: Newspaper },
   { href: "/wisdom", label: "Wisdom", labelKey: "wisdom", icon: Compass },
   { href: "/dear-dku", label: "Dear DKU", labelKey: "dearDku", icon: Pencil },
