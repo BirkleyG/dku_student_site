@@ -47,7 +47,7 @@ export function CatalogPicker({ onPick }: { onPick: (course: CatalogCourse) => v
               }}
               className="focus-ring flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-paper-dim"
             >
-              <span className="shrink-0 rounded-full bg-sprout/25 px-2 py-0.5 text-xs font-medium text-sprout-deep">
+              <span className="shrink-0 rounded-sm bg-sprout/25 px-2 py-0.5 text-xs font-medium text-sprout-deep">
                 {c.code}
               </span>
               <span className="min-w-0">

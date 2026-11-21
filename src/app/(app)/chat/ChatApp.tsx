@@ -319,13 +319,13 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
               <div className="mt-1.5 flex gap-2">
                 <button
                   onClick={() => void respondToInvite(inv, "accept")}
-                  className="focus-ring rounded-full bg-ink px-3 py-1 text-xs text-paper"
+                  className="focus-ring rounded-sm bg-ink px-3 py-1 text-xs text-paper"
                 >
                   {t("acceptInvite")}
                 </button>
                 <button
                   onClick={() => void respondToInvite(inv, "decline")}
-                  className="focus-ring rounded-full border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:text-ink"
+                  className="focus-ring rounded-sm border border-ink/20 px-3 py-1 text-xs text-ink/70 hover:text-ink"
                 >
                   {t("declineInvite")}
                 </button>
@@ -425,7 +425,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           {selected.kind === "GROUP" ? (
             <button
               onClick={() => setShowManage(true)}
-              className="focus-ring shrink-0 rounded-full border border-ink/15 px-3 py-1 text-xs text-ink/70 hover:text-ink"
+              className="focus-ring shrink-0 rounded-sm border border-ink/15 px-3 py-1 text-xs text-ink/70 hover:text-ink"
             >
               {t("manageGroup")}
             </button>
@@ -572,7 +572,7 @@ function SidebarRow({
       <span className="text-ink/40">{icon}</span>
       <span className={`truncate ${shownUnread > 0 ? "font-semibold text-ink" : ""}`}>{label}</span>
       {shownMentions > 0 ? (
-        <span className="ml-auto shrink-0 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-semibold leading-none text-ink" title="Mentions">
+        <span className="ml-auto shrink-0 rounded-sm bg-gold px-1.5 py-0.5 text-[10px] font-semibold leading-none text-ink" title="Mentions">
           @{shownMentions}
         </span>
       ) : null}
@@ -710,7 +710,7 @@ function MessageRow({
 
           <button
             onClick={() => setPickerOpen((v) => !v)}
-            className="focus-ring flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-ink/40 transition-colors hover:bg-paper-dim hover:text-ink"
+            className="focus-ring flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs text-ink/40 transition-colors hover:bg-paper-dim hover:text-ink"
             aria-label={t("addReactionAria")}
           >
             <SmilePlus className="h-3.5 w-3.5" />
@@ -884,7 +884,7 @@ function Composer({
       <button
         onClick={send}
         disabled={disabled || !value.trim()}
-        className="focus-ring shrink-0 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
+        className="focus-ring shrink-0 rounded-sm bg-gold px-4 py-2.5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright disabled:opacity-50"
       >
         {t("send")}
       </button>

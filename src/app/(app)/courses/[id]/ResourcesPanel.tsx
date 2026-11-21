@@ -166,11 +166,11 @@ export function ResourcesPanel({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+                    <span className="rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                       {courseResourceTypeLabels[r.type]}
                     </span>
                     {r.examType ? (
-                      <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-ink/70">
+                      <span className="rounded-sm bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-ink/70">
                         {courseExamTypeLabels[r.examType]}
                       </span>
                     ) : null}

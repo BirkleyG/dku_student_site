@@ -233,14 +233,14 @@ export function Spotlight({
                       {onBack ? (
                         <button
                           onClick={onBack}
-                          className="focus-ring rounded-full border border-ink/15 px-4 py-2 text-xs font-medium text-ink hover:bg-paper-dim"
+                          className="focus-ring rounded-sm border border-ink/15 px-4 py-2 text-xs font-medium text-ink hover:bg-paper-dim"
                         >
                           {backLabel ?? "Back"}
                         </button>
                       ) : null}
                       <button
                         onClick={onNext}
-                        className="focus-ring rounded-full bg-gold px-4 py-2 text-xs font-medium text-ink hover:bg-gold-bright"
+                        className="focus-ring rounded-sm bg-gold px-4 py-2 text-xs font-medium text-ink hover:bg-gold-bright"
                       >
                         {nextLabel}
                       </button>

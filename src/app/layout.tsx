@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { getServerLocale } from "@/lib/i18n/server";
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -48,7 +48,7 @@ export default async function RootLayout({ children, modal }: LayoutProps<"/">) 
   return (
     <html
       lang={locale}
-      className={`${instrumentSerif.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink">
         <Providers locale={locale}>

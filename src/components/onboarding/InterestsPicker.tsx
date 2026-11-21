@@ -66,7 +66,7 @@ export function InterestsPicker({
 
         <button
           onClick={() => onContinue(items.filter((i) => selected.has(i.href)).map((i) => i.href))}
-          className="focus-ring mt-6 w-full rounded-full bg-gold px-5 py-3 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright"
+          className="focus-ring mt-6 w-full rounded-sm bg-gold px-5 py-3 text-sm font-medium text-ink transition-transform hover:bg-gold-bright"
         >
           {selected.size === 0 ? "Show me everything" : "Continue"}
         </button>

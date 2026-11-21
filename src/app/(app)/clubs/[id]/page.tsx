@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Globe, Mail, Phone } from "lucide-react";
+import { Globe, Mail, Phone, MessageSquare } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
@@ -50,11 +50,11 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
           ) : null}
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+              <span className="rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
                 {clubCategoryLabels[club.category]}
                 {club.athleticKind ? ` · ${athleticKindLabels[club.athleticKind]}` : ""}
               </span>
-              <span className="rounded-full border border-ink/15 px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-ink/50">
+              <span className="rounded-sm border border-ink/15 px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-ink/50">
                 {groupTypeLabels[club.type]}
               </span>
             </div>
@@ -92,6 +92,14 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[id]">) {
       <Reveal delay={0.2} className="mt-8">
         <h2 className="text-xs uppercase tracking-[0.15em] text-ink/50">{t("getInTouchHeading")}</h2>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-ink/70">
+          {(() => {
+            const contact = club.members.find((m) => m.role === "MANAGER" && m.userId !== currentUser?.id);
+            return contact ? (
+              <a href={`/chat/dm/${contact.userId}`} className="focus-ring flex items-center gap-1.5 font-medium text-ink hover:underline">
+                <MessageSquare className="h-4 w-4" /> {t("messageManager", { name: contact.user.firstName })}
+              </a>
+            ) : null;
+          })()}
           {club.contactMethod === "EMAIL" && club.contactValue ? (
             <a href={`mailto:${club.contactValue}`} className="focus-ring flex items-center gap-1.5 hover:text-ink">
               <Mail className="h-4 w-4" /> {club.contactValue}

@@ -211,7 +211,7 @@ export function ReviewsPanel({
                 <span className="flex items-center gap-1">
                   <Smile className="h-3.5 w-3.5 text-sprout-deep" /> {r.funRating}/5
                 </span>
-                {r.course ? <span className="rounded-full bg-sprout/25 px-2 py-0.5 text-sprout-deep">{r.course.code}</span> : null}
+                {r.course ? <span className="rounded-sm bg-sprout/25 px-2 py-0.5 text-sprout-deep">{r.course.code}</span> : null}
               </div>
               {isAdmin || r.isOwn ? (
                 <button

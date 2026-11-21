@@ -467,7 +467,7 @@ export function OnboardingFlow({ onClose, onComplete }: { onClose: () => void; o
           role="status"
           className="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex justify-center px-4 sm:bottom-10"
         >
-          <p className="rounded-full bg-ink/85 px-4 py-2 text-xs font-medium text-white shadow-lg">Loading the page…</p>
+          <p className="rounded-sm bg-ink/85 px-4 py-2 text-xs font-medium text-white shadow-lg">Loading the page…</p>
         </div>
       ) : null}
 
@@ -501,7 +501,7 @@ function ChoiceButton({
   return (
     <button
       onClick={onClick}
-      className={`focus-ring rounded-full px-5 py-2.5 text-sm font-medium transition-transform hover:-translate-y-0.5 ${
+      className={`focus-ring rounded-full px-5 py-2.5 text-sm font-medium transition-transform ${
         primary ? "bg-gold text-ink hover:bg-gold-bright" : "border border-ink text-ink hover:bg-ink hover:text-white"
       }`}
     >

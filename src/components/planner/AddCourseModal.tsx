@@ -130,7 +130,7 @@ export function AddCourseModal({
                 key={option.join("/")}
                 type="button"
                 onClick={() => fillFrom(unitCode)}
-                className="focus-ring flex items-center gap-1 rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/80 hover:border-gold hover:bg-gold/10"
+                className="focus-ring flex items-center gap-1 rounded-sm border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/80 hover:border-gold hover:bg-gold/10"
               >
                 {placedHere ? <Check className="h-3 w-3 text-sprout-deep" /> : null}
                 {option.join(" / ")}
@@ -274,17 +274,17 @@ export function AddCourseModal({
 
             <div className="flex items-center justify-between gap-2 pt-2">
               {editing && onDelete ? (
-                <button onClick={onDelete} className="focus-ring rounded-full px-4 py-2 text-sm text-danger">
+                <button onClick={onDelete} className="focus-ring rounded-sm px-4 py-2 text-sm text-danger">
                   {t("removeCourse")}
                 </button>
               ) : (
                 <span />
               )}
               <div className="flex gap-2">
-                <button onClick={onClose} className="focus-ring rounded-full px-4 py-2 text-sm text-ink/60">
+                <button onClick={onClose} className="focus-ring rounded-sm px-4 py-2 text-sm text-ink/60">
                   {t("cancel")}
                 </button>
-                <button onClick={save} className="focus-ring rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright">
+                <button onClick={save} className="focus-ring rounded-sm bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright">
                   {t("saveCourse")}
                 </button>
               </div>

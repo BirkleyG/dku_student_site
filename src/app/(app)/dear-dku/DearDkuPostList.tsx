@@ -94,7 +94,7 @@ function PostCard({
   return (
     <Card className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+        <span className="rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
           {dearDkuCategoryLabels[post.category]}
         </span>
         <span className="flex items-center gap-1 text-xs text-ink/45">

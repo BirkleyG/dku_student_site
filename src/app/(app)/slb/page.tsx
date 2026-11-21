@@ -126,8 +126,8 @@ export default async function SlbPage({ searchParams }: PageProps<"/slb">) {
     const total = i.yes + i.no;
     return (
       <Link key={i.id} href={`/slb/initiatives/${i.id}`} className="focus-ring block">
-        <Card className="h-full transition-transform duration-300 hover:-translate-y-0.5">
-          <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${status.className}`}>{t(STATUS_LABEL_KEYS[i.status])}</span>
+        <Card className="h-full transition-transform duration-300">
+          <span className={`inline-block rounded-sm px-2.5 py-0.5 text-[11px] font-medium ${status.className}`}>{t(STATUS_LABEL_KEYS[i.status])}</span>
           <h3 className="mt-2 font-display text-xl leading-snug">{i.title}</h3>
           <p className="mt-1 line-clamp-2 text-sm text-ink/60">{i.summary}</p>
           <p className="mt-3 text-xs text-ink/45">
@@ -223,7 +223,7 @@ export default async function SlbPage({ searchParams }: PageProps<"/slb">) {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="focus-ring inline-flex items-center gap-1 rounded-full border border-ink/15 px-3 py-1.5 text-sm text-ink/70 hover:border-ink/35 hover:text-ink"
+                    className="focus-ring inline-flex items-center gap-1 rounded-sm border border-ink/15 px-3 py-1.5 text-sm text-ink/70 hover:border-ink/35 hover:text-ink"
                   >
                     {link.label} <ArrowUpRight className="h-3 w-3" />
                   </a>

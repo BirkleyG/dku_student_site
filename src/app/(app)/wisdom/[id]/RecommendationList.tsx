@@ -6,11 +6,15 @@ import { StaggerGroup, StaggerItem } from "@/components/motion/Reveal";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useT } from "@/lib/i18n/client";
+import { PinMap } from "@/components/map/PinMap";
 
 type ApiRecommendation = {
   id: string;
   placeName: string;
   location: string | null;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   description: string;
   authorId: string;
   author: { firstName: string; lastName: string };
@@ -27,6 +31,8 @@ function isLink(value: string) {
 
 export function RecommendationList({
   topicId,
+  topicTitle,
+  category,
   requireLocation,
   currentUserId,
   isAdmin,
@@ -34,6 +40,8 @@ export function RecommendationList({
   initialRecommendations,
 }: {
   topicId: string;
+  topicTitle: string;
+  category: string;
   requireLocation: boolean;
   currentUserId: string | null;
   isAdmin: boolean;
@@ -43,9 +51,26 @@ export function RecommendationList({
   const t = useT("wisdom");
   const [recommendations, setRecommendations] = useState(initialRecommendations);
   const sorted = useMemo(() => [...recommendations].sort((a, b) => score(b) - score(a)), [recommendations]);
+  const pins = useMemo(
+    () =>
+      recommendations.flatMap((r) =>
+        r.lat != null && r.lng != null
+          ? [{ id: r.id, name: r.placeName, address: r.address ?? r.location, lat: r.lat, lng: r.lng, category, topicId }]
+          : [],
+      ),
+    [recommendations, category, topicId],
+  );
 
   return (
     <div className="mt-8">
+      <PinMap
+        pins={pins}
+        topics={[{ id: topicId, title: topicTitle, category }]}
+        fixedTopicId={topicId}
+        canAdd={canAdd}
+        onCreated={(rec) => setRecommendations((prev) => [...prev, rec as ApiRecommendation])}
+      />
+      <div className="mt-8" />
       <h2 className="font-display text-xl">
         {recommendations.length === 1
           ? t("recommendationCountOne", { count: recommendations.length })

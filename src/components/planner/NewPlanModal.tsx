@@ -33,10 +33,10 @@ export function NewPlanModal({ onClose, onCreate }: { onClose: () => void; onCre
           className="focus-ring mt-4 w-full rounded-xl border border-ink/15 bg-paper-dim px-3 py-2 text-sm"
         />
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="focus-ring rounded-full px-4 py-2 text-sm text-ink/60">
+          <button onClick={onClose} className="focus-ring rounded-sm px-4 py-2 text-sm text-ink/60">
             {t("cancel")}
           </button>
-          <button onClick={submit} className="focus-ring rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright">
+          <button onClick={submit} className="focus-ring rounded-sm bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-bright">
             {t("createPlanButton")}
           </button>
         </div>

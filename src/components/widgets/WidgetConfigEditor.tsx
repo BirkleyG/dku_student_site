@@ -308,7 +308,7 @@ export function WidgetConfigEditor({
 
         <button
           onClick={save}
-          className="focus-ring mt-5 w-full rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-ink/85"
+          className="focus-ring mt-5 w-full rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-ink/85"
         >
           {t("save")}
         </button>

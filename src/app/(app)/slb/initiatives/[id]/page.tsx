@@ -40,7 +40,7 @@ export default async function InitiativePage({ params }: PageProps<"/slb/initiat
       </Link>
 
       <Reveal className="mt-4">
-        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}>{status.label}</span>
+        <span className={`inline-block rounded-sm px-2.5 py-0.5 text-xs font-medium ${status.className}`}>{status.label}</span>
         <h1 className="mt-3 font-display text-4xl leading-tight">{initiative.title}</h1>
         <p className="mt-2 text-lg text-ink/65">{initiative.summary}</p>
         <p className="mt-3 text-sm text-ink/45">

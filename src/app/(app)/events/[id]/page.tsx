@@ -41,13 +41,13 @@ export default async function EventDetailPage({ params }: PageProps<"/events/[id
 
       <Reveal delay={0.1} className="mt-8">
         <span
-          className="rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+          className="rounded-sm px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
           style={{ backgroundColor: EVENT_CATEGORY_MAP[event.category].tint, color: EVENT_CATEGORY_MAP[event.category].color }}
         >
           {EVENT_CATEGORY_MAP[event.category].label}
         </span>
         {event.kind !== "EVENT" ? (
-          <span className="ml-2 rounded-full bg-ink px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+          <span className="ml-2 rounded-sm bg-ink px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
             {event.kind === "DEADLINE" ? t("kindDeadline") : t("kindHoliday")}
           </span>
         ) : null}

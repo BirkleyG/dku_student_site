@@ -66,7 +66,7 @@ export function DayAgenda({ day, events, onClose }: Props) {
                   <span className="block truncate text-xs text-ink/45">{event.location}</span>
                 </span>
                 <span
-                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+                  className="shrink-0 rounded-sm px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
                   style={{ backgroundColor: meta.tint, color: meta.color }}
                 >
                   {event.kind === "DEADLINE" ? t("kindDeadline") : event.kind === "HOLIDAY" ? t("kindHoliday") : meta.label}

@@ -180,7 +180,7 @@ export function PlannerBoard() {
         ))}
         <button
           onClick={() => setShowNewPlanModal(true)}
-          className="focus-ring flex items-center gap-1 rounded-full border border-dashed border-ink/25 px-4 py-2 text-sm text-ink/55 hover:border-ink/45"
+          className="focus-ring flex items-center gap-1 rounded-sm border border-dashed border-ink/25 px-4 py-2 text-sm text-ink/55 hover:border-ink/45"
         >
           <Plus className="h-3.5 w-3.5" />
           {t("newPlanButton")}
@@ -224,7 +224,7 @@ export function PlannerBoard() {
                 {!selectedPlan.isPrimary ? (
                   <button
                     onClick={() => patchPlan({ isPrimary: true })}
-                    className="focus-ring rounded-full border border-ink/15 px-3 py-2 text-xs text-ink/60 hover:border-ink/40"
+                    className="focus-ring rounded-sm border border-ink/15 px-3 py-2 text-xs text-ink/60 hover:border-ink/40"
                   >
                     {t("makePrimary")}
                   </button>
@@ -232,7 +232,7 @@ export function PlannerBoard() {
                 <button
                   onClick={exportPlan}
                   disabled={exporting}
-                  className="focus-ring flex items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-medium text-ink hover:bg-gold-bright disabled:opacity-50"
+                  className="focus-ring flex items-center gap-1.5 rounded-sm bg-gold px-4 py-2 text-xs font-medium text-ink hover:bg-gold-bright disabled:opacity-50"
                 >
                   <Download className="h-3.5 w-3.5" />
                   {exporting ? t("exporting") : t("exportButton")}
@@ -297,7 +297,7 @@ export function PlannerBoard() {
                                               },
                                             })
                                           }
-                                          className={`focus-ring flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition-transform hover:-translate-y-0.5 ${color}`}
+                                          className={`focus-ring flex items-center gap-1 rounded-sm border px-2 py-1 text-[11px] font-medium transition-transform ${color}`}
                                         >
                                           {c.genEdTags.includes("DUKE_FACULTY") ? (
                                             <GraduationCap className="h-3 w-3 shrink-0" aria-label={t("dukeFacultyBadgeAria")} />

@@ -313,7 +313,7 @@ export function InstallGuide({ lang, className = "" }: { lang: Lang; className?:
             <button
               onClick={handleInstallClick}
               disabled={installState === "installing"}
-              className="focus-ring mb-4 flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-60"
+              className="focus-ring mb-4 flex items-center gap-2 rounded-sm bg-gold px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright disabled:opacity-60"
             >
               <MonitorDown className="h-4 w-4" aria-hidden />
               {installState === "installing" ? t.installing : t.installButton}

@@ -121,7 +121,7 @@ export function NewPoll() {
                     type="button"
                     aria-label="Remove option"
                     onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
-                    className="focus-ring rounded-full px-2 text-ink/40 hover:text-ink"
+                    className="focus-ring rounded-sm px-2 text-ink/40 hover:text-ink"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -357,7 +357,7 @@ export function StatusControl({ initiativeId, status }: { initiativeId: string; 
           await send(`/api/slb/initiatives/${initiativeId}`, "PATCH", { status: e.target.value });
           router.refresh();
         }}
-        className="focus-ring rounded-full border border-ink/15 bg-paper px-3 py-1.5 text-sm text-ink"
+        className="focus-ring rounded-sm border border-ink/15 bg-paper px-3 py-1.5 text-sm text-ink"
       >
         {STATUS_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>

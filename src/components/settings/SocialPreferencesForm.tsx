@@ -110,7 +110,7 @@ export function SocialPreferencesForm({ initial }: { initial: SocialPreferences 
         <button
           onClick={save}
           disabled={state === "saving"}
-          className="focus-ring rounded-full bg-ink px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-ink/85 disabled:opacity-50"
+          className="focus-ring rounded-sm bg-ink px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-ink/85 disabled:opacity-50"
         >
           {state === "saving" ? t("saving") : t("save")}
         </button>

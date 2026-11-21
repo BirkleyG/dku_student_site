@@ -14,7 +14,7 @@ import type { WidgetData } from "./AppWidgetContent";
 const CTRL_INPUT =
   "w-full rounded-lg border border-ink/15 bg-white px-2.5 py-1.5 text-sm text-ink placeholder:text-ink/35 focus:border-gold focus:outline-none";
 const CTRL_BUTTON =
-  "focus-ring inline-flex items-center justify-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-ink/85 disabled:opacity-50";
+  "focus-ring inline-flex items-center justify-center gap-1.5 rounded-sm bg-ink px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-ink/85 disabled:opacity-50";
 
 function Empty({ label }: { label: string }) {
   return <p className="text-sm text-ink/40">{label}</p>;
@@ -545,7 +545,7 @@ export function ExtWidget({ instance, data }: { instance: WidgetInstance; data: 
       return (
         <div>
           <p className="line-clamp-2 text-sm text-ink/70">{wv.text}</p>
-          <span className="mt-1.5 inline-block rounded-full bg-ink px-3 py-1 text-xs font-medium text-white">{wv.cta} →</span>
+          <span className="mt-1.5 inline-block rounded-sm bg-ink px-3 py-1 text-xs font-medium text-white">{wv.cta} →</span>
         </div>
       );
     case "ticker":

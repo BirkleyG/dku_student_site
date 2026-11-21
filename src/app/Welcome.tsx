@@ -492,7 +492,7 @@ function ChoiceButton({
   return (
     <button
       onClick={onClick}
-      className={`focus-ring rounded-full px-5 py-2.5 text-sm font-medium transition-transform hover:-translate-y-0.5 ${
+      className={`focus-ring rounded-full px-5 py-2.5 text-sm font-medium transition-transform ${
         primary ? "bg-gold text-ink hover:bg-gold-bright" : "border border-ink text-ink hover:bg-ink hover:text-white"
       }`}
     >
@@ -540,7 +540,7 @@ function TextInputRow({
       />
       <button
         onClick={onSubmit}
-        className="focus-ring shrink-0 rounded-2xl bg-gold px-5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright"
+        className="focus-ring shrink-0 rounded-2xl bg-gold px-5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright"
       >
         {submitLabel}
       </button>

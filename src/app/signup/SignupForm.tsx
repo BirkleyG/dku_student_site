@@ -204,7 +204,7 @@ export function SignupForm() {
               <button
                 onClick={() => void advance()}
                 disabled={status === "submitting"}
-                className="focus-ring shrink-0 rounded-2xl bg-gold px-5 text-sm font-medium text-ink transition-transform hover:-translate-y-0.5 hover:bg-gold-bright disabled:opacity-50"
+                className="focus-ring shrink-0 rounded-2xl bg-gold px-5 text-sm font-medium text-ink transition-transform hover:bg-gold-bright disabled:opacity-50"
               >
                 {status === "submitting" ? t("submitting") : currentStep.optional && !value ? t("skip") : "↵"}
               </button>

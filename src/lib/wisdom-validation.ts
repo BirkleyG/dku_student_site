@@ -26,9 +26,17 @@ export const wisdomRecommendationSchema = z
     placeName: z.string().trim().min(2, "Give it a name").max(140),
     location: z.string().trim().max(300).optional().or(z.literal("")),
     description: z.string().trim().min(5, "Say a bit more about why").max(2000),
+    /** Map pin (GCJ-02). Both or neither. */
+    address: z.string().trim().max(300).optional().or(z.literal("")),
+    lat: z.number().min(-90).max(90).optional().nullable(),
+    lng: z.number().min(-180).max(180).optional().nullable(),
     requireLocation: z.boolean().optional(),
   })
-  .refine((data) => !data.requireLocation || (data.location && data.location.length > 0), {
+  .refine((data) => (data.lat == null) === (data.lng == null), {
+    message: "Pin needs both latitude and longitude",
+    path: ["lat"],
+  })
+  .refine((data) => !data.requireLocation || (data.location && data.location.length > 0) || data.lat != null, {
     message: "This topic requires a location or map link",
     path: ["location"],
   });

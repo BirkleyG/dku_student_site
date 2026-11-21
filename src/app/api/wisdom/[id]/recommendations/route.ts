@@ -25,9 +25,12 @@ export async function POST(request: Request, { params }: Params) {
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { placeName, location, description } = parsed.data;
+  const { placeName, location, description, address, lat, lng } = parsed.data;
   const recommendation = await prisma.wisdomRecommendation.create({
-    data: { topicId, placeName, location: location || null, description, authorId: user.id },
+    data: {
+      topicId, placeName, location: location || address || null, description, authorId: user.id,
+      address: address || null, lat: lat ?? null, lng: lng ?? null,
+    },
     include: { author: { select: { firstName: true, lastName: true } }, votes: true },
   });
   await awardPoints(user.id, "WISDOM_REC", recommendation.id);

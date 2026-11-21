@@ -42,7 +42,7 @@ export default async function DearDkuPostPage({ params }: PageProps<"/dear-dku/[
     <div className="mx-auto max-w-2xl">
       <Reveal className="flex items-start justify-between gap-4">
         <div>
-          <span className="rounded-full bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
+          <span className="rounded-sm bg-sprout/25 px-2.5 py-0.5 text-xs font-medium text-sprout-deep">
             {dearDkuCategoryLabels[post.category]}
           </span>
           <h1 className="mt-2 font-display text-4xl">{post.title}</h1>

@@ -178,7 +178,7 @@ export function NavMenu({
               >
                 {userLabel}
                 {typeof communityScore === "number" ? (
-                  <span className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold-bright">
+                  <span className="flex items-center gap-1 rounded-sm bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold-bright">
                     <Award className="h-3 w-3" /> {communityScore}
                   </span>
                 ) : null}

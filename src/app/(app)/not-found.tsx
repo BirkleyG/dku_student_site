@@ -11,7 +11,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/home"
-          className="focus-ring mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:bg-gold-bright"
+          className="focus-ring mt-8 inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-6 py-3 text-sm font-medium text-ink transition-all duration-200 hover:bg-gold-bright"
         >
           Back to DKU Life
         </Link>

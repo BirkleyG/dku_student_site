@@ -88,7 +88,7 @@ export function ImageUpload({ label, value, onChange, error }: Props) {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="focus-ring rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-ink shadow-sm hover:bg-white"
+              className="focus-ring rounded-sm bg-white/90 px-3 py-1.5 text-xs font-medium text-ink shadow-sm hover:bg-white"
             >
               Replace
             </button>
