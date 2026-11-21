@@ -5,9 +5,12 @@ import { defineConfig } from "prisma/config";
 // directly instead of via the `env()` helper — that helper throws at
 // config-load time if the var is unset, which would break `generate`
 // (and therefore `npm install`) on a fresh deploy before the DB is wired up.
+// Migrations take a Postgres advisory lock, which hangs behind a pooled connection
+// (e.g. Neon's `-pooler` host, PgBouncer). Set DIRECT_URL to the non-pooled string and the
+// Prisma CLI (migrate deploy) uses it; the app itself keeps using DATABASE_URL at runtime.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL,
   },
 });
