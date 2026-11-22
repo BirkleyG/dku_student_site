@@ -22,6 +22,7 @@ function serialize(a: Row, userId: string | null, now = new Date()) {
     id: a.id,
     title: a.title,
     body: a.body,
+    imageUrl: a.imageUrl,
     createdAt: a.createdAt.toISOString(),
     expiresAt: expiresAt({ createdAt: a.createdAt, ...t }).toISOString(),
     visible: isVisible({ createdAt: a.createdAt, ...t }, now),
@@ -57,14 +58,14 @@ export async function POST(request: Request) {
   });
   if (recent >= 3) return NextResponse.json({ error: "You can post 3 announcements a day" }, { status: 429 });
 
-  const { title, body, eventId } = parsed.data;
+  const { title, body, eventId, imageUrl } = parsed.data;
   if (eventId) {
     const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
     if (!event) return NextResponse.json({ error: "That event no longer exists" }, { status: 400 });
   }
 
   const created = await prisma.announcement.create({
-    data: { title, body, eventId: eventId || null, authorId: user.id },
+    data: { title, body, eventId: eventId || null, imageUrl: imageUrl || null, authorId: user.id },
     include,
   });
   return NextResponse.json({ announcement: serialize(created, user.id) }, { status: 201 });

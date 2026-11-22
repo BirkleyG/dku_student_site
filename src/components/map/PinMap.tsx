@@ -20,7 +20,7 @@ export type MapPin = {
 };
 export type MapTopic = { id: string; title: string; category: string };
 type Draft = { name: string; address: string; lat: number | null; lng: number | null };
-type GeoResult = { name: string; address: string; lat: number; lng: number };
+type GeoResult = { name: string; altName: string | null; address: string; lat: number; lng: number; km: number };
 
 // AMap road tiles: GCJ-02, fast inside mainland China, no key needed for tiles.
 const TILE_URL = "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
@@ -286,7 +286,13 @@ export function PinMap({
                     {results.map((r, i) => (
                       <li key={`${r.lat},${r.lng},${i}`}>
                         <button onClick={() => pick(r)} className="focus-ring block w-full px-3 py-2 text-left hover:bg-paper">
-                          <span className="block text-sm font-medium">{r.name}</span>
+                          <span className="flex items-baseline justify-between gap-3">
+                            <span className="min-w-0 text-sm font-medium">
+                              {r.name}
+                              {r.altName ? <span className="ml-2 font-normal text-ink/50">{r.altName}</span> : null}
+                            </span>
+                            <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink/45">{t("kmAway", { km: r.km })}</span>
+                          </span>
                           <span className="block truncate text-xs text-ink/55">{r.address}</span>
                         </button>
                       </li>

@@ -159,7 +159,10 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
   }, [selected]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    // Scroll only the message pane. scrollIntoView would also scroll the page, yanking
+    // readers past the Announcement Board above on every load and new message.
+    const pane = bottomRef.current?.parentElement;
+    if (pane) pane.scrollTop = pane.scrollHeight;
   }, [messages]);
 
   useEffect(() => {
@@ -291,7 +294,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
 
   if (!sidebar || !selected) {
     return (
-      <div className="flex h-[calc(100svh-var(--header-h))] items-center justify-center">
+      <div className="flex h-[min(720px,calc(100svh-var(--header-h)-2rem))] items-center justify-center border border-ink/15 bg-paper">
         <p className="text-sm text-ink/40">{error ?? t("loading")}</p>
       </div>
     );
@@ -313,7 +316,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
       {sidebar.invites && sidebar.invites.length > 0 ? (
         <SidebarSection label={t("invitesSection")}>
           {sidebar.invites.map((inv) => (
-            <div key={inv.id} className="rounded-lg bg-gold/10 px-2.5 py-2">
+            <div key={inv.id} className="rounded-sm border border-gold/40 bg-gold/10 px-2.5 py-2">
               <p className="text-sm text-ink">{inv.groupName}</p>
               <p className="text-xs text-ink/50">{t("invitedBy", { name: inv.inviterName })}</p>
               <div className="mt-1.5 flex gap-2">
@@ -360,13 +363,13 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
         )}
         <button
           onClick={() => setShowCreate(true)}
-          className="focus-ring mt-1 block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
+          className="focus-ring mt-1 block w-full rounded-sm px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-canvas hover:text-ink"
         >
           {t("createGroupLink")}
         </button>
         <button
           onClick={() => setShowJoin(true)}
-          className="focus-ring block block w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-paper hover:text-ink"
+          className="focus-ring block w-full rounded-sm px-2.5 py-1.5 text-left text-xs text-ink/45 hover:bg-canvas hover:text-ink"
         >
           {t("joinWithInviteCode")}
         </button>
@@ -400,16 +403,16 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
   );
 
   return (
-    <div className="flex h-[calc(100svh-var(--header-h))] w-full">
+    <div className="flex h-[min(720px,calc(100svh-var(--header-h)-2rem))] w-full overflow-hidden border border-ink/15 bg-canvas">
       <aside
         data-tour="chat-channel-list"
-        className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/10 bg-paper-dim px-3 py-4 sm:flex"
+        className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-ink/15 bg-paper px-3 py-4 sm:flex"
       >
         {channelList}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-ink/10 px-5 py-3.5">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-ink/15 px-5 py-3.5">
           <button
             type="button"
             onClick={() => setShowChannels(true)}
@@ -419,7 +422,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-lg text-ink">{selected.name}</h1>
+            <h3 className="truncate font-display text-xl text-ink">{selected.name}</h3>
             {selected.description ? <p className="truncate text-xs text-ink/45">{selected.description}</p> : null}
           </div>
           {selected.kind === "GROUP" ? (
@@ -454,7 +457,7 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
 
         {error ? <p className="px-5 pb-1 text-xs text-danger">{error}</p> : null}
 
-        <div data-tour="chat-composer" className="shrink-0 border-t border-ink/10 p-4">
+        <div data-tour="chat-composer" className="shrink-0 border-t border-ink/15 p-4">
           <Composer
             value={composer}
             onChange={setComposer}
@@ -536,7 +539,7 @@ function SidebarSection({ label, action, children }: { label: string; action?: R
   return (
     <div className="mt-5 first:mt-0">
       <div className="flex items-center justify-between px-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-ink/35">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink/50">{label}</p>
         {action}
       </div>
       <div className="mt-1.5 space-y-0.5">{children}</div>
@@ -565,8 +568,8 @@ function SidebarRow({
   return (
     <button
       onClick={onClick}
-      className={`focus-ring flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
-        active ? "bg-gold/15 text-ink" : "text-ink/65 hover:bg-paper hover:text-ink"
+      className={`focus-ring flex w-full items-center gap-2 rounded-sm border-l-2 px-2.5 py-1.5 text-left text-sm transition-colors ${
+        active ? "border-gold bg-canvas font-medium text-ink" : "border-transparent text-ink/65 hover:bg-canvas hover:text-ink"
       }`}
     >
       <span className="text-ink/40">{icon}</span>
@@ -667,8 +670,8 @@ function MessageRow({
         </div>
 
         <div
-          className={`mt-0.5 whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
-            isMine ? "rounded-br-sm bg-gold/20 text-ink" : "rounded-bl-sm bg-paper-dim text-ink/85"
+          className={`mt-0.5 whitespace-pre-wrap rounded-md px-3.5 py-2 text-sm leading-relaxed ${
+            isMine ? "rounded-br-none bg-gold/15 text-ink" : "rounded-bl-none border border-ink/10 bg-paper text-ink/85"
           }`}
         >
           <MessageBody body={message.body} mentions={message.mentions} />
@@ -879,7 +882,7 @@ function Composer({
         // for any input/textarea under 16px — text-sm here read as a jarring
         // zoom-in every time you tapped the composer. text-base clears that
         // threshold; sm:text-sm keeps the original size on desktop.
-        className="focus-ring w-full resize-none rounded-xl border border-ink/15 bg-paper-dim px-4 py-2.5 text-base text-ink placeholder:text-ink/30 focus:border-gold sm:text-sm"
+        className="focus-ring w-full resize-none rounded-sm border border-ink/20 bg-canvas px-4 py-2.5 text-base text-ink placeholder:text-ink/35 focus:border-ink sm:text-sm"
       />
       <button
         onClick={send}
