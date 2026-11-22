@@ -49,6 +49,15 @@ export function wgs84ToGcj02(p: LatLng): LatLng {
   return { lat: p.lat + dLat, lng: p.lng + dLng };
 }
 
+/** Great-circle distance in km. Fine to mix GCJ-02 and WGS-84 at this precision (they differ by ~0.5 km). */
+export function distanceKm(a: LatLng, b: LatLng): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
 export function isValidLatLng(lat: unknown, lng: unknown): lat is number {
   return (
     typeof lat === "number" && typeof lng === "number" &&

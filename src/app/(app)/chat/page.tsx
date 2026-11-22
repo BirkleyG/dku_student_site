@@ -27,22 +27,24 @@ export default async function ChatPage() {
   });
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-3xl px-4 pb-10 pt-6 sm:px-6">
-        <AnnouncementBoard
-          currentUserId={user.id}
-          isAdmin={hasScope(user, "CHAT")}
-          events={events.map((e) => ({ ...e, startsAt: e.startsAt.toISOString() }))}
-        />
-      </div>
-      <div id="messages" className="border-t border-ink">
-        <h2 className="mx-auto max-w-3xl px-4 pt-4 text-xs font-semibold uppercase tracking-[0.08em] text-ink/60 sm:px-6">
-          {t("messagesHeading")}
-        </h2>
-        <Suspense>
-          <ChatApp currentUserId={user.id} currentUserName={session.user.name ?? t("you")} />
-        </Suspense>
-      </div>
-    </>
+    <div className="mx-auto w-full max-w-5xl px-4 pb-12 pt-6 sm:px-6">
+      <AnnouncementBoard
+        currentUserId={user.id}
+        isAdmin={hasScope(user, "CHAT")}
+        events={events.map((e) => ({ ...e, startsAt: e.startsAt.toISOString() }))}
+      />
+
+      <section id="messages" aria-labelledby="messages-heading" className="mt-14 scroll-mt-[calc(var(--header-h)+1rem)]">
+        <div className="border-b border-ink pb-3">
+          <h2 id="messages-heading" className="font-display text-3xl">{t("messagesHeading")}</h2>
+          <p className="mt-1 max-w-xl text-sm text-ink/60">{t("messagesDescription")}</p>
+        </div>
+        <div className="mt-5">
+          <Suspense>
+            <ChatApp currentUserId={user.id} currentUserName={session.user.name ?? t("you")} />
+          </Suspense>
+        </div>
+      </section>
+    </div>
   );
 }

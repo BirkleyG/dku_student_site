@@ -1100,6 +1100,8 @@ model Announcement {
   id        String             @id @default(cuid())
   title     String
   body      String
+  /// Optional photo, an /api/uploads/<id> URL from the shared upload endpoint.
+  imageUrl  String?
   eventId   String?
   event     Event?             @relation(fields: [eventId], references: [id], onDelete: SetNull)
   authorId  String
