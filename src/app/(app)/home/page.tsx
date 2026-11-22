@@ -15,7 +15,7 @@ import { GoldBurst } from "@/components/effects/GoldBurst";
 import type { EatsWidgetData } from "@/lib/eats-live";
 import { getServerLocale, getT } from "@/lib/i18n/server";
 import { loadWidgetExt, type WidgetUser } from "@/lib/widget-data";
-import { dmChannelName } from "@/lib/chat";
+import { channelDisplayName } from "@/lib/chat";
 
 // fetchEatsWidgetData already catches its own errors and returns null on
 // failure, but this dashboard has been taken down by an unhandled query
@@ -47,8 +47,7 @@ export default async function HomePage() {
     widgetUser = user
       ? { id: user.id, role: user.role, communityScore: user.communityScore, showOnLeaderboard: user.showOnLeaderboard, createdAt: user.createdAt }
       : null;
-    // DKU Eats SSO signs people in with their DKU Life user id as the Firebase
-    // uid; guest orders are keyed by netID instead, so match on both.
+    // DKU Eats identifies people by NetID (orders, shop managers).
     eatsUser = user ? { id: user.id, netId: user.netId } : null;
     if (user) {
       try {
@@ -107,9 +106,9 @@ export default async function HomePage() {
     ? (
         await prisma.chatChannel.findMany({
           where: { OR: [{ id: "general" }, { members: { some: { userId } } }] },
-          select: { id: true, name: true, kind: true, members: { select: { user: { select: { id: true, firstName: true, lastName: true } } } } },
+          select: { id: true, name: true, kind: true, eatsCustomerId: true, members: { select: { user: { select: { id: true, firstName: true, lastName: true } } } } },
         })
-      ).map((c) => ({ id: c.id, name: c.kind === "DIRECT" ? dmChannelName(c, userId) : c.name }))
+      ).map((c) => ({ id: c.id, name: channelDisplayName(c, userId) }))
     : [];
 
   const trackedWidgets = savedRows.filter((w) => w.kind === "CHAT_TRACKED_CHANNEL");

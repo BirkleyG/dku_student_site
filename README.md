@@ -25,7 +25,8 @@ This repo's default branch (`claude/lucid-knuth-kxmnfs`) is what Vercel will imp
 | `RESEND_API_KEY` | Optional | Leave unset for now. Without it, signup verification links are written to the deployment's logs (Vercel dashboard → your project → **Logs**) instead of emailed — the app is fully usable this way, you just verify accounts by copying the link out of the logs. Add this later to send real emails. |
 | `NEXTAUTH_URL` | Optional | Not needed on Vercel or in local dev — Auth.js trusts the request host automatically in both. Only set this if deploying somewhere else and you hit a host/auth error. |
 | `BOOTSTRAP_ADMIN_NETID` | Optional | Every other signup requires an invite code, but invite codes can only be issued by an admin — and there's no admin on an empty database. Set this to one netID (e.g. `abc12`) to let *that* netID sign up once, with no code, as the first ADMIN, as long as the `User` table is still empty. Leave unset once you have an admin account; it has no effect on a non-empty database. |
-| `EATS_FIREBASE_PROJECT_ID`, `EATS_FIREBASE_CLIENT_EMAIL`, `EATS_FIREBASE_PRIVATE_KEY` | Optional | Enables single sign-on into the DKU Eats embed on the `/eats` tab. All three come from one JSON file: Firebase Console (DKU Eats' project, `eats-3f3fa`) → **Project Settings → Service Accounts → Generate new private key**. Without these, `/eats` still works, it just falls back to an unauthenticated embed. |
+| `EATS_API_URL` | Optional | The DKU Eats API (Railway) address. Turns on live open kitchens on Home and Eats hours and bake pickups in the calendar. Without it the Eats widgets show sample data. |
+| `EATS_SHARED_SECRET` | Optional | Must match `DKU_LIFE_SECRET` on the DKU Eats API. Turns on one-tap sign-in to the `/eats` embed, the order tracker, Eats points, and shop conversations in Messages (DKU Eats' "Message on DKU Life" buttons land in `/chat/eats/<shop>`). |
 | `NEXT_PUBLIC_EATS_URL` | Optional | Where DKU Eats is hosted. Defaults to `https://dkueats.com`. |
 
 ### Steps
@@ -58,4 +59,4 @@ No email provider is required in development — verification links are logged t
 
 ## Status
 
-Onboarding, auth, Home dashboard, Events, The Board, DKU Wisdom, DKU News, and Clubs & Orgs are fully built. DKU Eats is embedded with single sign-on (see the env var table above) — it's a separate app (`birkleyg/eats`), so it needs its own Firebase service account credentials to enable SSO.
+Onboarding, auth, Home dashboard, Events, The Board, DKU Wisdom, DKU News, and Clubs & Orgs are fully built. DKU Eats is a separate app (`birkleyg/eats`) embedded at `/eats`. It's linked by `EATS_API_URL` and `EATS_SHARED_SECRET` (see the env var table above): one-tap sign-in, live widgets and calendar, points, and customer ↔ shop conversations in Messages.

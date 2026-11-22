@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { ACADEMIC_CALENDAR } from "@/lib/academic-calendar";
 import { campusDayKey, campusWallToDate } from "@/lib/datetime";
 import { expandEatsAvailability } from "@/lib/eats-calendar";
-import { fetchEatsVendorsForCalendar } from "@/lib/eats-live";
+import { fetchEatsCatalogForCalendar } from "@/lib/eats-live";
 
 export const CALENDAR_SOURCES = ["events", "academic", "eats"] as const;
 export type CalendarSource = (typeof CALENDAR_SOURCES)[number];
@@ -21,7 +21,7 @@ export type CalendarFeedItem = {
   start: string;
   end: string;
   allDay: boolean;
-  /** Event category key for `events`; "session" | "holiday" for `academic`; "hours" | "pickup" | "slots" for `eats`. */
+  /** Event category key for `events`; "session" | "holiday" for `academic`; "hours" | "pickup" for `eats`. */
   category: string;
   url: string;
 };
@@ -121,11 +121,11 @@ export async function buildCalendarFeed(opts: {
   }
 
   if (sources.includes("eats")) {
-    const vendors = await fetchEatsVendorsForCalendar();
-    if (!vendors) {
+    const catalog = await fetchEatsCatalogForCalendar();
+    if (!catalog) {
       unavailable.push("eats");
     } else {
-      for (const e of expandEatsAvailability(vendors, from, to)) {
+      for (const e of expandEatsAvailability(catalog, from, to)) {
         items.push({
           id: e.id,
           source: "eats",
@@ -136,7 +136,7 @@ export async function buildCalendarFeed(opts: {
           end: e.endsAt.toISOString(),
           allDay: e.allDay,
           category: e.kind,
-          url: `${baseUrl}/eats`,
+          url: `${baseUrl}/eats?shop=${encodeURIComponent(e.vendorSlug)}`,
         });
       }
     }

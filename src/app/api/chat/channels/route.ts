@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasScope } from "@/lib/permissions";
-import { ensureGeneralChannel, createChatGroup, dmChannelName, MAX_OWNED_GROUPS } from "@/lib/chat";
+import { ensureGeneralChannel, createChatGroup, channelDisplayName, dmChannelName, MAX_OWNED_GROUPS } from "@/lib/chat";
 import { chatGroupSchema } from "@/lib/chat-validation";
 import { getMentionCounts, getUnreadCounts } from "@/lib/chat-state";
 
-/** Sidebar data: the general channel, the groups this user has joined, and their DMs. */
+/** Sidebar data: the general channel, the groups this user has joined, their DMs, and DKU Eats shop conversations. */
 export async function GET() {
   const session = await auth();
   if (!session?.user?.email) {
@@ -18,7 +18,7 @@ export async function GET() {
 
   const general = await ensureGeneralChannel();
 
-  const [groups, dms, invites] = await Promise.all([
+  const [groups, dms, invites, shops] = await Promise.all([
     prisma.chatChannel.findMany({
       where: { kind: "GROUP", members: { some: { userId: user.id } } },
       orderBy: { name: "asc" },
@@ -36,10 +36,15 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.chatChannel.findMany({
+      where: { kind: "EATS_VENDOR", members: { some: { userId: user.id } } },
+      include: { members: { include: { user: { select: { id: true, firstName: true, lastName: true } } } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   const [unread, mentions] = await Promise.all([
-    getUnreadCounts(user, [general.id, ...groups.map((g) => g.id), ...dms.map((d) => d.id)]),
+    getUnreadCounts(user, [general.id, ...groups.map((g) => g.id), ...dms.map((d) => d.id), ...shops.map((s) => s.id)]),
     getMentionCounts(user.id),
   ]);
   const counts = (id: string) => ({ unread: unread[id] ?? 0, mentions: mentions[id] ?? 0 });
@@ -58,6 +63,14 @@ export async function GET() {
       name: dmChannelName(d, user.id),
       otherUserId: d.members.find((m) => m.userId !== user.id)?.userId ?? null,
       ...counts(d.id),
+    })),
+    shops: shops.map((s) => ({
+      id: s.id,
+      name: channelDisplayName(s, user.id),
+      // The customer sees the shop; the shop's team sees which customer.
+      asShop: s.eatsCustomerId !== user.id,
+      vendorSlug: s.eatsVendorSlug,
+      ...counts(s.id),
     })),
   });
 }

@@ -1,3 +1,4 @@
+import type { ChatChannelKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 // Per-user chat state: what you've read and where you've been @mentioned.
@@ -51,7 +52,7 @@ export async function getMentionCounts(userId: string): Promise<Record<string, n
  * message text really contains "@First Last". Anything else is dropped silently.
  */
 export async function validateMentions(params: {
-  channel: { id: string; kind: "GENERAL" | "GROUP" | "DIRECT" };
+  channel: { id: string; kind: ChatChannelKind };
   authorId: string;
   body: string;
   userIds: string[];

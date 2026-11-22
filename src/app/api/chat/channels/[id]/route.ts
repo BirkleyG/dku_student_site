@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isChannelMember, dmChannelName, canManageGroup } from "@/lib/chat";
+import { isChannelMember, channelDisplayName, canManageGroup } from "@/lib/chat";
 import { chatGroupSchema } from "@/lib/chat-validation";
 
 type Params = { params: Promise<{ id: string }> };
@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: Params) {
     channel: {
       id: channel.id,
       kind: channel.kind,
-      name: channel.kind === "DIRECT" ? dmChannelName(channel, user.id) : channel.name,
+      name: channelDisplayName(channel, user.id),
       description: channel.description,
       inviteCode: channel.inviteCode,
       ownerId: channel.createdById,

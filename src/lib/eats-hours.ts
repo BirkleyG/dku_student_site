@@ -1,52 +1,47 @@
-// Port of DKU Eats' opening-hours logic (birkleyg/eats functions/src/hours.ts)
-// so DKU Life counts a kitchen as "open" exactly the way DKU Eats does. Keep
-// in sync if that file changes.
+// Port of DKU Eats' opening-hours logic (birkleyg/eats src/lib/time.js,
+// `isOpenNow`) so DKU Life counts a kitchen as "open" exactly the way DKU Eats
+// does. Keep in sync if that file changes.
+//
+// Hours are { Mon: { open, from: "HH:MM", to: "HH:MM" }, ... } in campus time.
+// The closing minute is exclusive, from === to means 24h, and a window that
+// ends before it starts runs past midnight.
 
 import { toCampus } from "@/lib/datetime";
 
 const WEEK_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const campusNow = toCampus; // Kunshan, UTC+8, no DST
+type DayHours = { open?: boolean; from?: string; to?: string };
+type Window = { fromMin: number; toMin: number };
 
 function toMinutes(val: unknown): number | null {
-  if (typeof val !== "string" || !val) return null;
-  const [h, m] = val.split(":").map((n) => Number(n));
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return h * 60 + m;
+  if (typeof val !== "string") return null;
+  const match = val.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
 }
 
-function isMinutesInRange(nowMin: number, start: number | null, end: number | null): boolean {
-  if (start === null || end === null) return false;
-  if (start === end) return true;
-  if (start < end) return nowMin >= start && nowMin <= end;
-  return nowMin >= start || nowMin <= end; // overnight
+function dayWindow(hours: unknown, dayIndex: number): Window | null {
+  if (!hours || typeof hours !== "object") return null;
+  const h = (hours as Record<string, DayHours | undefined>)[WEEK_KEYS[dayIndex]];
+  if (!h?.open) return null;
+  const fromMin = toMinutes(h.from);
+  const toMin = toMinutes(h.to);
+  return fromMin === null || toMin === null ? null : { fromMin, toMin };
+}
+
+function inWindow(win: Window | null, minutes: number): boolean {
+  if (!win) return false;
+  if (win.fromMin === win.toMin) return true;
+  if (win.fromMin < win.toMin) return minutes >= win.fromMin && minutes < win.toMin;
+  return minutes >= win.fromMin || minutes < win.toMin;
 }
 
 export function isOpenNow(hours: unknown, now: Date = new Date()): boolean {
-  if (!hours) return true;
-  const local = campusNow(now);
-  const nowMin = local.getHours() * 60 + local.getMinutes();
-
-  if (typeof hours === "string") {
-    const lower = hours.toLowerCase();
-    if (lower.includes("closed")) return false;
-    const range = hours.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-    if (range) return isMinutesInRange(nowMin, toMinutes(range[1]), toMinutes(range[2]));
-    if (lower.includes("opens")) {
-      const openMatch = hours.match(/(\d{1,2}:\d{2})/);
-      if (openMatch) {
-        const start = toMinutes(openMatch[1]);
-        return start === null ? true : nowMin >= start;
-      }
-    }
-    return true;
-  }
-
-  if (typeof hours === "object") {
-    const h = (hours as Record<string, { open?: boolean; from?: string; to?: string }>)[WEEK_KEYS[local.getDay()]];
-    if (!h || !h.open) return false;
-    return isMinutesInRange(nowMin, toMinutes(h.from), toMinutes(h.to));
-  }
-
-  return true;
+  const local = toCampus(now);
+  const minutes = local.getHours() * 60 + local.getMinutes();
+  const day = local.getDay();
+  if (inWindow(dayWindow(hours, day), minutes)) return true;
+  // Yesterday's overnight window spilling past midnight.
+  const yesterday = dayWindow(hours, (day + 6) % 7);
+  return Boolean(yesterday && yesterday.fromMin > yesterday.toMin && minutes < yesterday.toMin);
 }

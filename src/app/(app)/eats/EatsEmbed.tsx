@@ -8,38 +8,32 @@ import { useT } from "@/lib/i18n/client";
 
 const EATS_URL = process.env.NEXT_PUBLIC_EATS_URL ?? "https://dkueats.com";
 
-export function EatsEmbed({ loggedIn }: { loggedIn: boolean }) {
+export function EatsEmbed({ loggedIn, path = "/" }: { loggedIn: boolean; path?: string }) {
   const t = useT("eats");
-  const [src, setSrc] = useState<string | null>(loggedIn ? null : EATS_URL);
+  const base = `${EATS_URL}${path}`;
+  // undefined = still asking DKU Life for a sign-in token; null = go without one.
+  const [ssoToken, setSsoToken] = useState<string | null | undefined>(undefined);
+  const src = !loggedIn || ssoToken === null ? base : ssoToken ? `${base}?${new URLSearchParams({ dkulife: ssoToken }).toString()}` : null;
 
   useEffect(() => {
     if (!loggedIn) return;
     let cancelled = false;
 
+    // One-time signed token (src/lib/eats-sso.ts): DKU Eats swaps it for a
+    // session, so whoever is signed in here is signed in there too.
     fetch("/api/eats/sso", { method: "POST" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (cancelled) return;
-        if (!data?.token) {
-          setSrc(EATS_URL);
-          return;
-        }
-        const params = new URLSearchParams({
-          sso: data.token,
-          name: data.name ?? "",
-          netId: data.netId ?? "",
-          email: data.email ?? "",
-        });
-        setSrc(`${EATS_URL}/?${params.toString()}`);
+        if (!cancelled) setSsoToken(typeof data?.token === "string" ? data.token : null);
       })
       .catch(() => {
-        if (!cancelled) setSrc(EATS_URL);
+        if (!cancelled) setSsoToken(null);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [loggedIn]);
+  }, [loggedIn, base]);
 
   return (
     <div data-tour="eats-embed" className="relative h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-paper">
@@ -62,11 +56,11 @@ function EatsLoading() {
   );
 }
 
-export function OpenInNewTab() {
+export function OpenInNewTab({ path = "/" }: { path?: string }) {
   const t = useT("eats");
   return (
     <a
-      href={EATS_URL}
+      href={`${EATS_URL}${path}`}
       target="_blank"
       rel="noopener noreferrer"
       title={t("openInNewTab")}

@@ -129,6 +129,27 @@ export function dmChannelName(
   return other ? `${other.firstName} ${other.lastName}` : "Direct message";
 }
 
+type NamedChannel = {
+  kind: ChatChannelKind;
+  name: string;
+  eatsCustomerId?: string | null;
+  members: { user: { firstName: string; lastName: string; id: string } }[];
+};
+
+/**
+ * What a channel is called for `viewerId`: the other person for a DM; for a
+ * DKU Eats shop conversation, the shop (for the customer) or
+ * "Customer · Shop" (for the shop's team).
+ */
+export function channelDisplayName(channel: NamedChannel, viewerId: string): string {
+  if (channel.kind === "DIRECT") return dmChannelName(channel, viewerId);
+  if (channel.kind === "EATS_VENDOR" && channel.eatsCustomerId && channel.eatsCustomerId !== viewerId) {
+    const customer = channel.members.find((m) => m.user.id === channel.eatsCustomerId)?.user;
+    if (customer) return `${customer.firstName} ${customer.lastName} · ${channel.name}`;
+  }
+  return channel.name;
+}
+
 const MESSAGE_PREVIEW_LENGTH = 120;
 
 function truncateBody(body: string): string {
@@ -136,7 +157,7 @@ function truncateBody(body: string): string {
   return trimmed.length > MESSAGE_PREVIEW_LENGTH ? `${trimmed.slice(0, MESSAGE_PREVIEW_LENGTH).trimEnd()}…` : trimmed;
 }
 
-/** Every explicit member of a channel (GROUP or DIRECT), minus the sender. GENERAL has no membership rows — see `isChannelMember`. */
+/** Every explicit member of a channel (GROUP, DIRECT or EATS_VENDOR), minus the sender. GENERAL has no membership rows — see `isChannelMember`. */
 async function otherChannelMemberIds(channelId: string, excludeUserId: string): Promise<string[]> {
   const members = await prisma.chatChannelMember.findMany({
     where: { channelId, userId: { not: excludeUserId } },

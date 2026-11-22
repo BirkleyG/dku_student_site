@@ -1,11 +1,13 @@
-import type { Firestore, Timestamp } from "firebase-admin/firestore";
-import { getEatsAdminApp, isEatsConfigured } from "@/lib/eats-sso";
+import { eatsApiUrl, eatsServerAuthHeader, isEatsConfigured, isEatsLinked } from "@/lib/eats-sso";
 import { isOpenNow } from "@/lib/eats-hours";
-import type { EatsVendorRecord } from "@/lib/eats-calendar";
+import type { EatsCatalog, EatsDropRecord, EatsVendorRecord } from "@/lib/eats-calendar";
 import { awardPoints } from "@/lib/points";
 
-// Reads DKU Eats' Firestore directly with the same service account DKU Life
-// already uses for SSO, so the home widgets show real kitchens and orders.
+// Live DKU Eats data from its v2 API (birkleyg/eats, server/). Public data
+// (kitchens, hours, bakes) comes from GET /api/vendors; per-person data
+// (orders, shops) and anonymous activity come from /api/integrations/dku-life,
+// which needs the shared secret. Every call is short and best-effort: if DKU
+// Eats is slow or down, callers fall back to sample data or skip it.
 
 export type EatsVendor = { id: string; name: string; open: boolean };
 export type EatsOrderStatus = { restaurant: string; status: string; detail: string | null };
@@ -25,38 +27,66 @@ export type EatsWidgetData = {
   lastOrder: EatsLastOrder | null;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  incoming: "Order received",
-  tofire: "In the queue",
-  onfire: "Being prepared",
-  done: "Ready for pickup",
+export type EatsUserOrder = {
+  id: string;
+  code: string;
+  status: string;
+  vendorName: string;
+  vendorSlug: string;
+  pickupDate: string | null;
+  pickupTime: string;
+  createdAt: string;
 };
-// A finished order stays on the tracker for a while so you can see it's ready.
-const DONE_VISIBLE_MS = 3 * 60 * 60 * 1000;
+export type EatsUserData = { orders: EatsUserOrder[]; shops: { id: string; slug: string; name: string }[] };
+type EatsActivityOrder = { id: string; vendorName: string; createdAt: string };
+
+const STATUS_LABELS: Record<string, string> = {
+  placed: "Order received",
+  preparing: "Being prepared",
+  ready: "Ready for pickup",
+};
+// A ready order stays on the tracker for a while so you can see it's waiting.
+const READY_VISIBLE_MS = 3 * 60 * 60 * 1000;
 const TIMEOUT_MS = 2500;
-const VENDOR_CACHE_MS = 60 * 1000;
+const CATALOG_CACHE_MS = 60 * 1000;
+const BUSY_WINDOW_MS = 60 * 60 * 1000;
 // After a failure or timeout, skip DKU Eats for a minute so an outage costs
-// one slow home-page load instead of slowing every visit.
+// one slow page load instead of slowing every visit.
 const FAILURE_BACKOFF_MS = 60 * 1000;
 let lastFailureAt = 0;
+let catalogCache: { at: number; catalog: EatsCatalog } | null = null;
 
-let vendorCache: { at: number; vendors: EatsVendorRecord[] } | null = null;
+const backingOff = () => Date.now() - lastFailureAt < FAILURE_BACKOFF_MS;
 
-// Loaded on demand (like firebase-admin/auth in eats-sso.ts) so a module-load
-// problem in the Firebase SDK can never take down pages that import this file.
-let firestore: Firestore | null = null;
-async function db(): Promise<Firestore> {
-  if (!firestore) {
-    const { getFirestore } = await import("firebase-admin/firestore");
-    firestore = getFirestore(getEatsAdminApp());
+export class EatsHttpError extends Error {
+  constructor(public status: number, path: string) {
+    super(`DKU Eats ${path} answered ${status}`);
   }
-  return firestore;
 }
 
-function toMillis(value: unknown): number {
-  if (value && typeof (value as Timestamp).toMillis === "function") return (value as Timestamp).toMillis();
-  if (typeof value === "number") return value;
-  return 0;
+/**
+ * GET a DKU Eats API path. Throws on failure or timeout. Only outages (network
+ * errors, timeouts, 5xx) start the backoff; a 404 for one shop doesn't.
+ */
+export async function eatsGet<T>(path: string, { server = false } = {}): Promise<T> {
+  const base = eatsApiUrl();
+  if (!base) throw new Error("DKU Eats isn't configured (EATS_API_URL)");
+  let res: Response;
+  try {
+    res = await fetch(`${base}/api${path}`, {
+      headers: server ? eatsServerAuthHeader() : {},
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (err) {
+    lastFailureAt = Date.now();
+    throw err;
+  }
+  if (!res.ok) {
+    if (res.status >= 500) lastFailureAt = Date.now();
+    throw new EatsHttpError(res.status, path);
+  }
+  return (await res.json()) as T;
 }
 
 function timeAgo(ms: number, now: number): string {
@@ -66,197 +96,130 @@ function timeAgo(ms: number, now: number): string {
   return hours < 24 ? `${hours}h ago` : `${Math.round(hours / 24)}d ago`;
 }
 
-async function loadVendors() {
-  if (vendorCache && Date.now() - vendorCache.at < VENDOR_CACHE_MS) return vendorCache.vendors;
-  const snap = await (await db()).collection("vendors").select("name", "hours", "approved", "display", "serviceType", "weeklyPickup", "quotas", "quotaSystemEnabled").get();
-  const vendors = snap.docs
-    // Same rule the DKU Eats app uses for its own kitchen list.
-    .filter((doc) => doc.get("approved") !== false && doc.get("display") !== false)
-    .map((doc) => ({
-      id: doc.id,
-      name: String(doc.get("name") ?? "").trim(),
-      hours: doc.get("hours"),
-      serviceType: doc.get("serviceType"),
-      weeklyPickup: doc.get("weeklyPickup"),
-      quotas: doc.get("quotas"),
-      quotaSystemEnabled: doc.get("quotaSystemEnabled"),
-    }))
-    .filter((v) => v.name)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  vendorCache = { at: Date.now(), vendors };
-  return vendors;
+async function loadCatalog(): Promise<EatsCatalog> {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_CACHE_MS) return catalogCache.catalog;
+  const data = await eatsGet<{ vendors: EatsVendorRecord[]; drops: EatsDropRecord[] }>("/vendors");
+  const catalog: EatsCatalog = {
+    vendors: data.vendors.map((v) => ({
+      id: v.id,
+      slug: v.slug,
+      name: String(v.name ?? "").trim(),
+      kind: v.kind,
+      hours: v.hours,
+      acceptingOrders: v.acceptingOrders,
+    })).filter((v) => v.name),
+    drops: data.drops,
+  };
+  catalogCache = { at: Date.now(), catalog };
+  return catalog;
 }
 
-async function loadActiveOrder(uid: string | null, netId: string | null): Promise<EatsOrderStatus | null> {
-  const orders = (await db()).collection("orders");
-  const fields = ["vendorName", "status", "createdAt", "pickupTime", "orderCode"] as const;
-  // Queried by one field each and sorted here, so no composite index is needed.
-  const queries = [
-    uid ? orders.where("customerUid", "==", uid).select(...fields).limit(20).get() : null,
-    netId ? orders.where("customerNetId", "==", netId).select(...fields).limit(20).get() : null,
-  ].filter((q): q is NonNullable<typeof q> => q !== null);
-  if (queries.length === 0) return null;
-
-  const now = Date.now();
-  const seen = new Set<string>();
-  const candidates = (await Promise.all(queries))
-    .flatMap((snap) => snap.docs)
-    .filter((doc) => (seen.has(doc.id) ? false : (seen.add(doc.id), true)))
-    .map((doc) => ({
-      restaurant: String(doc.get("vendorName") ?? "DKU Eats"),
-      status: String(doc.get("status") ?? ""),
-      createdAt: toMillis(doc.get("createdAt")),
-      pickupTime: doc.get("pickupTime"),
-      orderCode: doc.get("orderCode"),
-    }))
-    .filter((o) => o.status in STATUS_LABELS && (o.status !== "done" || now - o.createdAt < DONE_VISIBLE_MS))
-    .sort((a, b) => b.createdAt - a.createdAt);
-
-  const latest = candidates[0];
-  if (!latest) return null;
-  const details = [
-    typeof latest.pickupTime === "string" && latest.pickupTime ? `Pickup ${latest.pickupTime}` : null,
-    latest.orderCode ? `Code ${latest.orderCode}` : null,
-  ].filter(Boolean);
-  return { restaurant: latest.restaurant, status: STATUS_LABELS[latest.status], detail: details.join(" · ") || null };
-}
-
-async function loadActivity(): Promise<EatsActivityItem[]> {
-  const snap = await (await db()).collection("orders").orderBy("createdAt", "desc").select("vendorName", "createdAt").limit(5).get();
-  const now = Date.now();
-  // Deliberately anonymous: only the kitchen and when, never who ordered.
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    text: `Someone ordered from ${String(doc.get("vendorName") ?? "a DKU Eats kitchen")}`,
-    timeAgo: timeAgo(toMillis(doc.get("createdAt")), now),
-  }));
-}
-
-const BUSY_WINDOW_MS = 60 * 60 * 1000;
-
-async function loadBusy(): Promise<EatsBusyItem[]> {
-  const snap = await (await db()).collection("orders").orderBy("createdAt", "desc").select("vendorName", "createdAt").limit(100).get();
-  const cutoff = Date.now() - BUSY_WINDOW_MS;
-  const counts = new Map<string, number>();
-  for (const doc of snap.docs) {
-    if (toMillis(doc.get("createdAt")) < cutoff) break;
-    const name = String(doc.get("vendorName") ?? "").trim();
-    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+/** Same rule as DKU Eats' own vendorStatus(): restaurants by hours, bakeries by an orderable bake. */
+function vendorIsOpen(vendor: EatsVendorRecord, drops: EatsDropRecord[], now: Date): boolean {
+  if (!vendor.acceptingOrders) return false;
+  if (vendor.kind === "bakery") {
+    return drops.some(
+      (d) => d.vendorId === vendor.id && d.status === "open" && (!d.orderDeadline || new Date(d.orderDeadline) > now),
+    );
   }
-  return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  return isOpenNow(vendor.hours, now);
 }
 
-async function loadLastOrder(uid: string, netId: string | null): Promise<EatsLastOrder | null> {
-  const orders = (await db()).collection("orders");
-  const fields = ["vendorName", "status", "createdAt"] as const;
-  const queries = [
-    orders.where("customerUid", "==", uid).select(...fields).limit(20).get(),
-    netId ? orders.where("customerNetId", "==", netId).select(...fields).limit(20).get() : null,
-  ].filter((q): q is NonNullable<typeof q> => q !== null);
-  const latest = (await Promise.all(queries))
-    .flatMap((snap) => snap.docs)
-    .map((doc) => ({
-      restaurant: String(doc.get("vendorName") ?? "DKU Eats"),
-      status: String(doc.get("status") ?? ""),
-      createdAt: toMillis(doc.get("createdAt")),
-    }))
-    .filter((o) => o.status !== "cancelled" && o.status !== "canceled" && o.createdAt > 0)
-    .sort((a, b) => b.createdAt - a.createdAt)[0];
+async function loadUser(netId: string): Promise<EatsUserData> {
+  return eatsGet<EatsUserData>(`/integrations/dku-life/users/${encodeURIComponent(netId.toLowerCase())}`, { server: true });
+}
+
+async function loadActivity(): Promise<EatsActivityOrder[]> {
+  return (await eatsGet<{ orders: EatsActivityOrder[] }>("/integrations/dku-life/activity", { server: true })).orders;
+}
+
+function activeOrder(orders: EatsUserOrder[], now: number): EatsOrderStatus | null {
+  const latest = orders.find(
+    (o) => o.status in STATUS_LABELS && (o.status !== "ready" || now - Date.parse(o.createdAt) < READY_VISIBLE_MS),
+  );
   if (!latest) return null;
-  return { restaurant: latest.restaurant, status: STATUS_LABELS[latest.status] ?? "Completed", timeAgo: timeAgo(latest.createdAt, Date.now()) };
+  const pickup = latest.pickupTime && latest.pickupTime !== "ASAP" ? `Pickup ${latest.pickupDate ? `${latest.pickupDate} ` : ""}${latest.pickupTime}` : null;
+  const details = [pickup, latest.code ? `Code ${latest.code}` : null].filter(Boolean);
+  return { restaurant: latest.vendorName, status: STATUS_LABELS[latest.status], detail: details.join(" · ") || null };
+}
+
+function lastOrderOf(orders: EatsUserOrder[], now: number): EatsLastOrder | null {
+  const latest = orders.find((o) => o.status !== "cancelled");
+  if (!latest) return null;
+  return {
+    restaurant: latest.vendorName,
+    status: STATUS_LABELS[latest.status] ?? "Completed",
+    timeAgo: timeAgo(Date.parse(latest.createdAt), now),
+  };
 }
 
 /**
- * Points sync: DKU Eats lives in its own Firestore, so orders are pulled in when the user opens their
- * Profile. Awards EATS_ORDER per order id (idempotent) and EATS_RUN_RESTAURANT if a vendor doc lists the
- * user as its owner. Best-effort with a timeout; never throws. (Vendor ownership field names are a guess
- * — ownerUid / ownerId / uid — the external webhook /api/points/external is the fallback.)
+ * Points sync, run when the user opens their Profile: EATS_ORDER per DKU Eats
+ * order (idempotent per order id) and EATS_RUN_RESTAURANT if they manage a
+ * shop. Matched by NetID, which is how DKU Eats identifies people. Never throws.
  */
 export async function syncEatsPoints(user: { id: string; netId: string | null }): Promise<void> {
-  if (!isEatsConfigured() || Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return;
-  const work = (async () => {
-    const firestore = await db();
-    const orders = firestore.collection("orders");
-    const [byUid, byNetId] = await Promise.all([
-      orders.where("customerUid", "==", user.id).select("status").limit(200).get(),
-      user.netId ? orders.where("customerNetId", "==", user.netId).select("status").limit(200).get() : null,
-    ]);
-    const seen = new Set<string>();
-    for (const doc of [...byUid.docs, ...(byNetId?.docs ?? [])]) {
-      if (seen.has(doc.id)) continue;
-      seen.add(doc.id);
-      const status = String(doc.get("status") ?? "");
-      if (status === "cancelled" || status === "canceled") continue;
-      await awardPoints(user.id, "EATS_ORDER", doc.id);
-    }
-    for (const field of ["ownerUid", "ownerId", "uid"]) {
-      const owned = await firestore.collection("vendors").where(field, "==", user.id).select("name").limit(1).get();
-      if (!owned.empty) {
-        await awardPoints(user.id, "EATS_RUN_RESTAURANT", owned.docs[0].id);
-        break;
-      }
-    }
-  })();
+  if (!isEatsLinked() || !user.netId || backingOff()) return;
   try {
-    await Promise.race([work, new Promise<void>((resolve) => setTimeout(resolve, TIMEOUT_MS))]);
+    const data = await loadUser(user.netId);
+    for (const order of data.orders) {
+      if (order.status !== "cancelled") await awardPoints(user.id, "EATS_ORDER", order.id);
+    }
+    if (data.shops[0]) await awardPoints(user.id, "EATS_RUN_RESTAURANT", data.shops[0].id);
   } catch (err) {
-    lastFailureAt = Date.now();
     console.error("DKU Eats points sync failed:", err);
   }
 }
 
 /** Real DKU Eats data for the home widgets, or null if Eats isn't configured or doesn't answer in time. */
 export async function fetchEatsWidgetData(user: { id: string; netId: string | null } | null): Promise<EatsWidgetData | null> {
-  if (!isEatsConfigured()) return null;
-  if (Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return null;
-
-  const work = (async () => {
-    const [vendors, order, activity, busy, lastOrder] = await Promise.all([
-      loadVendors(),
-      user ? loadActiveOrder(user.id, user.netId) : Promise.resolve(null),
-      loadActivity(),
-      loadBusy(),
-      user ? loadLastOrder(user.id, user.netId) : Promise.resolve(null),
+  if (!isEatsConfigured() || backingOff()) return null;
+  try {
+    const linked = isEatsLinked();
+    const [catalog, userData, activity] = await Promise.all([
+      loadCatalog(),
+      linked && user?.netId ? loadUser(user.netId).catch(() => null) : Promise.resolve(null),
+      linked ? loadActivity().catch(() => [] as EatsActivityOrder[]) : Promise.resolve([] as EatsActivityOrder[]),
     ]);
-    const now = new Date();
-    const withStatus = vendors.map((v) => ({ id: v.id, name: v.name, open: isOpenNow(v.hours, now) }));
+    const now = Date.now();
+    const vendors = catalog.vendors
+      .map((v) => ({ id: v.id, name: v.name, open: vendorIsOpen(v, catalog.drops, new Date(now)) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const busyCounts = new Map<string, number>();
+    for (const o of activity) {
+      if (now - Date.parse(o.createdAt) > BUSY_WINDOW_MS) break;
+      busyCounts.set(o.vendorName, (busyCounts.get(o.vendorName) ?? 0) + 1);
+    }
+
     return {
       live: true,
-      openCount: withStatus.filter((v) => v.open).length,
-      totalCount: withStatus.length,
-      vendors: withStatus,
-      order,
-      activity,
-      busy,
-      lastOrder,
-    } satisfies EatsWidgetData;
-  })();
-
-  try {
-    const result = await Promise.race([
-      work,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
-    ]);
-    if (!result) lastFailureAt = Date.now();
-    return result;
+      openCount: vendors.filter((v) => v.open).length,
+      totalCount: vendors.length,
+      vendors,
+      order: userData ? activeOrder(userData.orders, now) : null,
+      // Deliberately anonymous: only the kitchen and when, never who ordered.
+      activity: activity.slice(0, 5).map((o) => ({
+        id: o.id,
+        text: `Someone ordered from ${o.vendorName}`,
+        timeAgo: timeAgo(Date.parse(o.createdAt), now),
+      })),
+      busy: [...busyCounts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+      lastOrder: userData ? lastOrderOf(userData.orders, now) : null,
+    };
   } catch (err) {
-    lastFailureAt = Date.now();
     console.error("DKU Eats widget data failed:", err);
     return null;
   }
 }
 
-/** Kitchen settings for the calendar feed, or null if Eats is not configured or does not answer in time. */
-export async function fetchEatsVendorsForCalendar(): Promise<EatsVendorRecord[] | null> {
-  if (!isEatsConfigured()) return null;
-  if (Date.now() - lastFailureAt < FAILURE_BACKOFF_MS) return null;
+/** Kitchens and upcoming bakes for the calendar feed, or null if Eats is not configured or does not answer in time. */
+export async function fetchEatsCatalogForCalendar(): Promise<EatsCatalog | null> {
+  if (!isEatsConfigured() || backingOff()) return null;
   try {
-    const result = await Promise.race([loadVendors(), new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS))]);
-    if (!result) lastFailureAt = Date.now();
-    return result;
+    return await loadCatalog();
   } catch (err) {
-    lastFailureAt = Date.now();
-    console.error("DKU Eats calendar vendors failed:", err);
+    console.error("DKU Eats calendar data failed:", err);
     return null;
   }
 }

@@ -122,6 +122,7 @@ model User {
   chatReadStates     ChatReadState[]
   chatMentions       ChatMention[]
   chatChannelsCreated    ChatChannel[]        @relation("ChatChannelCreator")
+  eatsVendorChats        ChatChannel[]        @relation("ChatEatsCustomer")
   chatChannelMemberships ChatChannelMember[]  @relation("ChatChannelMemberUser")
   chatInvitesSent        ChatGroupInvite[]    @relation("ChatInviteInviter")
   chatInvitesReceived    ChatGroupInvite[]    @relation("ChatInviteInvitee")
@@ -357,12 +358,14 @@ enum ChatChannelKind {
   GENERAL
   GROUP
   DIRECT
+  EATS_VENDOR
 }
 
 // One row per chat surface: the single sitewide GENERAL channel (id "general",
 // implicit membership for every user), an admin-created GROUP channel joined
 // via inviteCode (nationality/class-year communities etc.), or a 2-member
-// DIRECT channel created on demand between two users.
+// DIRECT channel created on demand between two users, or an EATS_VENDOR
+// conversation between one customer and the whole team of a DKU Eats shop.
 model ChatChannel {
   id          String              @id @default(cuid())
   kind        ChatChannelKind
@@ -377,6 +380,14 @@ model ChatChannel {
   readStates  ChatReadState[]
   createdAt   DateTime            @default(now())
 
+  // EATS_VENDOR only. The shop lives in DKU Eats (its id and slug there); the
+  // members are the customer plus every shop manager who has a DKU Life account.
+  eatsVendorId   String?
+  eatsVendorSlug String?
+  eatsCustomerId String?
+  eatsCustomer   User?   @relation("ChatEatsCustomer", fields: [eatsCustomerId], references: [id], onDelete: Cascade)
+
+  @@unique([eatsVendorId, eatsCustomerId])
   @@map("chat_channels")
 }
 

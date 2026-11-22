@@ -1,7 +1,7 @@
-// Turns DKU Eats vendor settings into calendar entries. Pure (no Firestore, no
-// React) so the API route and tests can share it. Mirrors DKU Eats' own
-// src/hours/hours.js: sit-down kitchens follow weekly hours; "weekly pickup"
-// cafes (order all week, collect on one day) are shown on their pickup day.
+// Turns DKU Eats kitchens into calendar entries. Pure (no fetching, no React)
+// so the API route and tests can share it. Mirrors DKU Eats' own week view
+// (src/lib/schedule.js buildWeek): restaurants follow weekly hours; bakeries
+// show each upcoming bake's pickup window.
 
 import { campusWallToDate } from "@/lib/datetime";
 
@@ -9,21 +9,35 @@ const WEEK_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export type EatsVendorRecord = {
   id: string;
+  slug: string;
   name: string;
+  kind: "restaurant" | "bakery";
+  /** { Mon: { open, from: "HH:MM", to: "HH:MM" }, ... } in campus time (restaurants). */
   hours: unknown;
-  serviceType?: unknown;
-  /** Weekly-pickup schedule: { day: "Sat", from: "12:00", to: "14:00", pausedWeeks: ["2026-10-10"] } */
-  weeklyPickup?: unknown;
-  /** Daily pickup slots (existing "takeout" service type). */
-  quotas?: unknown;
-  quotaSystemEnabled?: unknown;
+  acceptingOrders: boolean;
 };
+
+/** A bakery "bake": a pre-order window with one pickup date, time and place. */
+export type EatsDropRecord = {
+  id: string;
+  vendorId: string;
+  title: string;
+  pickupDate: string;
+  pickupStart: string;
+  pickupEnd: string;
+  location: string;
+  status: string;
+  orderDeadline: string | null;
+};
+
+export type EatsCatalog = { vendors: EatsVendorRecord[]; drops: EatsDropRecord[] };
 
 export type EatsCalendarItem = {
   id: string;
   vendorId: string;
+  vendorSlug: string;
   vendorName: string;
-  kind: "hours" | "pickup" | "slots";
+  kind: "hours" | "pickup";
   title: string;
   startsAt: Date;
   endsAt: Date;
@@ -78,63 +92,13 @@ export function campusDateRange(from: string, to: string, maxDays = 62): string[
   return out;
 }
 
-export function expandEatsAvailability(vendors: EatsVendorRecord[], from: string, to: string): EatsCalendarItem[] {
+export function expandEatsAvailability(catalog: EatsCatalog, from: string, to: string): EatsCalendarItem[] {
   const items: EatsCalendarItem[] = [];
   const dates = campusDateRange(from, to);
+  const byId = new Map(catalog.vendors.map((v) => [v.id, v]));
 
-  for (const vendor of vendors) {
-    if (vendor.serviceType === "weekly") {
-      const cfg = (vendor.weeklyPickup ?? {}) as { day?: string; from?: string; to?: string; pausedWeeks?: unknown };
-      const dayIndex = WEEK_KEYS.indexOf(String(cfg.day));
-      if (dayIndex < 0) continue;
-      const paused = new Set(Array.isArray(cfg.pausedWeeks) ? cfg.pausedWeeks.map(String) : []);
-      const start = parseHHMM(cfg.from);
-      const end = parseHHMM(cfg.to);
-      const timed = start !== null && end !== null;
-      for (const iso of dates) {
-        if (weekdayOf(iso) !== dayIndex || paused.has(iso)) continue;
-        items.push({
-          id: `eats:${vendor.id}:${iso}:pickup`,
-          vendorId: vendor.id,
-          vendorName: vendor.name,
-          kind: "pickup",
-          title: `${vendor.name} · pickup day`,
-          startsAt: timed ? campusInstant(iso, start) : campusInstant(iso, [0, 0]),
-          endsAt: timed ? campusInstant(iso, end, minutesOf(end) <= minutesOf(start) ? 1 : 0) : campusInstant(iso, [0, 0], 1),
-          allDay: !timed,
-          note: timed ? `Pick up ${clock12(start)}–${clock12(end)}. Order any day this week.` : "Order any day this week, pick up today.",
-        });
-      }
-      continue;
-    }
-
-    if (vendor.serviceType === "takeout") {
-      const slots = (Array.isArray(vendor.quotas) ? vendor.quotas : [])
-        .filter((q): q is { time: string; isActive: true } => Boolean(q) && typeof q === "object" && (q as { isActive?: boolean }).isActive === true)
-        .map((q) => parseHHMM(q.time))
-        .filter((t): t is [number, number] => t !== null)
-        .sort((a, b) => minutesOf(a) - minutesOf(b));
-      if (!vendor.quotaSystemEnabled || slots.length === 0) continue;
-      const first = slots[0];
-      const last = slots[slots.length - 1];
-      for (const iso of dates) {
-        items.push({
-          id: `eats:${vendor.id}:${iso}:slots`,
-          vendorId: vendor.id,
-          vendorName: vendor.name,
-          kind: "slots",
-          title: `${vendor.name} · pickup slots`,
-          startsAt: campusInstant(iso, first),
-          endsAt: campusInstant(iso, last),
-          allDay: false,
-          note: `Pickup slots ${clock12(first)}–${clock12(last)}`,
-        });
-      }
-      continue;
-    }
-
-    // Sit-down: structured weekly hours only. Legacy free-text hours can't be placed on a day.
-    if (!vendor.hours || typeof vendor.hours !== "object") continue;
+  for (const vendor of catalog.vendors) {
+    if (vendor.kind !== "restaurant" || !vendor.hours || typeof vendor.hours !== "object") continue;
     const hours = vendor.hours as Record<string, DayHours>;
     for (const iso of dates) {
       const day = hours[WEEK_KEYS[weekdayOf(iso)]];
@@ -145,15 +109,37 @@ export function expandEatsAvailability(vendors: EatsVendorRecord[], from: string
       items.push({
         id: `eats:${vendor.id}:${iso}:hours`,
         vendorId: vendor.id,
+        vendorSlug: vendor.slug,
         vendorName: vendor.name,
         kind: "hours",
         title: `${vendor.name} · open`,
         startsAt: campusInstant(iso, start),
-        endsAt: campusInstant(iso, end, minutesOf(end) < minutesOf(start) ? 1 : 0),
+        endsAt: campusInstant(iso, end, minutesOf(end) <= minutesOf(start) ? 1 : 0),
         allDay: false,
         note: `Open ${clock12(start)}–${clock12(end)}`,
       });
     }
+  }
+
+  for (const drop of catalog.drops) {
+    const vendor = byId.get(drop.vendorId);
+    if (!vendor || drop.pickupDate < from || drop.pickupDate > to) continue;
+    const start = parseHHMM(drop.pickupStart);
+    const end = parseHHMM(drop.pickupEnd);
+    if (!start || !end) continue;
+    const where = drop.location ? ` at ${drop.location}` : "";
+    items.push({
+      id: `eats:${vendor.id}:${drop.id}:pickup`,
+      vendorId: vendor.id,
+      vendorSlug: vendor.slug,
+      vendorName: vendor.name,
+      kind: "pickup",
+      title: `${vendor.name} · ${drop.title || "bake"} pickup`,
+      startsAt: campusInstant(drop.pickupDate, start),
+      endsAt: campusInstant(drop.pickupDate, end, minutesOf(end) <= minutesOf(start) ? 1 : 0),
+      allDay: false,
+      note: `Pick up ${clock12(start)}–${clock12(end)}${where}. Pre-order on DKU Eats.`,
+    });
   }
 
   return items.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());

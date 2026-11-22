@@ -1,4 +1,4 @@
-// Sample data for the DKU Eats widgets, used only when the live Firestore
+// Sample data for the DKU Eats widgets, used only when the live DKU Eats API
 // connection (see eats-live.ts) isn't configured or doesn't answer in time.
 // The widgets label it as sample data. Deterministic per day/minute so it
 // doesn't flicker on every render.

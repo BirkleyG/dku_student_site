@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { Hash, Menu, MessageCircle, MessageSquare, Plus, SmilePlus, UserPlus, X } from "lucide-react";
+import { Hash, Menu, MessageCircle, MessageSquare, Plus, SmilePlus, Store, UserPlus, UtensilsCrossed, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { JoinGroupModal } from "./JoinGroupModal";
 import { NewDmModal } from "./NewDmModal";
@@ -21,7 +21,9 @@ type Counts = { unread?: number; mentions?: number };
 type SidebarChannel = { id: string; name: string; description: string | null } & Counts;
 type SidebarDm = { id: string; name: string; otherUserId: string | null } & Counts;
 type SidebarInvite = { id: string; channelId: string; groupName: string; inviterName: string };
-type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[]; invites?: SidebarInvite[] };
+/** A DKU Eats shop conversation. `asShop`: the viewer is on the shop's team (the name is then "Customer · Shop"). */
+type SidebarShop = { id: string; name: string; asShop: boolean; vendorSlug: string | null } & Counts;
+type SidebarData = { general: SidebarChannel; groups: SidebarChannel[]; dms: SidebarDm[]; shops?: SidebarShop[]; invites?: SidebarInvite[] };
 
 type ChatUser = { id: string; firstName: string; lastName: string };
 type ChatReaction = { id: string; emoji: string; userId: string };
@@ -35,7 +37,8 @@ type ChatMessage = {
   _count?: { replies: number };
 };
 
-type SelectedChannel = { id: string; name: string; description: string | null; kind: "GENERAL" | "GROUP" | "DIRECT" };
+type ChannelKind = "GENERAL" | "GROUP" | "DIRECT" | "EATS_VENDOR";
+type SelectedChannel = { id: string; name: string; description: string | null; kind: ChannelKind; vendorSlug?: string | null };
 
 /** Resolves a `?channel=` id from a push deep link against the loaded sidebar, falling back to General. */
 function resolveRequestedChannel(data: SidebarData, requestedChannelId: string | null): SelectedChannel {
@@ -45,8 +48,14 @@ function resolveRequestedChannel(data: SidebarData, requestedChannelId: string |
     if (group) return { ...group, kind: "GROUP" };
     const dm = data.dms.find((d) => d.id === requestedChannelId);
     if (dm) return { ...dm, description: null, kind: "DIRECT" };
+    const shop = data.shops?.find((x) => x.id === requestedChannelId);
+    if (shop) return shopChannel(shop);
   }
   return { ...data.general, kind: "GENERAL" };
+}
+
+function shopChannel(shop: SidebarShop): SelectedChannel {
+  return { id: shop.id, name: shop.name, description: null, kind: "EATS_VENDOR", vendorSlug: shop.vendorSlug };
 }
 
 async function jsonFetch(url: string, init?: RequestInit) {
@@ -399,6 +408,22 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
           ))
         )}
       </SidebarSection>
+
+      {sidebar.shops && sidebar.shops.length > 0 ? (
+        <SidebarSection label={t("shopsSection")}>
+          {sidebar.shops.map((x) => (
+            <SidebarRow
+              key={x.id}
+              icon={x.asShop ? <Store className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
+              label={x.name}
+              active={selected.id === x.id}
+              unread={x.unread}
+              mentions={x.mentions}
+              onClick={() => selectChannel(shopChannel(x))}
+            />
+          ))}
+        </SidebarSection>
+      ) : null}
     </>
   );
 
@@ -425,6 +450,14 @@ export function ChatApp({ currentUserId, currentUserName }: { currentUserId: str
             <h3 className="truncate font-display text-xl text-ink">{selected.name}</h3>
             {selected.description ? <p className="truncate text-xs text-ink/45">{selected.description}</p> : null}
           </div>
+          {selected.kind === "EATS_VENDOR" && selected.vendorSlug ? (
+            <a
+              href={`/eats?shop=${encodeURIComponent(selected.vendorSlug)}`}
+              className="focus-ring shrink-0 rounded-sm border border-ink/15 px-3 py-1 text-xs text-ink/70 hover:text-ink"
+            >
+              {t("openShop")}
+            </a>
+          ) : null}
           {selected.kind === "GROUP" ? (
             <button
               onClick={() => setShowManage(true)}
@@ -748,7 +781,7 @@ function MessageRow({
   );
 }
 
-type ComposerChannel = { id: string; kind: "GENERAL" | "GROUP" | "DIRECT" };
+type ComposerChannel = { id: string; kind: ChannelKind };
 
 /** The "@query" being typed right before the caret, if any. */
 function activeMention(value: string): { query: string; start: number } | null {
@@ -777,7 +810,7 @@ function Composer({
   const [suggestions, setSuggestions] = useState<ChatUser[]>([]);
   const [highlight, setHighlight] = useState(0);
   const members = useRef<{ channelId: string; users: ChatUser[] } | null>(null);
-  const mention = channel.kind === "DIRECT" ? null : activeMention(value);
+  const mention = channel.kind === "DIRECT" || channel.kind === "EATS_VENDOR" ? null : activeMention(value);
   const query = mention?.query ?? null;
 
   useEffect(() => {

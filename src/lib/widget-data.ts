@@ -11,7 +11,7 @@ import { getAchievementProgress, getRecentPointEvents, getUserPointsSummary } fr
 import { ACHIEVEMENTS, ACHIEVEMENT_BY_ID, isAchievementKey } from "@/lib/achievements";
 import { ACTIVITY_RULES, POINT_SOURCES, isActivityKey } from "@/lib/points-rules";
 import { getReviewSemesters } from "@/lib/semester-review";
-import { dmChannelName } from "@/lib/chat";
+import { channelDisplayName } from "@/lib/chat";
 import { getMentionCounts, getUnreadCounts } from "@/lib/chat-state";
 import { getFriendActivity, getOnlineFriends, getUpcomingBirthdays } from "@/lib/friends";
 import { CAMPUS_CONTACTS, NATIONAL_EMERGENCY } from "@/lib/campus-contacts";
@@ -616,7 +616,7 @@ const loadChat: Loader = async ({ user, t }) => {
         include: { author: { select: { firstName: true } } },
       });
       byChannel[c.id] = latest
-        ? { channelName: c.kind === "DIRECT" ? dmChannelName(c, user.id) : c.name, author: latest.author.firstName, body: clip(latest.body, 90) }
+        ? { channelName: channelDisplayName(c, user.id), author: latest.author.firstName, body: clip(latest.body, 90) }
         : null;
     }),
   );
@@ -918,7 +918,7 @@ const loadSocial: Loader = async ({ user, now, t, locale }) => {
   ]);
 
   const unread = await getUnreadCounts(user, channels.map((c) => c.id));
-  const nameOf = (c: (typeof channels)[number]) => (c.kind === "DIRECT" ? dmChannelName(c, user.id) : c.name);
+  const nameOf = (c: (typeof channels)[number]) => channelDisplayName(c, user.id);
   const total = Object.values(unread).reduce((a, b) => a + b, 0);
   const busiest = [...channels].sort((a, b) => (unread[b.id] ?? 0) - (unread[a.id] ?? 0))[0];
   const mentionTotal = Object.values(mentionCounts).reduce((a, b) => a + b, 0);
