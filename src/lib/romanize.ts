@@ -22,6 +22,15 @@ export function romanize(text: string): string {
   };
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
+    // 大道 ("avenue") is a two-character suffix: 杜克大道 -> "Duke Dadao", not "Dukeda Dao".
+    if (c === "大" && chars[i + 1] === "道" && word) {
+      flush();
+      word = "dadao";
+      flush();
+      i++;
+      directionOpen = false;
+      continue;
+    }
     if (!HAN.test(c)) {
       // Latin letters, digits and punctuation pass through; a space or a Chinese character ends the run.
       if (!c.trim()) flush();

@@ -63,6 +63,7 @@ export function PinMap({
   const [dropMode, setDropMode] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[] | null>(null);
+  const [interpreted, setInterpreted] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [topicId, setTopicId] = useState(fixedTopicId ?? "");
@@ -174,6 +175,7 @@ export function PinMap({
       return;
     }
     setResults(data.results ?? []);
+    setInterpreted(data.interpreted ?? null);
   };
 
   const pick = (r: GeoResult) => {
@@ -278,6 +280,11 @@ export function PinMap({
                   <Search className="h-4 w-4" /> {searching ? t("searching") : t("search")}
                 </Button>
               </form>
+              {results && interpreted ? (
+                <p className="mt-3 text-xs text-ink/55">
+                  {t("searchedAs")} <span lang="zh" className="font-medium text-ink">{interpreted}</span>
+                </p>
+              ) : null}
               {results ? (
                 results.length === 0 ? (
                   <p className="mt-3 text-sm text-ink/55">{t("noResults")}</p>
