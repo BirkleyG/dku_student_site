@@ -192,7 +192,7 @@ export function interpretAddress(query: string): Interpretation | null {
 }
 
 /**
- * Places whose pinyin starts with what was typed, nearest DKU first: "haidilao" -> 海底捞火锅(昆山店).
+ * Places whose pinyin starts with what was typed, nearest DKU first: "zhouzhuang" -> 周庄镇.
  * For plain pinyin searches that aren't an address. Needs at least 5 letters to avoid noise.
  */
 export function pinyinMatches(query: string, limit = 5): PlaceRef[] {

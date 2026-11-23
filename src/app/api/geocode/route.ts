@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
   const key = process.env.AMAP_KEY;
   const interp = interpretAddress(q);
-  // Plain pinyin ("haidilao", "wanda guangchang"): known places whose pinyin starts with it.
+  // Plain pinyin ("zhouzhuang", "xiaolin"): known roads/towns whose pinyin starts with it.
   const pinyinHits = interp ? [] : pinyinMatches(q);
   const [amap, amapRaw, osm, amapAddress, crossing] = await Promise.allSettled([
     key ? searchAmap(interp?.chinese ?? pinyinHits[0]?.name ?? q, key) : Promise.resolve([]),

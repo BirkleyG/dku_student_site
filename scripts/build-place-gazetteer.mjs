@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Builds src/data/kunshan-places.json: Chinese names of roads, waterways, towns, villages,
- * neighbourhoods, shops, restaurants and sights around DKU, from OpenStreetMap (via Overpass). The Wisdom place search uses it to
+ * Builds src/data/kunshan-places.json: Chinese names of roads, waterways, towns, villages and
+ * neighbourhoods around DKU, from OpenStreetMap (via Overpass). The Wisdom place search uses it to
  * turn pinyin/English addresses ("Xiaolin West Road and Yuanshi Road Intersection") back into
  * Chinese ("萧林西路与元石路交叉口") before searching.
  *
@@ -25,7 +25,7 @@ const BOUNDS = { south: 31.22, north: 31.58, west: 120.75, east: 121.12 };
 const GRID = 8; // public Overpass servers time out on the whole box, so fetch it in tiles
 const MIN_TILE = 0.01; // degrees; a tile that keeps failing is split in four down to this size
 // Finished tiles are cached here, so a run that dies halfway picks up where it stopped.
-const CACHE = join(tmpdir(), "dku-place-gazetteer");
+const CACHE = join(tmpdir(), "dku-place-gazetteer-v2");
 const DKU = { lat: 31.4175, lng: 120.8952 };
 const HAN = /\p{Script=Han}/u;
 
@@ -33,9 +33,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** One attempt cycle against the public mirrors; null if they all keep failing. */
 async function queryTile(bb) {
-  // Roads, rivers, towns/villages (place nodes; admin boundary relations are too heavy to fetch), and
-  // named shops, restaurants, malls, parks and sights so pinyin like "haidilao" finds 海底捞.
-  const query = `[out:json][timeout:50];(way["highway"]["name"](${bb});way["waterway"]["name"](${bb});node["place"]["name"](${bb});nw["amenity"]["name"](${bb});nw["shop"]["name"](${bb});nw["tourism"]["name"](${bb});nw["leisure"]["name"](${bb}););out tags center qt;`;
+  // Roads, rivers and towns/villages (place nodes). Admin boundary relations and shops/restaurants
+  // make tiles too heavy for the public mirrors; AMap covers businesses.
+  const query = `[out:json][timeout:50];(way["highway"]["name"](${bb});way["waterway"]["name"](${bb});node["place"]["name"](${bb}););out tags center qt;`;
   for (let attempt = 0; attempt < 4; attempt++) {
     const url = ENDPOINTS[attempt % ENDPOINTS.length];
     try {
