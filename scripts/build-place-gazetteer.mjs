@@ -49,6 +49,22 @@ async function queryTile(bb) {
   return null;
 }
 
+async function mirrorsUp() {
+  for (const url of ENDPOINTS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        body: new URLSearchParams({ data: '[out:json][timeout:10];node["place"="town"](31.40,120.88,31.45,120.95);out tags qt;' }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (res.ok) return true;
+    } catch {
+      // try the next mirror
+    }
+  }
+  return false;
+}
+
 /** A tile's elements, from cache or Overpass. A tile that keeps failing is split into quarters. */
 async function fetchTile([s, w, n, e]) {
   const bb = [s, w, n, e].map((x) => x.toFixed(4)).join(",");
@@ -58,6 +74,16 @@ async function fetchTile([s, w, n, e]) {
   if (elements) {
     writeFileSync(file, JSON.stringify(elements));
     return elements;
+  }
+  // If even a tiny query fails, the mirrors are down rather than this tile being too big: wait it out.
+  while (!(await mirrorsUp())) {
+    process.stdout.write("  Overpass mirrors are down; retrying in 2 minutes\n");
+    await sleep(120_000);
+  }
+  const retried = await queryTile(bb);
+  if (retried) {
+    writeFileSync(file, JSON.stringify(retried));
+    return retried;
   }
   if (n - s <= MIN_TILE) throw new Error(`Tile ${bb} failed even at the smallest size; rerun later to resume`);
   process.stdout.write(`  splitting ${bb}\n`);
