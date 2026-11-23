@@ -11,7 +11,8 @@
  * Output rows are [name, lat, lng] (WGS-84, rounded), one per distinct name, keeping the copy
  * closest to DKU. Data © OpenStreetMap contributors, ODbL.
  */
-import { writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,16 +23,20 @@ const ENDPOINTS = [
 // Kunshan plus a margin (Suzhou Industrial Park edge, Huaqiao, Zhouzhuang).
 const BOUNDS = { south: 31.22, north: 31.58, west: 120.75, east: 121.12 };
 const GRID = 8; // public Overpass servers time out on the whole box, so fetch it in tiles
+const MIN_TILE = 0.01; // degrees; a tile that keeps failing is split in four down to this size
+// Finished tiles are cached here, so a run that dies halfway picks up where it stopped.
+const CACHE = join(tmpdir(), "dku-place-gazetteer");
 const DKU = { lat: 31.4175, lng: 120.8952 };
 const HAN = /\p{Script=Han}/u;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchTile(bb) {
+/** One attempt cycle against the public mirrors; null if they all keep failing. */
+async function queryTile(bb) {
   // Roads, rivers, towns/villages (place nodes; admin boundary relations are too heavy to fetch), and
   // named shops, restaurants, malls, parks and sights so pinyin like "haidilao" finds 海底捞.
   const query = `[out:json][timeout:50];(way["highway"]["name"](${bb});way["waterway"]["name"](${bb});node["place"]["name"](${bb});nw["amenity"]["name"](${bb});nw["shop"]["name"](${bb});nw["tourism"]["name"](${bb});nw["leisure"]["name"](${bb}););out tags center qt;`;
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     const url = ENDPOINTS[attempt % ENDPOINTS.length];
     try {
       const res = await fetch(url, { method: "POST", body: new URLSearchParams({ data: query }), signal: AbortSignal.timeout(80_000) });
@@ -41,7 +46,27 @@ async function fetchTile(bb) {
     }
     await sleep(5000 * (attempt + 1));
   }
-  throw new Error(`Tile ${bb} failed after retries`);
+  return null;
+}
+
+/** A tile's elements, from cache or Overpass. A tile that keeps failing is split into quarters. */
+async function fetchTile([s, w, n, e]) {
+  const bb = [s, w, n, e].map((x) => x.toFixed(4)).join(",");
+  const file = join(CACHE, `${bb}.json`);
+  if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8"));
+  const elements = await queryTile(bb);
+  if (elements) {
+    writeFileSync(file, JSON.stringify(elements));
+    return elements;
+  }
+  if (n - s <= MIN_TILE) throw new Error(`Tile ${bb} failed even at the smallest size; rerun later to resume`);
+  process.stdout.write(`  splitting ${bb}\n`);
+  const ms = (s + n) / 2;
+  const mw = (w + e) / 2;
+  const quarters = [[s, w, ms, mw], [s, mw, ms, e], [ms, w, n, mw], [ms, mw, n, e]];
+  const parts = [];
+  for (const q of quarters) parts.push(...(await fetchTile(q)));
+  return parts;
 }
 
 const dist2 = (lat, lng) => (lat - DKU.lat) ** 2 + ((lng - DKU.lng) * Math.cos((DKU.lat * Math.PI) / 180)) ** 2;
@@ -52,14 +77,11 @@ const dLng = (BOUNDS.east - BOUNDS.west) / GRID;
 const tiles = [];
 for (let i = 0; i < GRID; i++) {
   for (let j = 0; j < GRID; j++) {
-    tiles.push(
-      [BOUNDS.south + i * dLat, BOUNDS.west + j * dLng, BOUNDS.south + (i + 1) * dLat, BOUNDS.west + (j + 1) * dLng]
-        .map((n) => n.toFixed(4))
-        .join(","),
-    );
+    tiles.push([BOUNDS.south + i * dLat, BOUNDS.west + j * dLng, BOUNDS.south + (i + 1) * dLat, BOUNDS.west + (j + 1) * dLng]);
   }
 }
 
+mkdirSync(CACHE, { recursive: true });
 let done = 0;
 async function worker() {
   for (let bb = tiles.shift(); bb; bb = tiles.shift()) {
