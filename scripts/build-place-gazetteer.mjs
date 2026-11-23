@@ -6,12 +6,13 @@
  * Chinese ("萧林西路与元石路交叉口") before searching.
  *
  * Usage:  node scripts/build-place-gazetteer.mjs
+ *         node scripts/build-place-gazetteer.mjs --cached-only   (write what's downloaded so far)
  * (Behind an HTTPS proxy on Node 22+: NODE_USE_ENV_PROXY=1 node scripts/build-place-gazetteer.mjs)
  *
  * Output rows are [name, lat, lng] (WGS-84, rounded), one per distinct name, keeping the copy
  * closest to DKU. Data © OpenStreetMap contributors, ODbL.
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -108,21 +109,29 @@ for (let i = 0; i < GRID; i++) {
 }
 
 mkdirSync(CACHE, { recursive: true });
+const cachedOnly = process.argv.includes("--cached-only");
 let done = 0;
+function addElements(elements) {
+  for (const el of elements) {
+    const name = el.tags?.name?.trim();
+    const lat = el.lat ?? el.center?.lat;
+    const lng = el.lon ?? el.center?.lon;
+    if (!name || !HAN.test(name) || lat == null || lng == null) continue;
+    const prev = best.get(name);
+    if (!prev || dist2(lat, lng) < dist2(prev[1], prev[2])) best.set(name, [name, +lat.toFixed(5), +lng.toFixed(5)]);
+  }
+}
 async function worker() {
   for (let bb = tiles.shift(); bb; bb = tiles.shift()) {
-    for (const el of await fetchTile(bb)) {
-      const name = el.tags?.name?.trim();
-      const lat = el.lat ?? el.center?.lat;
-      const lng = el.lon ?? el.center?.lon;
-      if (!name || !HAN.test(name) || lat == null || lng == null) continue;
-      const prev = best.get(name);
-      if (!prev || dist2(lat, lng) < dist2(prev[1], prev[2])) best.set(name, [name, +lat.toFixed(5), +lng.toFixed(5)]);
-    }
+    addElements(await fetchTile(bb));
     process.stdout.write(`tile ${++done}/${GRID * GRID}: ${best.size} names\n`);
   }
 }
-await worker(); // one at a time: public Overpass mirrors answer 504 to parallel requests
+if (cachedOnly) {
+  for (const f of readdirSync(CACHE)) addElements(JSON.parse(readFileSync(join(CACHE, f), "utf8")));
+} else {
+  await worker(); // one at a time: public Overpass mirrors answer 504 to parallel requests
+}
 
 const rows = [...best.values()].sort((a, b) => a[0].localeCompare(b[0], "zh"));
 const out = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "data", "kunshan-places.json");
